@@ -3,7 +3,7 @@
   "sourceFiles": 259,
   "sourceArchive": {
     "name": "lhl76-source.tar.gz",
-    "sha256": "a9d50c98fce323c34da6c1a0613ed4aa79a125af0a67d8f49e06514e7c06a44b"
+    "sha256": "cc5a00d0ef87a4811ff57e1bf7ee8698f0e161be5bab55962278405113c76d3e"
   },
   "dataArchive": {
     "name": "lhl76-data.tar.aes",
@@ -12,5 +12,6 @@
   "verifiedFiles": 1457,
   "verifiedDatabaseBackup": "2026-10-29T13:57:34.305Z",
   "workingWrites": 0,
-  "secretsExcluded": true
+  "secretsExcluded": true,
+  "sourceFinalizedAt": "2026-10-29T14:21:55.732Z"
 }
