@@ -1,0 +1,662 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CompetitionType {
+  CHAMPIONSHIP
+  TOURNAMENT
+}
+
+enum MatchStageType {
+  GROUP_STAGE
+  PLAYOFF
+  QUARTERFINAL
+  SEMIFINAL
+  FINAL
+  THIRD_PLACE
+  OTHER
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINAL
+  POSTPONED
+  CANCELLED
+}
+
+enum MatchResultType {
+  NORMAL
+  TECHNICAL
+  FORFEIT
+}
+
+enum RosterStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum SuspensionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum LeadershipRole {
+  NONE
+  CAPTAIN
+  ASSISTANT
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  SECRETARY
+}
+
+model Season {
+  id                    String                 @id @default(uuid())
+  name                  String                 @unique
+  slug                  String                 @unique
+  startsAt              DateTime
+  endsAt                DateTime
+  rosterLimit           Int                    @default(35)
+  isActive              Boolean                @default(false)
+  competitions          Competition[]
+  playerClassifications PlayerClassification[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+}
+
+model Competition {
+  id        String          @id @default(uuid())
+  seasonId  String
+  season    Season          @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  type      CompetitionType
+  rules     Json?
+  sortOrder Int             @default(0)
+  isActive  Boolean         @default(false)
+  divisions Division[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([seasonId, slug])
+  @@index([seasonId, type])
+}
+
+model Division {
+  id            String       @id @default(uuid())
+  competitionId String
+  competition   Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  sortOrder     Int          @default(0)
+  teamEntries   TeamEntry[]
+  stages        MatchStage[]
+  matches       Match[]
+  standings     Standing[]
+  playoffs      Playoff[]
+
+  @@unique([competitionId, slug])
+  @@index([competitionId, sortOrder])
+}
+
+model Team {
+  id               String      @id @default(uuid())
+  slug             String      @unique
+  name             String
+  shortName        String
+  city             String?
+  shortDescription String?
+  description      String?     @db.Text
+  achievements     Json?
+  logoUrl          String?
+  teamPhotoUrl     String?
+  vkUrl            String?
+  telegramUrl      String?
+  websiteUrl       String?
+  entries          TeamEntry[]
+  deletedAt        DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model TeamEntry {
+  id            String             @id @default(uuid())
+  teamId        String
+  team          Team               @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  divisionId    String
+  division      Division           @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  rosterLimit   Int?
+  roster        RosterEntry[]
+  homeMatches   Match[]            @relation("HomeTeamEntry")
+  awayMatches   Match[]            @relation("AwayTeamEntry")
+  goals         Goal[]
+  assists       Assist[]
+  penalties     Penalty[]
+  legacyEvents  LegacyMatchEvent[]
+  penaltyShots  PenaltyShot[]
+  playerStats   PlayerStatistic[]
+  teamStatistic TeamStatistic?
+  standing      Standing?
+  playoffHome   PlayoffSeries[]    @relation("PlayoffHomeTeamEntry")
+  playoffAway   PlayoffSeries[]    @relation("PlayoffAwayTeamEntry")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([teamId, divisionId])
+  @@index([divisionId])
+}
+
+model Player {
+  id                   String                 @id @default(uuid())
+  slug                 String                 @unique
+  firstName            String
+  lastName             String
+  patronymic           String?
+  nativeName           String?
+  birthDate            DateTime?
+  country              String?
+  birthPlace           String?
+  position             String?
+  stickHand            String?
+  heightCm             Int?
+  weightKg             Int?
+  league               String?
+  baseNumber            String?
+  ratingCategoryId      String?
+  ratingCategory        ClassificationCategory? @relation("CurrentPlayerRating", fields: [ratingCategoryId], references: [id], onDelete: SetNull)
+  photoUrl             String?
+  laureatePhotoUrl     String?
+  laureateAchievements String?                @db.Text
+  rosterEntries        RosterEntry[]
+  classifications      PlayerClassification[]
+  goals                Goal[]
+  assists              Assist[]
+  penalties            Penalty[]
+  statistics           PlayerStatistic[]
+  legacyEvents         LegacyMatchEvent[]
+  penaltyShots         PenaltyShot[]           @relation("PenaltyShotShooter")
+  facedPenaltyShots    PenaltyShot[]           @relation("PenaltyShotGoalie")
+  deletedAt            DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@index([lastName, firstName, patronymic])
+}
+
+model RosterEntry {
+  id           String         @id @default(uuid())
+  teamEntryId  String
+  teamEntry    TeamEntry      @relation(fields: [teamEntryId], references: [id], onDelete: Cascade)
+  playerId     String
+  player       Player         @relation(fields: [playerId], references: [id], onDelete: Restrict)
+  number       String?
+  leadership   LeadershipRole @default(NONE)
+  status       RosterStatus   @default(ACTIVE)
+  joinedAt     DateTime       @default(now())
+  leftAt       DateTime?
+  matchRosters MatchRoster[]
+  suspensions  PlayerSuspension[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([teamEntryId, playerId])
+  @@index([playerId])
+}
+
+model PlayerSuspension {
+  id             String           @id @default(uuid())
+  rosterEntryId  String
+  rosterEntry    RosterEntry      @relation(fields: [rosterEntryId], references: [id], onDelete: Cascade)
+  reason         String
+  note           String?          @db.Text
+  startsAt       DateTime         @default(now())
+  endsAt         DateTime?
+  matchesCount   Int?
+  status         SuspensionStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([rosterEntryId, status])
+  @@index([status, startsAt, endsAt])
+}
+
+model ClassificationCategory {
+  id                    String                 @id @default(uuid())
+  name                  String                 @unique
+  level                 Int
+  sortOrder             Int
+  active                Boolean                @default(true)
+  description           String?
+  playerClassifications PlayerClassification[]
+  ratedPlayers          Player[]               @relation("CurrentPlayerRating")
+  createdAt             DateTime               @default(now())
+}
+
+model PlayerClassification {
+  id         String                 @id @default(uuid())
+  playerId   String
+  player     Player                 @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  seasonId   String
+  season     Season                 @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   ClassificationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  startsAt   DateTime               @default(now())
+  endsAt     DateTime?
+
+  @@index([playerId, seasonId])
+  @@index([seasonId, categoryId])
+}
+
+model MatchStage {
+  id                 String         @id @default(uuid())
+  divisionId         String
+  division           Division       @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  name               String
+  slug               String
+  type               MatchStageType
+  sortOrder          Int            @default(0)
+  countsForStandings Boolean        @default(false)
+  matches            Match[]
+
+  @@unique([divisionId, slug])
+}
+
+model Venue {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  name        String
+  address     String?
+  city        String?
+  description String? @db.Text
+  imageUrl    String?
+  mapUrl      String?
+  active      Boolean @default(true)
+  matches     Match[]
+
+  @@unique([name, city])
+}
+
+model Match {
+  id              String             @id @default(uuid())
+  slug            String             @unique
+  divisionId      String
+  division        Division           @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  stageId         String
+  stage           MatchStage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  homeTeamEntryId String
+  homeTeamEntry   TeamEntry          @relation("HomeTeamEntry", fields: [homeTeamEntryId], references: [id], onDelete: Restrict)
+  awayTeamEntryId String
+  awayTeamEntry   TeamEntry          @relation("AwayTeamEntry", fields: [awayTeamEntryId], references: [id], onDelete: Restrict)
+  venueId         String?
+  venue           Venue?             @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  startsAt        DateTime?
+  isPlayoff       Boolean            @default(false)
+  playoffSeriesId String?
+  playoffSeries   PlayoffSeries?     @relation(fields: [playoffSeriesId], references: [id], onDelete: Restrict)
+  playoffGame     Int?
+  status          MatchStatus        @default(SCHEDULED)
+  resultType      MatchResultType    @default(NORMAL)
+  resultNote      String?
+  homeScore       Int                @default(0)
+  awayScore       Int                @default(0)
+  periodScores    Json?
+  protocolData    Json?
+  rosters         MatchRoster[]
+  goals           Goal[]
+  assists         Assist[]
+  penalties       Penalty[]
+  legacyEvents    LegacyMatchEvent[]
+  penaltyShots    PenaltyShot[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([divisionId, startsAt])
+  @@index([stageId])
+  @@index([homeTeamEntryId])
+  @@index([awayTeamEntryId])
+  @@unique([playoffSeriesId, playoffGame])
+}
+
+model MatchRoster {
+  id            String      @id @default(uuid())
+  matchId       String
+  match         Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  rosterEntryId String
+  rosterEntry   RosterEntry @relation(fields: [rosterEntryId], references: [id], onDelete: Restrict)
+  numberOverride String?
+
+  @@unique([matchId, rosterEntryId])
+  @@index([rosterEntryId])
+}
+
+model Goal {
+  id           String    @id @default(uuid())
+  matchId      String
+  match        Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamEntryId  String
+  teamEntry    TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Restrict)
+  scorerId     String
+  scorer       Player    @relation(fields: [scorerId], references: [id], onDelete: Restrict)
+  period       Int?
+  clockSeconds Int?
+  situation    String       @default("5X5")
+  assists      Assist[]
+
+  @@index([matchId, teamEntryId])
+  @@index([scorerId])
+}
+
+model Assist {
+  id          String    @id @default(uuid())
+  goalId      String?
+  goal        Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  matchId     String
+  match       Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamEntryId String
+  teamEntry   TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Restrict)
+  playerId    String
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Restrict)
+  order       Int
+
+  @@unique([goalId, order])
+  @@index([matchId, teamEntryId])
+  @@index([playerId])
+}
+
+model Penalty {
+  id           String    @id @default(uuid())
+  matchId      String
+  match        Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamEntryId  String
+  teamEntry    TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Restrict)
+  playerId     String?
+  player       Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  period       Int?
+  clockSeconds Int?
+  minutes      Int
+  reasonCode   String?
+  reason       String?
+
+  @@index([matchId, teamEntryId])
+  @@index([playerId])
+}
+
+model PenaltyShot {
+  id           String    @id @default(uuid())
+  matchId      String
+  match        Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamEntryId  String
+  teamEntry    TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Restrict)
+  playerId     String
+  player       Player    @relation("PenaltyShotShooter", fields: [playerId], references: [id], onDelete: Restrict)
+  goalieId     String?
+  goalie       Player?   @relation("PenaltyShotGoalie", fields: [goalieId], references: [id], onDelete: SetNull)
+  phase        String
+  attemptOrder Int       @default(1)
+  period       Int?
+  clockSeconds Int?
+  scored       Boolean   @default(false)
+
+  @@index([matchId, phase, attemptOrder])
+  @@index([playerId])
+}
+
+model LegacyMatchEvent {
+  id          String     @id @default(uuid())
+  source      String
+  legacyId    String
+  matchId     String
+  match       Match      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamEntryId String?
+  teamEntry   TeamEntry? @relation(fields: [teamEntryId], references: [id], onDelete: SetNull)
+  playerId    String?
+  player      Player?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  eventCode   String
+  eventType   String
+  count       Int        @default(1)
+  minute      String?
+  reason      String?
+  raw         Json?
+
+  @@unique([source, legacyId])
+  @@index([matchId, eventCode])
+  @@index([playerId])
+}
+
+model PlayerStatistic {
+  id             String    @id @default(uuid())
+  playerId       String
+  player         Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teamEntryId    String
+  teamEntry      TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Cascade)
+  games          Int       @default(0)
+  goals          Int       @default(0)
+  assists        Int       @default(0)
+  penaltyMinutes Int       @default(0)
+  goalieGames    Int       @default(0)
+  goalieSeconds  Int       @default(0)
+  shotsAgainst   Int       @default(0)
+  goalieGoalsAgainst Int   @default(0)
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([playerId, teamEntryId])
+  @@index([teamEntryId])
+}
+
+model TeamStatistic {
+  id           String    @id @default(uuid())
+  teamEntryId  String    @unique
+  teamEntry    TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Cascade)
+  games        Int       @default(0)
+  wins         Int       @default(0)
+  draws        Int       @default(0)
+  losses       Int       @default(0)
+  goalsFor     Int       @default(0)
+  goalsAgainst Int       @default(0)
+  points       Int       @default(0)
+  updatedAt    DateTime  @updatedAt
+}
+
+model Standing {
+  id          String    @id @default(uuid())
+  divisionId  String
+  division    Division  @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  teamEntryId String    @unique
+  teamEntry   TeamEntry @relation(fields: [teamEntryId], references: [id], onDelete: Cascade)
+  rank        Int
+  points      Int
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([divisionId, rank])
+  @@index([divisionId, points])
+}
+
+model Playoff {
+  id         String         @id @default(uuid())
+  divisionId String
+  division   Division       @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  name       String
+  published  Boolean        @default(false)
+  revision   Int            @default(0)
+  rounds     PlayoffRound[]
+}
+
+model PlayoffRound {
+  id        String          @id @default(uuid())
+  playoffId String
+  playoff   Playoff         @relation(fields: [playoffId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int
+  series    PlayoffSeries[]
+}
+
+model PlayoffSeries {
+  id              String       @id @default(uuid())
+  roundId         String
+  round           PlayoffRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  bestOf          Int
+  sortOrder       Int          @default(0)
+  sourceHomeId    String?
+  sourceHome      PlayoffSeries? @relation("HomeSource", fields: [sourceHomeId], references: [id], onDelete: Restrict)
+  homeDependents  PlayoffSeries[] @relation("HomeSource")
+  sourceAwayId    String?
+  sourceAway      PlayoffSeries? @relation("AwaySource", fields: [sourceAwayId], references: [id], onDelete: Restrict)
+  awayDependents  PlayoffSeries[] @relation("AwaySource")
+  sourceOutcome   String       @default("WINNER")
+  matches         Match[]
+  homeTeamEntryId String?
+  homeTeamEntry   TeamEntry?   @relation("PlayoffHomeTeamEntry", fields: [homeTeamEntryId], references: [id], onDelete: SetNull)
+  awayTeamEntryId String?
+  awayTeamEntry   TeamEntry?   @relation("PlayoffAwayTeamEntry", fields: [awayTeamEntryId], references: [id], onDelete: SetNull)
+}
+
+model LegacyImportMap {
+  id         String   @id @default(uuid())
+  source     String
+  entityType String
+  legacyId   String
+  entityId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([source, entityType, legacyId])
+  @@index([entityType, entityId])
+}
+
+model News {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  excerpt     String
+  body        String?   @db.Text
+  imageUrl    String?
+  videoUrl    String?
+  gallery     Json?
+  category    String
+  publishedAt DateTime?
+  isPublished Boolean   @default(false)
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  title       String
+  fileUrl     String
+  category    String?
+  publishedAt DateTime?
+}
+
+model MediaAlbum {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  description String?
+  coverUrl    String?
+  photos      Json
+  eventDate   DateTime?
+  publishedAt DateTime?
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Broadcast {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  title       String
+  description String?
+  videoUrl    String
+  imageUrl    String?
+  startsAt    DateTime?
+  isLive      Boolean   @default(false)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model HomepageContent {
+  id           String   @id @default(uuid())
+  type         String
+  title        String
+  subtitle     String?
+  link         String?
+  imageDesktop String?
+  imageMobile  String?
+  style        String?
+  active       Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model LeaguePage {
+  id        String   @id
+  headline  String
+  intro     String
+  updatedAt DateTime @updatedAt
+}
+
+model LeaguePerson {
+  id          String   @id @default(uuid())
+  name        String
+  role        String
+  description String?
+  photoUrl    String?
+  phone       String?
+  email       String?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Laureate {
+  id        String   @id @default(uuid())
+  category  String
+  title     String
+  name      String
+  teamName  String?
+  season    String?
+  imageUrl  String?
+  link      String?
+  active    Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  role         UserRole @default(ADMIN)
+  passwordHash String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Role {
+  id   String @id @default(uuid())
+  name String @unique
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  entityType String
+  entityId   String
+  action     String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+}

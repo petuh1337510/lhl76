@@ -1,0 +1,273 @@
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 20px;
+  background: #edf2f7;
+  color: #10243c;
+  font-family: Arial, sans-serif;
+}
+
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 6mm 8mm;
+  background: #fff;
+  box-shadow: 0 9px 30px #09254620;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 20mm 1fr 35mm;
+  align-items: center;
+  min-height: 14mm;
+  border-bottom: 1px solid #cbd7e3;
+}
+
+.logo {
+  width: 11mm;
+  height: 11mm;
+  object-fit: contain;
+}
+
+.title {
+  text-align: center;
+}
+
+.title small {
+  display: block;
+  color: #59738c;
+  font-size: 6.5pt;
+  font-weight: 700;
+  letter-spacing: .5pt;
+}
+
+.title h1 {
+  margin: .5mm 0;
+  font: 900 16pt/1 'Roboto Condensed', Arial, sans-serif;
+}
+
+.title p {
+  margin: 0;
+  color: #405d78;
+  font-size: 7pt;
+  font-weight: 700;
+}
+
+.timestamp {
+  text-align: right;
+  color: #6a8197;
+  font-size: 6pt;
+  line-height: 1.35;
+}
+
+.coach {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  height: 11mm;
+  margin-top: 1.5mm;
+  border-bottom: 1px solid #dce5ed;
+}
+
+.coach span {
+  margin-right: 3mm;
+  color: #64809a;
+  font-size: 6.5pt;
+  font-weight: 800;
+  letter-spacing: .45pt;
+}
+
+.coach img {
+  width: 8mm;
+  height: 8mm;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.coach strong {
+  font: 900 10pt 'Roboto Condensed', Arial, sans-serif;
+}
+
+.group {
+  margin-top: 1.5mm;
+}
+
+.group h2 {
+  height: 4mm;
+  margin: 0;
+  color: #315371;
+  font-size: 7.5pt;
+  font-weight: 800;
+  line-height: 4mm;
+  letter-spacing: .55pt;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 29mm);
+  justify-content: center;
+}
+
+.player {
+  position: relative;
+  width: 29mm;
+  height: 39mm;
+  border-top: 1px solid #cbd7e3;
+  border-left: 1px solid #cbd7e3;
+  border-bottom: 1px solid #cbd7e3;
+  background: #fff;
+  break-inside: avoid;
+}
+
+.player:nth-child(5n),
+.player:last-child {
+  border-right: 1px solid #cbd7e3;
+}
+
+.number {
+  position: absolute;
+  z-index: 2;
+  text-shadow: 1px 0 #fff, -1px 0 #fff, 0 1px #fff, 0 -1px #fff;
+  top: 1.4mm;
+  left: 1.5mm;
+  color: #091e37;
+  font: 900 11pt/1 'Roboto Condensed', Arial, sans-serif;
+}
+
+.leadership {
+  position: absolute;
+  z-index: 2;
+  top: 12mm;
+  left: 1.8mm;
+  display: grid;
+  place-items: center;
+  width: 4.5mm;
+  height: 4.5mm;
+  border: 1px solid #d01235;
+  border-radius: 50%;
+  color: #c90b30;
+  font: 900 8pt 'Roboto Condensed', Arial, sans-serif;
+  font-style: normal;
+}
+
+.photo {
+  position: absolute;
+  top: 2mm;
+  left: 50%;
+  width: 21mm;
+  height: 24mm;
+  transform: translateX(-50%);
+  object-fit: contain;
+  object-position: center top;
+  background: #fff;
+}
+
+.marks {
+  position: absolute;
+  z-index: 2;
+  top: 1.4mm;
+  right: 1.5mm;
+  display: grid;
+  gap: .4mm;
+  justify-items: end;
+  color: #244c70;
+}
+
+.marks span {
+  font-size: 6.5pt;
+  font-weight: 800;
+}
+
+.marks strong {
+  font: 400 8pt/1 Arial, sans-serif;
+  background: #fff;
+}
+
+.identity {
+  position: absolute;
+  top: 27mm;
+  right: 1mm;
+  left: 1mm;
+  display: grid;
+  gap: .4mm;
+  text-align: center;
+}
+
+.identity strong,
+.identity span {
+  display: block;
+  overflow-wrap: anywhere;
+  font-family: 'Roboto Condensed', Arial, sans-serif;
+  line-height: 1;
+}
+
+.identity strong {
+  font-size: 8.2pt;
+  font-weight: 900;
+}
+
+.identity span {
+  font-size: 7.6pt;
+  font-weight: 700;
+}
+
+.identity small {
+  margin-top: .6mm;
+  color: #45627d;
+  font-size: 6.5pt;
+  line-height: 1;
+}
+
+.dense .player {
+  height: 32mm;
+}
+
+.dense .photo {
+  top: 1mm;
+  width: 18mm;
+  height: 20mm;
+}
+
+.dense .identity {
+  top: 22mm;
+  gap: .3mm;
+}
+
+.dense .identity strong {
+  font-size: 7.7pt;
+}
+
+.dense .identity span {
+  font-size: 7pt;
+}
+
+.dense .identity small {
+  margin-top: .3mm;
+  font-size: 6pt;
+}
+
+.suspendedGroup{margin-top:4mm;padding-top:2mm;border-top:1px solid #cbd7e3;break-inside:avoid}
+.suspendedGroup h2{margin:0 0 1.5mm;color:#9d1730;font-size:7pt;text-transform:uppercase}
+.suspendedGroup p{display:flex;justify-content:space-between;gap:3mm;margin:0;padding:1mm 0;border-top:1px dotted #e1e7ed;font-size:6.5pt;line-height:1.2}
+.suspendedGroup p strong{white-space:nowrap}
+.suspendedGroup p span{text-align:right;color:#7d2a3c}
+
+@media print {
+  .page {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .sheet {
+    min-height: 297mm;
+    box-shadow: none;
+  }
+}

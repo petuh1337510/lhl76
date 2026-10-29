@@ -1,0 +1,10 @@
+import { PublicImage } from "@/components/public-image";
+import {safeHref} from '@/lib/editorial-url';
+import Link from "next/link";
+import {notFound} from "next/navigation";
+import {PublicSiteFooter,PublicSiteHeader} from "@/components/public-site-header";
+import {prisma} from "@/lib/prisma";
+export const dynamic="force-dynamic";
+export default async function VenuePage({params}:{params:Promise<{slug:string}>}){const{slug}=await params;const item=await prisma.venue.findUnique({where:{slug},include:{matches:{where:{startsAt:{gte:new Date()}},orderBy:{startsAt:"asc"},take:8,include:{homeTeamEntry:{include:{team:true}},awayTeamEntry:{include:{team:true}}}}}});if(!item||!item.active)notFound();return <><PublicSiteHeader/><main className="venuePage"><section className="venuePageHero">{item.imageUrl?<PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" src={item.imageUrl} alt=""/>:null}<div className="shell"><Link href="/venues">← Все стадионы</Link><span>{item.city||"Ярославская область"}</span><h1>{item.name}</h1><p>{item.address}</p></div></section><section className="shell venuePageContent"><article><small>О СТАДИОНЕ</small><h2>{item.name}</h2><p>{item.description||"Информация о стадионе будет добавлена позже."}</p>{item.mapUrl?<a href={safeHref(item.mapUrl)} target="_blank" rel="noreferrer">Открыть на карте →</a>:null}</article><aside><small>БЛИЖАЙШИЕ МАТЧИ</small>{item.matches.length?item.matches.map(match=><Link href={`/match/${match.slug}`} key={match.id}><time>{match.startsAt?.toLocaleString("ru-RU",{day:"2-digit",month:"long",hour:"2-digit",minute:"2-digit"})}</time><b>{match.homeTeamEntry.team.name} — {match.awayTeamEntry.team.name}</b></Link>):<p>Ближайших матчей пока нет.</p>}</aside></section></main><PublicSiteFooter/></>}
+import {entityMetadata} from '@/lib/entity-metadata';
+export async function generateMetadata({params,searchParams}:{params:Promise<{slug:string}>;searchParams:Promise<Record<string,string|string[]|undefined>>}){return entityMetadata('venue',decodeURIComponent((await params).slug),await searchParams);}

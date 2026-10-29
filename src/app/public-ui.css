@@ -1,0 +1,206 @@
+/* Public UI tokens. Inter: reading/navigation; Condensed: compact sporting figures.
+   Explicit public scopes keep admin forms and the print stylesheet independent. */
+:root {
+  --ui-ink: #071d3f;
+  --ui-muted: #526980;
+  --ui-blue: #15569e;
+  --ui-red: #e60832;
+  --ui-line: #cddbe8;
+  --ui-surface: #fff;
+  --ui-soft: #f3f6fa;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ui-space-12: 48px;
+  --ui-radius: 8px;
+  --ui-card-radius: 12px;
+  --ui-control: 44px;
+  --ui-body: 16px;
+  --ui-small: 13px;
+  --ui-label: 12px;
+  --ui-title: clamp(28px, 4vw, 48px);
+  --ui-heading: clamp(23px, 2.6vw, 32px);
+  --ui-weight-heading: 800;
+  --ui-content: 1180px;
+  --ui-gutter: clamp(16px, 3vw, 32px);
+  --ui-shadow: 0 6px 20px #071d3f0a;
+}
+:where(.homePage,.publicChamp,.teamPublic,.playerPublic,.matchPublic,.publicNewsPage,.newsArticlePage,.publicMedia,.publicBroadcasts,.publicDocuments,.leagueAbout) {
+  font-family: var(--font-inter), Arial, sans-serif;
+  line-height: 1.5;
+}
+:where(.siteHeaderLeague,.siteFooterModern,.homePage,.publicChamp,.teamPublic,.playerPublic,.matchPublic,.publicMedia,.publicNewsPage,.newsArticlePage,.publicBroadcasts,.publicDocuments) :focus-visible {
+  outline: 3px solid #438dcc;
+  outline-offset: 3px;
+}
+:where(.publicChamp,.teamPublic,.playerPublic,.matchPublic,.publicMedia,.publicNewsPage,.publicBroadcasts,.publicDocuments,.newsArticlePage) :is(h1,h2,h3) {
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.publicMedia .mediaHero h1,.publicDocuments .documentsHero h1,.publicBroadcasts .broadcastHero h1,.publicNewsPage .publicNewsHero h1 {
+  font: 800 var(--ui-title)/1.12 var(--font-inter), Arial, sans-serif;
+  letter-spacing: -.025em;
+  margin: var(--ui-space-3) 0;
+}
+.mediaHero p,.documentsHero p,.broadcastHero p,.publicNewsHero p {
+  font-size: var(--ui-body);
+  line-height: 1.6;
+  max-width: 65ch;
+}
+.publicMedia .shell,.publicDocuments .shell,.publicBroadcasts .shell,.publicNewsPage .shell,.newsArticlePage .shell {
+  max-width: var(--ui-content);
+  padding-left: var(--ui-gutter);
+  padding-right: var(--ui-gutter);
+}
+.publicNewsEmpty { border-radius: var(--ui-card-radius); padding: var(--ui-space-8); }
+.publicNewsEmpty b { font-size: var(--ui-heading); line-height: 1.25; }
+.publicNewsEmpty p,.teamStatsNote,.rosterNoResults { color: var(--ui-muted); font-size: var(--ui-small); line-height: 1.6; }
+
+/* Consolidated control metrics; legacy selected colours remain unchanged. */
+.homePage :is(.tabs,.divisionFilters) { padding: 5px 4px 8px; }
+.homePage :is(.tabs,.divisionFilters) button:hover,
+.homePage :is(.tabs,.divisionFilters) button:active { transform: none; box-shadow: none; }
+:where(.homePage,.publicChamp,.teamPublic) :is(.divisionFilters,.tabs,.champTabs,.calendarStages,.rosterFilters,.calendarPagination,.statisticsMode) button,
+:is(.publicNewsFilters,.broadcastFilters) a {
+  min-height: var(--ui-control);
+  padding: 10px 16px;
+  border-radius: var(--ui-radius);
+  font: 600 14px/1.35 var(--font-inter), Arial, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  transform: none;
+  box-shadow: none;
+  touch-action: manipulation;
+}
+:where(.homePage,.publicChamp,.teamPublic) :is(.divisionFilters,.tabs,.champTabs,.calendarStages,.rosterFilters,.calendarPagination,.statisticsMode) button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+:where(.homePage,.publicChamp,.teamPublic) :is(.divisionFilters,.tabs,.champTabs,.calendarStages,.rosterFilters,.calendarPagination,.statisticsMode) button[aria-busy="true"] { cursor: progress; }
+:is(.teamCompetition,.champSelects) select {
+  min-height: var(--ui-control);
+  max-width: 100%;
+  font-family: var(--font-inter), Arial, sans-serif;
+}
+.teamCompetition label { min-width: 0; }
+.teamCompetition .competitionSelection {
+  display: block;
+  margin-top: var(--ui-space-2);
+  color: var(--ui-muted);
+  font: 500 var(--ui-small)/1.5 var(--font-inter), Arial, sans-serif;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.teamProfile .teamDescription {
+  max-width: 32ch;
+  margin: var(--ui-space-3) auto 0;
+  color: var(--ui-muted);
+  font: 500 14px/1.6 var(--font-inter), Arial, sans-serif;
+}
+.teamCoach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-4) 0;
+  margin-bottom: var(--ui-space-6);
+  border-block: 1px solid var(--ui-line);
+}
+.teamCoach>span { flex: 1 1 210px; color: var(--ui-muted); font: 600 var(--ui-label)/1.5 var(--font-inter); letter-spacing: .04em; }
+.teamCoach .printRosterButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-2);
+  min-height: var(--ui-control);
+  padding: 10px 16px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font: 600 14px/1.35 var(--font-inter);
+  text-decoration: none;
+}
+.teamCoach .printRosterButton:hover { background: var(--ui-ink); color: #fff; border-color: var(--ui-ink); }
+.teamTabs button { min-height: var(--ui-control); }
+.rosterCardMain { min-width: 0; }
+.rosterPlayerName { overflow-wrap: anywhere; }
+.rosterSuspensionInfo { line-height: 1.5; }
+.matchPublic .matchHeroTop>a { font-size: 13px; font-weight: 600; line-height: 1.5; }
+.matchPublic .matchHeroVenue>a { color: #e0eaf5; text-decoration: none; font: 600 14px/1.5 var(--font-inter); }
+.matchHeroTop { gap: var(--ui-space-3); }
+.matchHeroTeam>a b { overflow-wrap: anywhere; }
+@media (min-width: 901px) and (max-width: 1100px) {
+  .matchHeroTeam>a b { font-size: 24px; }
+}
+.matchHeroVenue a:hover,.matchHeroTop a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Numerical alignment, not a change to statistical values or sorting. */
+:is(.homePage,.publicChamp,.teamPublic,.playerPublic,.matchPublic) :is(table,.leagueTable,.standingTable,.playerHistory,.playerStats,.matchHeroResult,.teamMatchCenter,.score,.statPoints) {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.teamStatisticsTable,.leagueTableViewport,.playerHistoryBlock { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #7797b6 #eaf0f6; }
+.teamStatisticsTable table { font-size: 14px; }
+.teamStatisticsTable :is(th,td) { vertical-align: middle; }
+.teamStatisticsTable th { font-size: var(--ui-label); line-height: 1.4; }
+.teamStatisticsTable tbody tr:hover { background: #f3f7fb; }
+.playerContent .tableScrollHint { padding: 12px 20px 0; }
+.teamProfile .rosterPosition h3,.teamProfile .teamStory h2 { font-size: var(--ui-heading); line-height: 1.2; }
+.publicNewsGrid h2,.mediaAlbums h2,.broadcastGrid h2 { line-height: 1.3; overflow-wrap: anywhere; }
+.newsArticleBody p,.newsArticleBody li { line-height: 1.7; }
+.newsArticleHeader h1 { overflow-wrap: break-word; word-break: normal; text-wrap: balance; }
+.homePage .sectionTitle h2,.publicChamp .calendarPanel h2,.playerContent h2,.matchContent h2 {
+  font-size: var(--ui-heading);
+  font-weight: var(--ui-weight-heading);
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+.homePage .sectionTitle { gap: var(--ui-space-4); }
+.homePage .sectionTitle>a { line-height: 1.5; }
+.teamProfileWrap { max-width: var(--ui-content); }
+.teamIdentityMeta { line-height: 1.5; }
+.teamProfileTabs { gap: var(--ui-space-4); }
+.teamProfileTabs button { line-height: 1.4; }
+.leagueAbout .leagueAboutHero h1 { font-weight: var(--ui-weight-heading); line-height: 1.08; letter-spacing: -.035em; }
+.leagueAboutSectionHead h2 { font-weight: var(--ui-weight-heading); line-height: 1.15; }
+.newsArticlePage .newsArticleHeader h1 { font-weight: var(--ui-weight-heading); line-height: 1.15; }
+.teamProfile .teamIdentity h1,.playerPublic .playerIdentity h1 { font-weight: var(--ui-weight-heading); line-height: 1.15; }
+.documentGroup a { min-height: 56px; }
+.documentGroup a b { overflow-wrap: anywhere; line-height: 1.5; }
+.teamStatisticsTable th button { min-height: 44px; font-variant-numeric: tabular-nums; }
+.leagueTableMobileControls button { min-width: 44px; min-height: 44px; }
+:is(.calendarPagination,.leagueTableMobileControls,.teamStatisticsTable,.documentGroup,.homePromoControls,.homeMediaNavigation) svg { width: 18px; height: 18px; vertical-align: middle; flex-shrink: 0; }
+:where(.publicChamp,.teamPublic) .calendarPagination button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+:is(.teamCompetition,.champSelects) select[aria-invalid="true"] { border-color: var(--ui-red); outline-color: var(--ui-red); }
+:is(.teamCompetition,.champSelects) select:disabled { opacity: .55; cursor: not-allowed; }
+.tableScrollHint { display: none; margin: 0 0 8px; color: var(--ui-muted); font: 500 12px/1.5 var(--font-inter); }
+.siteHeaderLeague svg,.siteFooterModern svg,.printRosterButton svg { flex-shrink: 0; vertical-align: middle; }
+.mobileMenu summary { min-width: var(--ui-control); min-height: var(--ui-control); }
+.siteDropdown:focus-within .seasonItem:focus-within .divisionFlyout { display: block; visibility: visible; opacity: 1; }
+@media(max-width:600px) {
+  .newsArticlePage .newsArticleHeader h1 { font-size: clamp(25px, 6.7vw, 36px); }
+  .teamCoach { align-items: flex-start; }
+  .teamCoach>span { flex-basis: 100%; }
+  .teamCoach .printRosterButton { width: 100%; }
+  .tableScrollHint { display: block; }
+  .publicMedia .mediaHero h1 { font-size: clamp(26px, 7.2vw, 40px); }
+  .matchHeroTop>a { min-width: 0; }
+}
+@media(prefers-reduced-motion:reduce) {
+  :is(.siteHeaderLeague,.homePage,.publicChamp,.teamPublic,.playerPublic,.matchPublic) * { scroll-behavior: auto; transition-duration: .01ms; }
+}
+/* Navigation feedback stays scoped to the public header. */
+.siteHeader a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--red, #ed0039); text-underline-offset: 7px; }
+.siteHeader .siteDropdown[data-dismissed="true"] > .siteDropdownMenu { display: none; }
+.publicRefreshNotice { padding: 12px 20px; background: #fff3e0; color: #102d4e; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.publicRefreshNotice button { min-height: 44px; padding: 8px 16px; border: 1px solid currentColor; border-radius: 6px; background: white; color: inherit; cursor: pointer; }
+.venuePageHero .shell > a { display: block; width: fit-content; margin-bottom: 16px; font-size: 13px; }
+.venuePageHero .shell > span { display: block; font-size: 13px; }
+.newsCard time,.publicNewsCardBody time,.newsArticleHeader time,.homeNewsCard time { font-size: 12px; color: #52677f; }
+.publicMedia:has(.publicNewsEmpty),.leagueCatalog:has(.publicNewsEmpty),.publicVenues:has(.publicNewsEmpty) { min-height: 0; }

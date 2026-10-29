@@ -1,0 +1,141 @@
+/* Administration-only design tokens. Public pages retain their existing styles. */
+.adminUI {
+  --admin-ink:#102b50; --admin-muted:#526780; --admin-line:#d4dfeb;
+  --admin-accent:#c90930; --admin-surface:#fff; --admin-radius:10px;
+  color:var(--admin-ink); font-family:var(--font-inter),Arial,sans-serif;
+  font-size:14px; line-height:1.5;
+}
+.adminUI.adminShellGlobal{grid-template-columns:240px minmax(0,1fr)}
+.adminUI .adminPageHost{min-width:0}
+.adminUI .adminContent{padding:28px clamp(16px,3vw,40px);min-width:0;max-width:1800px;margin-inline:auto}
+.adminUI .adminContent :is(h1,h2,h3){line-height:1.2;overflow-wrap:anywhere}
+.adminUI .adminContent h1{font-size:30px}
+.adminUI .adminContent h2{font-size:24px}
+.adminUI .adminContent h3{font-size:19px}
+.adminUI .adminContent :is(input,select,textarea,button){font-family:var(--font-inter),Arial,sans-serif;font-size:13px;line-height:1.4}
+.adminUI .adminContent :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea){min-width:0;max-width:100%;min-height:42px;border:1px solid var(--admin-line);border-radius:7px;color:var(--admin-ink);background:#fff;padding:10px 12px;box-sizing:border-box}
+.adminUI .adminContent textarea{resize:vertical;line-height:1.6;min-height:96px}
+.adminUI .adminContent :is(input[type=checkbox],input[type=radio]){width:18px;height:18px;min-height:18px;accent-color:var(--admin-accent);flex-shrink:0}
+.adminUI .adminContent input::placeholder{color:#6b7c90;opacity:1}
+.adminUI .adminContent button{min-height:40px;padding:9px 12px;border-radius:7px;cursor:pointer;white-space:normal}
+.adminUI :is(button,input,select,textarea):disabled{cursor:not-allowed;opacity:.55}
+.adminUI :is(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #448ac4;outline-offset:3px}
+.adminUI .adminContent :is(label,small){line-height:1.5}
+.adminUI .adminContent label{font-size:13px;color:var(--admin-muted)}
+.adminUI .adminContent :is(.registryEmpty,.dashboardEmpty){padding:24px;color:var(--admin-muted);font-size:14px;line-height:1.6}
+.adminUI .adminContent :is(.formError,.documentError,.rosterRowError){color:#a50d2b;background:#fff0f3;border-left:3px solid #c90930;padding:10px 12px;border-radius:6px;font-size:13px;overflow-wrap:anywhere}
+.adminUI .adminContent :is(.competitionHead,.adminRegistryHead,.teamAdminHero,.adminTop){gap:16px;flex-wrap:wrap}
+.adminUI .adminContent :is(.competitionHead,.adminRegistryHead) p{color:var(--admin-muted);font-size:13px;line-height:1.6}
+.adminUI .adminContent :is(.competitionHead,.adminRegistryHead,.teamAdminHero)>button{flex-shrink:0}
+.adminUI .adminContent :is(.adminForm,.mediaEditor,.newsEditor){max-width:100%;border-radius:var(--admin-radius)}
+.adminUI .adminContent :is(.adminForm,.mediaEditorFields,.newsEditorFields) :is(label,div){min-width:0}
+/* These are action rows, not the dark public-site footer. */
+.adminUI .adminContent footer{background:transparent;color:inherit;min-height:0;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.adminUI .adminContent :is(.mediaAdminGrid,.venueAdminGrid,.laureateAdminGrid) footer{margin:12px 0 0;padding:0}
+.adminUI .adminContent :is(.mediaAdminGrid,.venueAdminGrid,.laureateAdminGrid) footer button{font-size:12px}
+.adminUI .adminContent :is(.mediaAdminGrid,.venueAdminGrid,.laureateAdminGrid) h3{overflow-wrap:anywhere}
+.adminUI .adminRegistrySearch{flex-wrap:wrap}
+.adminUI .adminRegistrySearch input{flex:1 1 220px}
+.adminUI .adminRegistry{overflow-x:auto}
+.adminUI .registryIdentity{min-width:0}
+.adminUI .registryIdentity :is(span,strong,small){overflow-wrap:anywhere;min-width:0}
+.adminUI .adminPagination{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px}
+.adminUI .adminPagination button{min-width:42px}
+.adminUI .adminContent table{font-variant-numeric:tabular-nums}
+.adminUI .adminContent :is(.calendarPagination,.adminPagination){display:flex;flex-wrap:wrap;gap:8px}
+.adminUI .adminContent :is(.rosterAdminPerson,.rosterAdminPerson span,.usersList article>section){min-width:0;overflow-wrap:anywhere}
+.adminUI .adminContent :is(.rosterAdminActions,.protocolSave){display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.adminUI .adminContent :is(.suspensionRegistry,.usersList) small{font-size:12px;color:var(--admin-muted)}
+.adminUI .adminContent :is(.suspensionRegistry article>span,.usersList article>b,.usersList article>span){font-size:12px}
+.adminUI .adminContent .auditList pre{max-width:100%;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.adminUI .adminContent :is(.mediaEditor>header,.newsEditor>header,.documentEditor>header){gap:12px;flex-wrap:wrap}
+.adminUI .adminContent :is(.adminStandingsTable,.playoffBoard){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.adminUI .mediaUpload{grid-template-columns:minmax(0,1fr);gap:10px}
+.adminUI .mediaUpload input[type=file]{width:100%;font-size:12px;padding:8px}
+.adminUI .mediaUpload input::file-selector-button{border:1px solid var(--admin-line);border-radius:6px;background:#f1f5fa;color:var(--admin-ink);padding:8px;margin-right:8px;cursor:pointer}
+.adminUI .mediaUpload small{font-size:12px;color:var(--admin-muted);overflow-wrap:anywhere}
+.adminUI .adminSideGlobal{scrollbar-width:thin;scrollbar-color:#526780 #071b3b}
+.adminUI .adminSide section small{color:#a2b6ce;font-size:11px}
+.adminUI .adminSide .adminNavLink{min-height:42px;display:flex;align-items:center;font-size:13px}
+.adminUI .adminSide .adminNavLink.active{box-shadow:inset 3px 0 #e50830;background:#173560;color:#fff}
+.adminUI .adminLogout{min-height:44px;width:100%;margin:8px 0 22px;box-sizing:border-box}
+.adminUI .adminContent>.backButton{display:inline-flex;align-items:center;min-height:36px;margin-bottom:12px}
+.adminUI .registryIdentity strong,.adminUI .rosterAdminPerson strong{font-family:var(--font-inter),Arial,sans-serif;font-size:14px;line-height:1.4}
+.adminUI :is(.registryIdentity,.rosterAdminPerson) small{font-size:12px;color:var(--admin-muted)}
+.adminUI .homeContentList article{grid-template-columns:160px minmax(0,1fr) auto auto}
+.adminUI .homeContentList article>div{min-width:0}
+.adminUI .homeContentList p{overflow-wrap:anywhere;color:var(--admin-muted);font-size:12px}
+.adminUI .homeContentActions{flex-wrap:wrap;gap:6px}
+.adminUI .rosterAdminActions .suspensionButton{background:#fff0f3;border:1px solid #e8a6b3}
+.adminUI .playerAdminHead{flex-wrap:wrap}
+.adminUI .playerAdminHead>div:not(.playerPhoto){flex:1;min-width:150px}
+.adminUI .adminContent .usersList h3{font-size:15px}
+.adminUI .auditList :is(time,small,strong,summary,code),.adminUI .auditList article>span{font-size:12px;line-height:1.5}
+.adminUI .auditList article>div b{font-size:13px}
+.adminUI .auditList article{grid-template-columns:125px minmax(130px,1fr) 95px 125px minmax(100px,1fr) 75px}
+.adminUI .auditList article>*{min-width:0;overflow-wrap:anywhere}
+.adminUI .auditList details[open]{grid-column:1/-1}
+.adminUI .auditList pre{position:static;width:auto;box-sizing:border-box;font-size:12px}
+.adminUI .adminProtocol .protocolScore>em{position:static;display:inline-block;margin-top:12px}
+.adminUI .protocolScoreInner>span{display:block;line-height:1.5;overflow-wrap:anywhere}
+.adminUI .adminContent :is(.teamAdminActions,.adminListHead,.seasonList article){flex-wrap:wrap;gap:12px}
+.adminMobileBar{display:none}
+.adminSkip{position:fixed;left:12px;top:-100px;z-index:200;background:#fff;color:#102b50;padding:12px;border-radius:6px}
+.adminSkip:focus{top:12px}
+.adminUI .authPage{padding:24px 16px;box-sizing:border-box}
+.adminUI .authPage form{max-width:440px;width:100%;box-sizing:border-box}
+.adminUI .authPage :is(input,button){min-height:44px;font-size:14px}
+@media(max-width:1100px){
+  .adminUI .auditList article{grid-template-columns:110px minmax(0,1fr)}
+  .adminUI .auditList article>:is(strong,span,code,details){grid-column:2}
+  .adminUI .homeContentList article{grid-template-columns:150px minmax(0,1fr)}
+  .adminUI .homeContentVisibility,.adminUI .homeContentActions{grid-column:2;justify-self:start}
+  .adminUI .usersList article{grid-template-columns:44px minmax(0,1fr)}
+  .adminUI .usersList article>:is(b,span,button){grid-column:2;justify-self:start}
+  .adminUI .adminContent :is(.teamEventColumns,.protocolRosterGrid,.protocolExtraGrid){grid-template-columns:minmax(0,1fr)}
+  .adminUI .rosterAdminRow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .adminUI .rosterAdminPerson{grid-column:1/-1}
+  .adminUI .rosterAdminActions{grid-column:1/-1}
+  .adminUI .adminContent :is(.mediaAdminGrid,.venueAdminGrid,.laureateAdminGrid){grid-template-columns:repeat(2,minmax(0,1fr))}
+  .adminUI .newsEditorGrid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:1000px){
+  .adminUI.adminShellGlobal{display:block}
+  .adminUI .adminMobileBar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:#071b3b;color:#fff}
+  .adminMobileBar>a{color:#fff;text-decoration:none;font-weight:800}
+  .adminMobileBar button{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 12px;border:1px solid #60758e;border-radius:7px;background:#173560;color:#fff;font:600 13px var(--font-inter)}
+  .adminUI .adminSideGlobal{display:none;position:static;height:auto;max-height:65vh;overflow-y:auto}
+  .adminUI.adminMenuOpen .adminSideGlobal{display:block}
+  .adminUI .adminContent{padding:24px 16px}
+}
+@media(max-width:600px){
+  .adminUI .matchAdminList article{grid-template-columns:minmax(0,1fr)}
+  .adminUI .matchAdminList article>time{display:flex;gap:10px;align-items:center}
+  .adminUI .matchAdminTeams{min-width:0}
+  .adminUI .matchAdminTeams>b{overflow-wrap:anywhere}
+  .adminUI .matchAdminTeams>strong{white-space:nowrap}
+  .adminUI .matchAdminActions{grid-column:auto;display:flex;flex-wrap:wrap;gap:12px}
+  .adminUI .matchAdminList article>em{justify-self:start}
+  .adminUI .homeContentList article{grid-template-columns:minmax(0,1fr)}
+  .adminUI .homeContentVisibility,.adminUI .homeContentActions{grid-column:1}
+  .adminUI .playerAdminHead>button{flex-basis:100%;margin-left:0}
+  .adminUI .adminContent h1{font-size:26px}
+  .adminUI .adminContent h2{font-size:22px}
+  .adminUI .adminContent :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px}
+  .adminUI .adminContent button{min-height:44px}
+  .adminUI .adminContent :is(.mediaAdminGrid,.venueAdminGrid,.laureateAdminGrid,.adminStats,.adminGrid,.mediaEditorFields,.newsEditorFields>div,.suspensionEditor){grid-template-columns:minmax(0,1fr)}
+  .adminUI .adminContent :is(.matchAdminFilters,.matchCalendarFilters){grid-template-columns:minmax(0,1fr)}
+  .adminUI .adminRegistry article{gap:12px;padding:16px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .adminUI .adminRegistry .registryIdentity{grid-column:1/-1}
+  .adminUI .adminContent :is(.adminForm,.mediaEditorFields,.newsEditorFields){padding:16px}
+  .adminUI .adminContent footer{justify-content:flex-start}
+  .adminUI .adminContent :is(.goalieStint,.shootoutRow){display:flex;flex-wrap:wrap;gap:10px}
+  .adminUI .adminContent :is(.goalieStint,.shootoutRow)>*{min-width:0;max-width:100%}
+  .adminUI .adminContent .protocolScore{flex-wrap:wrap;gap:14px;padding:18px}
+  .adminUI .adminContent .protocolScore h2{font-size:24px}
+  .adminUI .adminContent .protocolScore h2 strong{font-size:32px}
+  .adminUI .adminContent .teamEventGroup{padding:12px}
+  .adminUI .adminContent .adminStandingsTable>:is(header,article,.adminTableHeader){min-width:650px}
+  .adminUI .authPage form{padding:24px}
+}
+@media(prefers-reduced-motion:reduce){.adminUI *{scroll-behavior:auto;transition:none;animation:none}}

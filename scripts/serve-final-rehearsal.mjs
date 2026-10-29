@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {execFileSync,spawn} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
+const backup=path.resolve(process.argv[2]||'');if(!backup.startsWith(path.resolve('backups')+path.sep))throw new Error('Invalid backup config');
+const verified=JSON.parse(fs.readFileSync(path.join(backup,'complete-verification.json'),'utf8'));
+const {container,user,database,port}=verified.target;
+if(!verified.databaseVerified||!verified.filesVerified||!container.startsWith('lhl76-final-reconcile-')||database!=='lhl76_final_rehearsal_clean'||port!==55433)throw new Error('Clean isolated clone required');
+const config=JSON.parse(execFileSync('docker',['inspect',container],{encoding:'utf8'}))[0];
+const password=config.Config.Env.find(x=>x.startsWith('POSTGRES_PASSWORD=')).slice(18);
+const child=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-p','3002','-H','127.0.0.1'],{env:{...process.env,NODE_ENV:'production',NEXT_DIST_DIR:'.next-final-readiness',DATABASE_URL:`postgresql://${user}:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}`,AUTH_SECRET:randomBytes(48).toString('hex'),PUBLIC_SITE_URL:'https://lhl-76.ru',VK_API_ACCESS_TOKEN:'',RATE_LIMIT_DIR:'.runtime/final-rehearsal-'+Date.now()},stdio:['ignore','pipe','pipe']});
+child.stdout.on('data',d=>process.stdout.write(d));child.stderr.on('data',()=>process.stderr.write('Rehearsal server reported an error; inspect locally.\n'));
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill());
+child.on('exit',code=>{process.exitCode=code||0;});

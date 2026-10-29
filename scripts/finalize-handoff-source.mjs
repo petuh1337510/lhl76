@@ -1,0 +1,10 @@
+import fs from 'node:fs';import path from 'node:path';import {execFileSync} from 'node:child_process';import {createHash} from 'node:crypto';
+const root=path.resolve(process.argv[2]);if(!root.startsWith('D:\\LHL76-Handoff\\'))throw Error('Wrong release target');
+const source=path.join(root,'source'),archive=path.join(root,'lhl76-source.tar.gz');
+fs.copyFileSync('docs/RELEASE-STATUS.txt',path.join(root,'RELEASE-STATUS.txt'));fs.copyFileSync('docs/RELEASE-STATUS.txt',path.join(source,'docs/RELEASE-STATUS.txt'));
+for(const name of ['docker-compose.production.yml','.env.example','.dockerignore'])fs.copyFileSync(name,path.join(root,'github-files',name));
+const old=path.join(root,'source-before-final-checks.tar.gz');if(!fs.existsSync(old))fs.copyFileSync(archive,old,fs.constants.COPYFILE_EXCL);
+execFileSync('tar',['-czf',archive,'-C',source,'.']);
+const sha=async p=>{const h=createHash('sha256');for await(const b of fs.createReadStream(p))h.update(b);return h.digest('hex')};
+const report=JSON.parse(fs.readFileSync(path.join(root,'CHECKSUMS.json'),'utf8'));report.sourceArchive.sha256=await sha(archive);report.sourceFinalizedAt=new Date().toISOString();
+fs.writeFileSync(path.join(root,'CHECKSUMS.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({sourceBytes:fs.statSync(archive).size,sourceSha256:report.sourceArchive.sha256}));

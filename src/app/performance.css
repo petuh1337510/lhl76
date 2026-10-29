@@ -1,0 +1,35 @@
+/* Layout stabilization only; the established visual design is unchanged. */
+html { scrollbar-gutter: stable; }
+body { font-synthesis: none; }
+.siteHeaderLeague { position: relative; isolation: isolate; }
+.siteHeaderLeague .leagueMastheadInner { max-width: 1440px; }
+.siteHeaderLeague .siteHeaderNav { width: auto; left: 300px; right: 250px; transform: none; }
+.siteHeaderLeague .siteHeaderInner { padding: 0 12px; }
+.siteHeaderLeague nav { flex-wrap: nowrap; }
+.leagueBrand { flex-shrink: 0; }
+.leagueBrand img { flex-shrink: 0; }
+/* The legacy arrow became an absolute underline on hover, changing link width. */
+.siteHeaderLeague .siteDropdown > a::after,
+.siteHeaderLeague .siteDropdown > a:hover::after { content: none; }
+.siteDropdown:focus-within > .siteDropdownMenu { display: block; visibility: visible; opacity: 1; pointer-events: auto; }
+.siteHeaderLeague .mobileMenu > div { max-height: calc(100dvh - 90px); overflow-y: auto; }
+@media (min-width: 1440px) {
+  .siteHeaderLeague .siteHeaderNav { left: calc(50% - 420px); right: calc(50% - 470px); }
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+  .siteHeaderLeague .siteHeaderNav { left: 120px; right: 45px; width: auto; }
+}
+@media (min-width: 1101px) and (max-width: 1250px) {
+  .siteHeaderLeague .siteHeaderNav { left: 270px; right: 180px; }
+}
+.homeMediaHero, .homeMediaHero.heroVariant-photo { background-image: none; }
+.homeMediaHero::before { display: none; }
+.homeHeroPicture { position: absolute; inset: -18px; z-index: -2; display: block; }
+.homeHeroPicture img { width: 100%; height: 100%; object-fit: cover; animation: homeHeroDrift 12s ease-out both; }
+.heroVariant-photo .homeHeroPicture { inset: 0; }
+.heroVariant-photo .homeHeroPicture img { animation: none; }
+@media (prefers-reduced-motion: reduce) { .homeHeroPicture img { animation: none; } }
+.homePage .newsImage { position: relative; overflow: hidden; isolation: isolate; }
+.homePage .homeNewsImage, .homePage .homePromoImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.homePage .newsImage:has(.homeNewsImage)::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg,#071d3f66,#071d3faa); z-index: -1; }
+.homePromoTile:has(.homePromoImage)::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg,#071d3f66,#071d3fcc); z-index: -1; }

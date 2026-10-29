@@ -1,0 +1,7 @@
+"use client";
+import {FormEvent,Suspense,useEffect,useState} from "react";
+import {useRouter,useSearchParams} from "next/navigation";
+import {safeAdminReturn} from "@/lib/security-policy";
+function LoginForm(){const[email,setEmail]=useState(""),[password,setPassword]=useState(""),[error,setError]=useState(""),[setup,setSetup]=useState(false),router=useRouter(),params=useSearchParams();useEffect(()=>{fetch("/api/admin/auth/setup").then(r=>r.json()).then(d=>setSetup(Boolean(d.available)))},[]);const submit=async(e:FormEvent)=>{e.preventDefault();setError("");const r=await fetch("/api/admin/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})}),d=await r.json();if(!r.ok)setError(d.error);else router.replace(safeAdminReturn(params.get("next")))};return <main className="authPage"><form onSubmit={submit}><div className="authLogo">ЛХЛ <b>76</b></div><span>ПАНЕЛЬ УПРАВЛЕНИЯ</span><h1>Вход в админку</h1><p>Введите данные вашей учётной записи.</p><label>Email<input type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Пароль<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error?<em>{error}</em>:null}<button>ВОЙТИ</button>{setup?<a href="/admin/setup">Создать первого администратора →</a>:null}<small>Доступ только для сотрудников ЛХЛ-76</small></form></main>}
+
+export default function Login(){return <Suspense><LoginForm/></Suspense>}

@@ -1,0 +1,24 @@
+# One application instance; persistent limiter state is shared by its Node processes.
+# Database is an existing privately networked service, never created/reset here.
+services:
+  app:
+    build: .
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Provide a least-privilege application database URL}
+      AUTH_SECRET: ${AUTH_SECRET:?Provide a unique secret}
+      PUBLIC_SITE_URL: https://lhl-76.ru
+      RATE_LIMIT_DIR: /app/state/limits
+      ALLOW_ADMIN_SETUP: "0"
+      TRUST_PROXY_IP: "0"
+    volumes:
+      - ${MEDIA_ROOT:?Provide restored persistent public-files directory}/uploads:/app/public/uploads
+      - ${MEDIA_ROOT:?Provide restored persistent public-files directory}/legacy-media:/app/public/legacy-media:ro
+      - ${MEDIA_ROOT:?Provide restored persistent public-files directory}/documents:/app/public/documents:ro
+      - limiter:/app/state
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+volumes:
+  limiter:
