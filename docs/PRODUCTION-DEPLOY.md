@@ -16,8 +16,8 @@ Actions. `CI` runs on commits and pull requests.
 
 ## GitHub Actions configuration
 
-Create a `production` Environment. The workflows use these repository or
-Environment variables:
+The workflows use the `production` Environment. These non-secret values are
+defined directly in the workflow files:
 
 | Variable | Value |
 | --- | --- |

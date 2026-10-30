@@ -6,6 +6,16 @@ on:
 permissions:
   contents: read
 
+env:
+  SERVER_HOST: 191.217.231.118
+  SERVER_PORT: "22"
+  SERVER_USERNAME: root
+  SERVER_APP_PATH: /opt/lhl76
+  PUBLIC_SITE_URL: https://191.217.231.118
+  MEDIA_ROOT: /opt/lhl76/public-files
+  APP_PORT: "3000"
+  COMPOSE_PROJECT_NAME: lhl76
+
 concurrency:
   group: lhl76-production
   cancel-in-progress: false
@@ -48,12 +58,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate deployment configuration
         env:
-          SERVER_HOST: ${{ vars.SERVER_HOST }}
-          SERVER_PORT: ${{ vars.SERVER_PORT }}
-          SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
-          SERVER_APP_PATH: ${{ vars.SERVER_APP_PATH }}
-          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
-          MEDIA_ROOT: ${{ vars.MEDIA_ROOT }}
           SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
           POSTGRES_OWNER_PASSWORD: ${{ secrets.POSTGRES_OWNER_PASSWORD }}
           POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
@@ -73,10 +77,6 @@ jobs:
           POSTGRES_OWNER_PASSWORD: ${{ secrets.POSTGRES_OWNER_PASSWORD }}
           POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
-          MEDIA_ROOT: ${{ vars.MEDIA_ROOT }}
-          APP_PORT: ${{ vars.APP_PORT || '3000' }}
-          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME || 'lhl76' }}
           IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
         run: |
           set -euo pipefail
@@ -101,11 +101,6 @@ jobs:
           chmod 600 release/runtime.env release/secrets/*
 
       - name: Copy release to server
-        env:
-          SERVER_HOST: ${{ vars.SERVER_HOST }}
-          SERVER_PORT: ${{ vars.SERVER_PORT }}
-          SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
-          SERVER_APP_PATH: ${{ vars.SERVER_APP_PATH }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/lhl76-deploy -p "${SERVER_PORT}" "${SERVER_USERNAME}@${SERVER_HOST}" \
@@ -117,10 +112,6 @@ jobs:
 
       - name: Deploy and verify
         env:
-          SERVER_HOST: ${{ vars.SERVER_HOST }}
-          SERVER_PORT: ${{ vars.SERVER_PORT }}
-          SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
-          SERVER_APP_PATH: ${{ vars.SERVER_APP_PATH }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
