@@ -1,0 +1,130 @@
+name: Build and deploy LHL-76
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lhl76-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish immutable image
+        id: image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha,scope=lhl76
+          cache-to: type=gha,mode=max,scope=lhl76
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate deployment configuration
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_PORT: ${{ vars.SERVER_PORT }}
+          SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
+          SERVER_APP_PATH: ${{ vars.SERVER_APP_PATH }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          MEDIA_ROOT: ${{ vars.MEDIA_ROOT }}
+          SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
+          POSTGRES_OWNER_PASSWORD: ${{ secrets.POSTGRES_OWNER_PASSWORD }}
+          POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        run: |
+          set -euo pipefail
+          for name in SERVER_HOST SERVER_PORT SERVER_USERNAME SERVER_APP_PATH PUBLIC_SITE_URL MEDIA_ROOT SERVER_PRIVATE_KEY POSTGRES_OWNER_PASSWORD POSTGRES_APP_PASSWORD AUTH_SECRET; do
+            test -n "${!name}" || { echo "Missing ${name}" >&2; exit 1; }
+          done
+          test "${SERVER_HOST}" = 191.217.231.118
+          test "${SERVER_APP_PATH}" = /opt/lhl76
+          test "${PUBLIC_SITE_URL}" = https://191.217.231.118
+
+      - name: Prepare SSH and runtime bundle
+        env:
+          SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
+          POSTGRES_OWNER_PASSWORD: ${{ secrets.POSTGRES_OWNER_PASSWORD }}
+          POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          MEDIA_ROOT: ${{ vars.MEDIA_ROOT }}
+          APP_PORT: ${{ vars.APP_PORT || '3000' }}
+          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME || 'lhl76' }}
+          IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh release/secrets
+          printf '%s\n' "${SERVER_PRIVATE_KEY}" > ~/.ssh/lhl76-deploy
+          chmod 600 ~/.ssh/lhl76-deploy
+          cp docs/production-known-hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          cp docker-compose.production.yml release/
+          cp scripts/deploy-release.sh release/
+          chmod +x release/deploy-release.sh
+          {
+            printf 'COMPOSE_PROJECT_NAME=%s\n' "${COMPOSE_PROJECT_NAME}"
+            printf 'LHL76_IMAGE=ghcr.io/%s@%s\n' '${{ github.repository }}' "${IMAGE_DIGEST}"
+            printf 'POSTGRES_DB=lhl76\nPOSTGRES_OWNER_USER=lhl_owner\nPOSTGRES_APP_USER=lhl_app\n'
+            printf 'AUTH_SECRET=%s\n' "${AUTH_SECRET}"
+            printf 'PUBLIC_SITE_URL=%s\n' "${PUBLIC_SITE_URL}"
+            printf 'MEDIA_ROOT=%s\nAPP_PORT=%s\n' "${MEDIA_ROOT}" "${APP_PORT}"
+          } > release/runtime.env
+          printf '%s' "${POSTGRES_OWNER_PASSWORD}" > release/secrets/postgres_owner_password
+          printf '%s' "${POSTGRES_APP_PASSWORD}" > release/secrets/postgres_app_password
+          chmod 600 release/runtime.env release/secrets/*
+
+      - name: Copy release to server
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_PORT: ${{ vars.SERVER_PORT }}
+          SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
+          SERVER_APP_PATH: ${{ vars.SERVER_APP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/lhl76-deploy -p "${SERVER_PORT}" "${SERVER_USERNAME}@${SERVER_HOST}" \
+            "mkdir -p '${SERVER_APP_PATH}/release/secrets' && chmod 700 '${SERVER_APP_PATH}/release/secrets'"
+          scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/docker-compose.production.yml release/deploy-release.sh release/runtime.env \
+            "${SERVER_USERNAME}@${SERVER_HOST}:${SERVER_APP_PATH}/release/"
+          scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/secrets/* \
+            "${SERVER_USERNAME}@${SERVER_HOST}:${SERVER_APP_PATH}/release/secrets/"
+
+      - name: Deploy and verify
+        env:
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+          SERVER_PORT: ${{ vars.SERVER_PORT }}
+          SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
+          SERVER_APP_PATH: ${{ vars.SERVER_APP_PATH }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${GHCR_TOKEN}" | ssh -i ~/.ssh/lhl76-deploy -p "${SERVER_PORT}" \
+            "${SERVER_USERNAME}@${SERVER_HOST}" \
+            "set -eu; export DOCKER_CONFIG=\$(mktemp -d); trap 'rm -rf \"\$DOCKER_CONFIG\"' EXIT; docker login ghcr.io -u '${{ github.actor }}' --password-stdin; chmod +x '${SERVER_APP_PATH}/release/deploy-release.sh'; '${SERVER_APP_PATH}/release/deploy-release.sh' '${SERVER_APP_PATH}'"
+          curl --fail --silent --show-error "https://${SERVER_HOST}/api/ready"

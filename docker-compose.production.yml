@@ -1,24 +1,83 @@
-# One application instance; persistent limiter state is shared by its Node processes.
-# Database is an existing privately networked service, never created/reset here.
+name: ${COMPOSE_PROJECT_NAME:-lhl76}
+
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lhl76}
+      POSTGRES_USER: ${POSTGRES_OWNER_USER:-lhl_owner}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_owner_password
+    secrets:
+      - postgres_owner_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   app:
-    build: .
-    ports: ["127.0.0.1:3000:3000"]
+    image: ${LHL76_IMAGE:?Set the immutable application image digest}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    init: true
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:?Provide a least-privilege application database URL}
-      AUTH_SECRET: ${AUTH_SECRET:?Provide a unique secret}
-      PUBLIC_SITE_URL: https://lhl-76.ru
+      POSTGRES_DB: ${POSTGRES_DB:-lhl76}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-lhl_app}
+      POSTGRES_APP_PASSWORD_FILE: /run/secrets/postgres_app_password
+      AUTH_SECRET: ${AUTH_SECRET:?Set a unique authentication secret}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set the public HTTPS origin}
       RATE_LIMIT_DIR: /app/state/limits
       ALLOW_ADMIN_SETUP: "0"
-      TRUST_PROXY_IP: "0"
+      TRUST_PROXY_IP: "1"
+    secrets:
+      - postgres_app_password
     volumes:
-      - ${MEDIA_ROOT:?Provide restored persistent public-files directory}/uploads:/app/public/uploads
-      - ${MEDIA_ROOT:?Provide restored persistent public-files directory}/legacy-media:/app/public/legacy-media:ro
-      - ${MEDIA_ROOT:?Provide restored persistent public-files directory}/documents:/app/public/documents:ro
+      - ${MEDIA_ROOT:?Set an absolute persistent media directory}/uploads:/app/public/uploads
+      - ${MEDIA_ROOT}/legacy-media:/app/public/legacy-media:ro
+      - ${MEDIA_ROOT}/documents:/app/public/documents:ro
+      - ${MEDIA_ROOT}/images-optimized:/app/public/images/optimized
       - limiter:/app/state
-    restart: unless-stopped
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: ["ALL"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+      - frontend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+
+networks:
+  backend:
+    internal: true
+  frontend:
+
 volumes:
+  postgres_data:
   limiter:
+
+secrets:
+  postgres_owner_password:
+    file: ./secrets/postgres_owner_password
+  postgres_app_password:
+    file: ./secrets/postgres_app_password

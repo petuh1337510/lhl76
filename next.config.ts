@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     localPatterns:[{pathname:'/images/**',search:''},{pathname:'/uploads/**',search:''},{pathname:'/legacy-media/**',search:''},{pathname:'/api/public/legacy-media'},{pathname:'/api/public/remote-image'},{pathname:'/icon.png',search:''}],
     remotePatterns: [],
     maximumResponseBody:25*1024*1024,
-    maximumDiskCacheSize:1024*1024*1024,
+    maximumDiskCacheSize:128*1024*1024,
     formats: ["image/webp"],
     qualities:[75,80,85],
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1600, 1920],

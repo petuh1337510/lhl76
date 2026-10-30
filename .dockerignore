@@ -6,6 +6,9 @@ tsconfig.tsbuildinfo
 .env.*
 !.env.example
 uploads
+public/uploads
+public/legacy-media
+public/documents
 *.log
 work
 outputs
@@ -13,3 +16,4 @@ outputs
 backups
 artifacts
 .runtime
+secrets

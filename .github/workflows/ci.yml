@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma generate
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm exec tsc --noEmit
+      - name: Validate deployment files
+        run: |
+          bash -n scripts/prepare-production-host.sh scripts/deploy-release.sh docker-entrypoint.sh
+          mkdir -p secrets
+          printf 'validation' > secrets/postgres_owner_password
+          printf 'validation' > secrets/postgres_app_password
+          COMPOSE_PROJECT_NAME=lhl76 LHL76_IMAGE=ghcr.io/example/lhl76@sha256:0123456789abcdef \
+            AUTH_SECRET=validation PUBLIC_SITE_URL=https://191.217.231.118 \
+            MEDIA_ROOT=/opt/lhl76/public-files \
+            docker compose -f docker-compose.production.yml config --quiet
