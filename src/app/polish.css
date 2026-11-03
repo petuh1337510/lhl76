@@ -442,9 +442,10 @@ html,body{max-width:100%;overflow-x:clip}
 
 /* Match carousel: one mobile card, arrows and finger swipe */
 @media(max-width:700px){
-  .matchCarousel .matchGrid{display:flex!important;grid-template-columns:none!important;gap:12px!important;margin:0!important;padding:0!important;overflow-x:auto!important;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .matchCarousel .matchGrid{display:flex!important;grid-template-columns:none!important;gap:12px!important;margin:0!important;padding:0!important;overflow-x:hidden!important;overflow-y:hidden;touch-action:pan-y}
   .matchCarousel .matchGrid::-webkit-scrollbar{display:none}
   .matchCarousel .match{flex:0 0 100%;width:100%;scroll-snap-align:start}
+  .matchCarousel .match:not(:first-child){display:none}
   .matchCarousel .slideArrow{display:grid!important;place-items:center;top:50%;width:38px;height:38px;font-size:28px;background:#fff;color:#0b315f;box-shadow:0 5px 16px #061d3d38}
   .matchCarousel .slideArrow.left{left:-11px}
   .matchCarousel .slideArrow.right{right:-11px}
@@ -835,25 +836,22 @@ html,body{max-width:100%;overflow-x:clip}
 .leagueAboutHero a:hover{transform:translateY(-2px);background:#c80329}.leagueAboutHero a span{font-size:20px;font-weight:400}
 .leagueAboutWatermark{position:absolute;right:-18px;bottom:-85px;color:#ffffff0b;font-size:clamp(300px,32vw,520px);font-weight:900;line-height:1;letter-spacing:-45px;pointer-events:none}
 .leagueAboutPeople{padding:66px 0 105px}
-.leagueAboutSectionHead{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:29px}
-.leagueAboutSectionHead span{color:#0f5f9e;font-size:11px;font-weight:900;letter-spacing:1.5px}
-.leagueAboutSectionHead h2{margin:9px 0 0;color:#071d3f;font-size:clamp(35px,4vw,49px);font-weight:900;line-height:1;letter-spacing:-1.7px}
-.leagueAboutSectionHead p{max-width:360px;margin:0 0 3px;color:#687f97;font-size:14px;line-height:1.5}
-.leaguePeopleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.leagueAboutSectionHead{max-width:1120px;margin:0 auto 29px}
+.leagueAboutSectionHead h2{margin:0;color:#071d3f;font-size:clamp(35px,4vw,49px);font-weight:900;line-height:1;letter-spacing:-1.7px}
+.leaguePeopleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;max-width:1120px;margin-inline:auto}
 .leaguePersonCard{min-width:0;overflow:hidden;border:1px solid #d7e3ee;border-radius:16px;background:#fff;box-shadow:0 13px 30px #071e3d0b;transition:transform .2s,box-shadow .2s}
 .leaguePersonCard:hover{transform:translateY(-4px);box-shadow:0 19px 38px #071e3d1a}
-.leaguePersonPhoto{height:310px;overflow:hidden;background:linear-gradient(135deg,#e7eef5,#cbd9e7);border-bottom:4px solid #e60832}
-.leaguePersonPhoto img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 29%;border-radius:0}
-.leaguePersonPhoto.sourceSquareCutout img{transform:scale(1.38)}
-.leaguePersonInfo{position:relative;min-height:160px;padding:23px 25px 25px}
-.leaguePersonIndex{position:absolute;right:25px;top:22px;color:#c8d7e5;font-size:12px;font-weight:900;letter-spacing:1px}
-.leaguePersonInfo h3{max-width:calc(100% - 27px);margin:0 0 9px;font-size:21px;font-weight:900;line-height:1.22;letter-spacing:-.45px}
+.leaguePersonPhoto{height:292px;overflow:hidden;padding-top:8px;background:#f7f9fc;border-bottom:4px solid #e60832}
+.leaguePersonPhoto img{display:block;width:min(100%,290px);height:100%;margin-inline:auto;object-fit:cover;object-position:center top;border-radius:0}
+.leaguePersonInfo{position:relative;min-height:160px;padding:22px 20px 23px}
+.leaguePersonIndex{position:absolute;right:20px;top:21px;color:#c8d7e5;font-size:12px;font-weight:900;letter-spacing:1px}
+.leaguePersonInfo h3{max-width:calc(100% - 27px);margin:0 0 9px;font-size:19px;font-weight:900;line-height:1.22;letter-spacing:-.45px}
 .leaguePersonInfo strong{display:block;color:#0d5b9c;font-size:13px;font-weight:800;line-height:1.4}
 .leaguePersonInfo p{margin:13px 0 0;padding-top:13px;border-top:1px solid #e6edf4;color:#667b91;font-size:13px;line-height:1.5;white-space:pre-line}
 .leaguePersonContacts{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:14px}.leaguePersonContacts a{color:#0d5b9c;font-size:12px;font-weight:700;text-decoration:none}.leaguePersonContacts a:hover{text-decoration:underline}
 .leaguePeopleEmpty{padding:35px;border:1px dashed #cbd9e8;border-radius:14px;background:#fff;color:#668099}
-@media(max-width:900px){.leaguePeopleGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.leagueAboutHeroInner{padding:72px 0 78px}.leagueAboutWatermark{right:-80px;bottom:-50px}}
-@media(max-width:600px){.leagueAboutWrap{width:min(100% - 32px,480px)}.leagueAboutHeroInner{padding:54px 0 64px}.leagueAboutHero h1{margin-top:22px;font-size:clamp(42px,12vw,60px);letter-spacing:-2.5px}.leagueAboutHero p{font-size:17px;line-height:1.5}.leagueAboutHero a{margin-top:30px}.leagueAboutWatermark{right:-75px;bottom:-15px;font-size:280px;letter-spacing:-30px}.leagueAboutPeople{padding:44px 0 70px}.leagueAboutSectionHead{display:block;margin-bottom:22px}.leagueAboutSectionHead p{margin-top:12px;font-size:13px}.leaguePeopleGrid{grid-template-columns:1fr;gap:16px}.leaguePersonPhoto{height:320px}.leaguePersonInfo{min-height:0;padding:21px}.leaguePersonInfo h3{font-size:20px}}
+@media(max-width:900px){.leagueAboutSectionHead,.leaguePeopleGrid{max-width:760px}.leaguePeopleGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.leagueAboutHeroInner{padding:72px 0 78px}.leagueAboutWatermark{right:-80px;bottom:-50px}}
+@media(max-width:600px){.leagueAboutWrap{width:min(100% - 32px,480px)}.leagueAboutHeroInner{padding:54px 0 64px}.leagueAboutHero h1{margin-top:22px;font-size:clamp(42px,12vw,60px);letter-spacing:-2.5px}.leagueAboutHero p{font-size:17px;line-height:1.5}.leagueAboutHero a{margin-top:30px}.leagueAboutWatermark{right:-75px;bottom:-15px;font-size:280px;letter-spacing:-30px}.leagueAboutPeople{padding:44px 0 70px}.leagueAboutSectionHead{margin-bottom:22px}.leagueAboutSectionHead,.leaguePeopleGrid{max-width:420px}.leaguePeopleGrid{grid-template-columns:1fr;gap:16px}.leaguePersonPhoto{height:300px}.leaguePersonInfo{min-height:0;padding:21px}.leaguePersonInfo h3{font-size:20px}}
 
 /* Редактор раздела «О лиге» */
 .leaguePageAdmin{max-width:1450px}.leagueAdminPublicLink{align-self:center;color:#0e5d9d;font-size:11px;font-weight:900;text-decoration:none;white-space:nowrap}.leagueAdminPublicLink:hover{text-decoration:underline}

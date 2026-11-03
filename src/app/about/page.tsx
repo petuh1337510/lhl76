@@ -36,13 +36,12 @@ export default async function AboutPage() {
       <section className="leagueAboutPeople" aria-labelledby="leaguePeopleTitle">
         <div className="leagueAboutWrap">
           <header className="leagueAboutSectionHead">
-            <div><span>ТЕ, КТО ДЕЛАЕТ ЛИГУ</span><h2 id="leaguePeopleTitle">ЛИЦА ЛИГИ</h2></div>
-            <p>За расписанием, матчами и трансляциями стоят люди, объединённые хоккеем.</p>
+            <h2 id="leaguePeopleTitle">ЛИЦА ЛИГИ</h2>
           </header>
           {people.length ? <div className="leaguePeopleGrid">
             {people.map((person, index) => <article className="leaguePersonCard" key={person.id}>
-              <div className={`leaguePersonPhoto ${["/images/league/suvorin.png", "/images/league/matveev.png"].includes(person.photoUrl || "") ? "sourceSquareCutout" : ""}`}>
-                <PublicImage width={240} height={320} sizes="240px" src={person.photoUrl || "/images/player-placeholder.svg"} alt={person.photoUrl ? person.name : "Фотография не добавлена"} loading={index < 3 ? "eager" : "lazy"} />
+              <div className="leaguePersonPhoto">
+                <PublicImage width={290} height={290} sizes="290px" src={person.photoUrl || "/images/player-placeholder.svg"} alt={person.photoUrl ? person.name : "Фотография не добавлена"} loading={index < 3 ? "eager" : "lazy"} />
               </div>
               <div className="leaguePersonInfo">
                 <span className="leaguePersonIndex">{String(index + 1).padStart(2, "0")}</span>

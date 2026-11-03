@@ -427,13 +427,13 @@ export default async function MatchPage({
         </div>
       </section>
       <nav className="matchSectionTabs" aria-label="Разделы матча">
-        <Link aria-current={view === "timeline" ? "page" : undefined} className={view === "timeline" ? "active" : ""} href={`/match/${slug}?view=timeline${returnQuery}`}>
+        <Link scroll={false} aria-current={view === "timeline" ? "page" : undefined} className={view === "timeline" ? "active" : ""} href={`/match/${slug}?view=timeline${returnQuery}`}>
           Хронология
         </Link>
-        <Link aria-current={view === "rosters" ? "page" : undefined} className={view === "rosters" ? "active" : ""} href={`/match/${slug}?view=rosters${returnQuery}`}>
+        <Link scroll={false} aria-current={view === "rosters" ? "page" : undefined} className={view === "rosters" ? "active" : ""} href={`/match/${slug}?view=rosters${returnQuery}`}>
           Составы
         </Link>
-        <Link aria-current={view === "statistics" ? "page" : undefined} className={view === "statistics" ? "active" : ""} href={`/match/${slug}?view=statistics${returnQuery}`}>
+        <Link scroll={false} aria-current={view === "statistics" ? "page" : undefined} className={view === "statistics" ? "active" : ""} href={`/match/${slug}?view=statistics${returnQuery}`}>
           Статистика
         </Link>
       </nav>
@@ -516,6 +516,7 @@ export default async function MatchPage({
         <section className="matchStatisticsPage">
           <nav className="matchTeamTabs" aria-label="Команда">
             <Link
+              scroll={false}
               className={statsTeam === "home" ? "active" : ""}
               href={`/match/${slug}?view=statistics&team=home${returnQuery}`}
             >
@@ -523,6 +524,7 @@ export default async function MatchPage({
               {match.home.name}
             </Link>
             <Link
+              scroll={false}
               className={statsTeam === "away" ? "active" : ""}
               href={`/match/${slug}?view=statistics&team=away${returnQuery}`}
             >

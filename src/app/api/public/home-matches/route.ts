@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { homeMatchDateRange } from "@/lib/home-match-carousel";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const { from, until } = homeMatchDateRange(new Date());
   const activeSeason = await prisma.season.findFirst({
     where: { isActive: true },
     orderBy: { startsAt: "desc" },
@@ -12,6 +14,7 @@ export async function GET() {
   const matches = await prisma.match.findMany({
     where: {
       status: { in: ["LIVE", "SCHEDULED", "FINAL"] },
+      startsAt: { gte: from, lt: until },
       ...(activeSeason
         ? { division: { competition: { seasonId: activeSeason.id } } }
         : {}),
@@ -22,18 +25,10 @@ export async function GET() {
       homeTeamEntry: { include: { team: true } },
       awayTeamEntry: { include: { team: true } },
     },
-    orderBy: { startsAt: "desc" },
-    take: 24,
+    orderBy: { startsAt: "asc" },
   });
-  const sorted = [...matches].sort((a, b) =>
-    a.status === "LIVE" && b.status !== "LIVE"
-      ? -1
-      : b.status === "LIVE" && a.status !== "LIVE"
-        ? 1
-        : 0,
-  );
   return NextResponse.json(
-    sorted.map((match) => {
+    matches.map((match) => {
       const date = match.startsAt ? new Date(match.startsAt) : null;
       const protocol =
         match.protocolData && typeof match.protocolData === "object"

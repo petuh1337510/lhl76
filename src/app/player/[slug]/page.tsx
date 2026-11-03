@@ -1,4 +1,5 @@
 import { PublicImage } from "@/components/public-image";
+import { PlayerPhotoViewer } from "./player-photo-viewer";
 import Link from "next/link";
 import { PublicReturnLink } from "@/components/public-return-link";
 import { notFound } from "next/navigation";
@@ -45,9 +46,7 @@ export default async function PlayerPage({
       <section className="playerHero">
         <PublicReturnLink fallback={currentHref}>← К соревнованию</PublicReturnLink>
         <div className="playerIdentity">
-          <i className="playerPortrait">
-            <PublicImage priority width={240} height={320} sizes="(max-width: 600px) 80px, 100px" src={player.photoUrl || "/images/player-placeholder.svg"} alt={player.name} />
-          </i>
+          <PlayerPhotoViewer photoUrl={player.photoUrl} name={player.name} />
           <div>
             <span>
               {current

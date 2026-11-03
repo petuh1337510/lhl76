@@ -10,5 +10,5 @@ export default async function HomePage() {
     getMatches().then((response) => response.json()),
     getHomeSummary().then((summary) => JSON.parse(JSON.stringify(summary))),
   ]);
-  return <Home initialMatches={initialMatches} initialSummary={initialSummary} />;
+  return <Home initialMatches={initialMatches} initialSummary={initialSummary} initialNow={new Date().toISOString()} />;
 }

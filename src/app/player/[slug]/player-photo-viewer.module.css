@@ -1,0 +1,62 @@
+.trigger {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.trigger:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.dialog {
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #07182c;
+  box-shadow: 0 20px 70px #0009;
+}
+
+.dialog::backdrop {
+  background: #061326e8;
+}
+
+.fullPhoto {
+  display: block;
+  width: auto !important;
+  height: auto !important;
+  max-width: min(90vw, 1200px);
+  max-height: calc(100dvh - 56px);
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.close {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #07182c;
+  font: 28px/1 Arial, sans-serif;
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: 3px solid #e60832;
+  outline-offset: 2px;
+}

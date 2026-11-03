@@ -10,6 +10,7 @@ import { PublicImage } from "@/components/public-image";
 import Link from "next/link";
 import { getImageProps } from "next/image";
 import {localMediaUrl} from '@/lib/local-media';
+import { nearestHomeMatchIndex, visibleHomeMatches } from "@/lib/home-match-carousel";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { PublicSiteContext } from "@/lib/public-site-context";
@@ -225,11 +226,13 @@ function PromoTiles({ items }: { items: HomepageItem[] }) {
   );
 }
 
-export default function Home({ initialMatches, initialSummary }: { initialMatches: any[]; initialSummary: any }) {
+export default function Home({ initialMatches, initialSummary, initialNow }: { initialMatches: any[]; initialSummary: any; initialNow: string }) {
   const [division, setDivision] = useState("Все");
   const [leadersDivision, setLeadersDivision] = useState("Любитель Плюс");
   const [standingsDivision, setStandingsDivision] = useState("Любитель Плюс");
   const [offset, setOffset] = useState(0);
+  const [now, setNow] = useState(() => Date.parse(initialNow));
+  const matchTouchStart = useRef<number | null>(null);
   const [contentState, setContentState] = useState<"loading" | "ready" | "error">(initialSummary ? "ready" : "error");
   const [databaseMatches, setDatabaseMatches] = useState<any[]>(initialMatches);
   const [homeSummary, setHomeSummary] = useState<{
@@ -267,6 +270,7 @@ export default function Home({ initialMatches, initialSummary }: { initialMatche
     ]);
       if (active) {
         setDatabaseMatches(items);
+        setNow(Date.now());
         if (summary) {
           setHomeSummary((current) => ({ ...current, ...summary }));
           if (refreshSummary) lastSummaryRefresh = Date.now();
@@ -306,8 +310,8 @@ export default function Home({ initialMatches, initialSummary }: { initialMatche
   const games = sourceMatches.filter(
     (match: any) => division === "Все" || match.division === division,
   );
-  const shown = games.slice(offset, offset + 4);
-  const featureMatch = sourceMatches.find((match: any) => match.status === "LIVE" || match.status === "SCHEDULED") ?? sourceMatches[0];
+  const shown = visibleHomeMatches(games, nearestHomeMatchIndex(games, now) + offset);
+  const featureMatch = sourceMatches.find((match: any) => match.status === "LIVE" || match.status === "SCHEDULED") ?? sourceMatches[nearestHomeMatchIndex(sourceMatches, now)];
   const heroSlides: HeroSlide[] = heroContent.map((item) => {
     const settings = heroSettings(item.style);
     const allowedVariants = ["league","partner","match","broadcast","photo"];
@@ -341,10 +345,10 @@ export default function Home({ initialMatches, initialSummary }: { initialMatche
   if (featureBroadcast && heroSlides.length < 3) heroSlides.push({
     id:`broadcast-${featureBroadcast.id}`, title:featureBroadcast.title, subtitle:featureBroadcast.description ?? "Смотрите матчи ЛХЛ-76 в прямом эфире и в записи", link:"/broadcasts?filter=live", imageDesktop:featureBroadcast.imageUrl ?? "/images/optimized/hero-hockey-258d60f1efb5.webp", imageMobile:featureBroadcast.imageUrl ?? "/images/optimized/hero-hockey-258d60f1efb5.webp", variant:"broadcast", eyebrow:featureBroadcast.isLive ? "ПРЯМОЙ ЭФИР" : "ТРАНСЛЯЦИЯ ЛХЛ-76", buttonLabel:featureBroadcast.isLive ? "СМОТРЕТЬ ЭФИР" : "СМОТРЕТЬ ВИДЕО", duration:7500, live:featureBroadcast.isLive,
   });
-  const move = (amount: number) =>
-    setOffset((current) =>
-      Math.max(0, Math.min(Math.max(games.length - 4, 0), current + amount)),
-    );
+  const move = (amount: number) => {
+    if (games.length < 2) return;
+    setOffset((current) => (current + amount + games.length) % games.length);
+  };
 
   return (
     <>
@@ -377,15 +381,24 @@ export default function Home({ initialMatches, initialSummary }: { initialMatche
               ))}
             </div>
             <div className="matchCarousel">
-              {games.length > 4 ? <button
-                disabled={!offset}
+              {games.length > 1 ? <button
                 onClick={() => move(-1)}
                 className="slideArrow left"
                 aria-label="Предыдущие матчи"
               >
                 ‹
               </button> : null}
-              <div className="matchGrid modern">
+              <div
+                className="matchGrid modern"
+                onTouchStart={(event) => { matchTouchStart.current = event.touches[0]?.clientX ?? null; }}
+                onTouchEnd={(event) => {
+                  const start = matchTouchStart.current;
+                  const end = event.changedTouches[0]?.clientX;
+                  if (start !== null && end !== undefined && Math.abs(end - start) > 45) move(end < start ? 1 : -1);
+                  matchTouchStart.current = null;
+                }}
+                onTouchCancel={() => { matchTouchStart.current = null; }}
+              >
                 {shown.map((match: any, index) => {
                   const live = match.status === "LIVE";
                   const final = match.status === "FINAL" || match.status === "ЗАВЕРШЕН";
@@ -444,8 +457,7 @@ export default function Home({ initialMatches, initialSummary }: { initialMatche
                   <span>{contentState === "error" ? "Проверьте подключение к базе данных." : "Расписание появится после публикации матчей."}</span>
                 </div> : null}
               </div>
-              {games.length > 4 ? <button
-                disabled={offset >= games.length - 4}
+              {games.length > 1 ? <button
                 onClick={() => move(1)}
                 className="slideArrow right"
                 aria-label="Следующие матчи"
