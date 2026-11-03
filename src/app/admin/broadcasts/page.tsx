@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
 import { ChangeEvent, useEffect, useState } from "react";
@@ -100,6 +101,7 @@ export default function BroadcastAdmin() {
       </div>
 
       {open ? (
+        <AdminModal title={form.id ? "Редактировать трансляцию" : "Новая трансляция"} onClose={() => setOpen(false)} wide>
         <section className="mediaEditor">
           <header>
             <div><span>{form.id ? "РЕДАКТИРОВАНИЕ" : "НОВАЯ ТРАНСЛЯЦИЯ"}</span><h2>{form.title || "Без названия"}</h2></div>
@@ -122,6 +124,7 @@ export default function BroadcastAdmin() {
           </div>
           <footer><button onClick={() => setOpen(false)}>Отмена</button><button disabled={busy} onClick={save}>{busy ? "СОХРАНЯЮ…" : "СОХРАНИТЬ"}</button></footer>
         </section>
+        </AdminModal>
       ) : null}
 
       <section className="mediaAdminGrid">

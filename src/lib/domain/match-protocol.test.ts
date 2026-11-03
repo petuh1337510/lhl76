@@ -54,6 +54,26 @@ describe("deriveMatchProtocol", () => {
     expect(result.contributions).toEqual([]);
   });
 
+  it("keeps a team penalty out of every player's penalty minutes", () => {
+    const result = deriveMatchProtocol({
+      homeTeamEntryId: "home",
+      awayTeamEntryId: "away",
+      status: "FINAL",
+      roster: [
+        { playerId: "home-player", teamEntryId: "home" },
+        { playerId: "away-player", teamEntryId: "away" },
+      ],
+      penalties: [
+        { teamEntryId: "home", playerId: "", minutes: 2 },
+        { teamEntryId: "away", playerId: "away-player", minutes: 4 },
+      ],
+    });
+
+    expect(result.contributions.find((row) => row.playerId === "home-player")?.penaltyMinutes).toBe(0);
+    expect(result.contributions.find((row) => row.playerId === "away-player")?.penaltyMinutes).toBe(4);
+    expect(result.contributions).toHaveLength(2);
+  });
+
   it("counts a converted penalty shot as a goal and never duplicates an assist", () => {
     const result = deriveMatchProtocol({
       homeTeamEntryId: "home",

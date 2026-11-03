@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 import { canonicalDivisionName } from '@/lib/historical-division-names';
+import { AdminModal } from '../admin-modal';
 
 type Team={id:string;name:string;city:string|null};
 type Division={id:string;name:string;teamEntries:{id:string;teamId:string;team:{name:string}}[];_count:{teamEntries:number;matches:number}};
@@ -16,7 +17,7 @@ function Manager(){
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
   const seasonId=params.get('seasonId'),competitionId=params.get('competitionId'),creating=params.get('create')==='1';
   const season=seasons.find(s=>s.id===seasonId)||(!seasonId?(seasons.find(s=>s.isActive)||seasons[0]):undefined);
-  const competition=season?.competitions.find(c=>c.id===competitionId);
+  const competition=creating?undefined:season?.competitions.find(c=>c.id===competitionId);
   useEffect(()=>{
     const controller=new AbortController();setLoading(true);
     fetch('/api/admin/competitions',{cache:'no-store',signal:controller.signal}).then(async r=>{
@@ -49,7 +50,7 @@ function Manager(){
     {error&&<div role="alert" className={styles.error}>{error} <button disabled={busy||loading} onClick={()=>{setError('');setRevision(v=>v+1)}}>Обновить список</button></div>}{notice&&<p role="status">{notice}</p>}
     {loading&&<p role="status">Обновляю список…</p>}
     {!season?(!loading&&<p>Выберите существующий сезон.</p>):<fieldset className={styles.workspace} disabled={busy||loading}>
-      {(creating||competition)?<><button onClick={()=>navigate(season.id)}>← К соревнованиям сезона {season.name}</button>
+      {competition?<><button onClick={()=>navigate(season.id)}>← К соревнованиям сезона {season.name}</button>
         <form className={styles.card} onSubmit={save} key={(competition?.id||'new')+':'+(competition?.updatedAt||season.id)}>
           <h2>{competition?'Настройки соревнования':'Добавить соревнование'}</h2><p>Сезон: {season.name}</p>
           <label>Название<input name="name" required minLength={2} maxLength={120} defaultValue={competition?.name||''}/></label>
@@ -69,6 +70,13 @@ function Manager(){
         {!season.competitions.length&&<p>В этом сезоне ещё нет соревнований.</p>}
       </>}
     </fieldset>}
+    {creating&&season&&<AdminModal title="Добавить соревнование" onClose={()=>navigate(season.id)}><form className={`${styles.card} competitionModalForm`} onSubmit={save} key={`new:${season.id}`}>
+      <h2>Добавить соревнование</h2><p>Сезон: {season.name}</p>
+      {error&&<p role="alert" className={styles.error}>{error}</p>}
+      <label>Название<input name="name" required minLength={2} maxLength={120}/></label>
+      <label>Тип<select name="type" defaultValue="TOURNAMENT"><option value="TOURNAMENT">Турнир</option><option value="CHAMPIONSHIP" disabled={season.competitions.some(c=>c.type==='CHAMPIONSHIP')}>Чемпионат</option></select></label>
+      <div className={`${styles.actions} competitionModalActions`}><button type="button" onClick={()=>navigate(season.id)}>Отмена</button><button type="submit" disabled={busy||loading}>Создать соревнование</button></div>
+    </form></AdminModal>}
   </section></main>
 }
 

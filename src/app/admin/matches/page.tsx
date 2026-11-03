@@ -1,5 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { AdminModal } from "../admin-modal";
+import "./match-list.css";
 
 const empty = {
   seasonId: "",
@@ -141,7 +143,7 @@ export default function MatchesPage() {
   }
   function startEditing(match: any) {
     setEditing(match);
-    setEditForm({ ...moscowDateTime(match.startsAt), venueId: match.venueId || "" });
+    setEditForm({ ...(match.startsAt ? moscowDateTime(match.startsAt) : { date: "", time: "" }), venueId: match.venueId || "" });
     setError("");
     setOpen(false);
   }
@@ -194,6 +196,7 @@ export default function MatchesPage() {
           <button onClick={() => setOpen(true)}>+ СОЗДАТЬ МАТЧ</button>
         </div>
         {open && (
+          <AdminModal title="Новый матч" onClose={() => setOpen(false)} wide>
           <section className="adminForm matchCreateForm">
             <h2>Новый матч</h2>
             {error && <p className="formError">{error}</p>}
@@ -353,8 +356,10 @@ export default function MatchesPage() {
               </button>
             </footer>
           </section>
+          </AdminModal>
         )}
         {editing && (
+          <AdminModal title="Изменить расписание" onClose={() => { setEditing(null); setError(""); }}>
           <section className="adminForm matchCreateForm">
             <h2>Изменить расписание</h2>
             <p>{editing.homeTeamEntry.team.name} — {editing.awayTeamEntry.team.name}. Команды и дивизион здесь не меняются.</p>
@@ -374,6 +379,7 @@ export default function MatchesPage() {
               <button disabled={saving || !editForm.date || !editForm.time} onClick={saveSchedule}>{saving ? "Сохранение…" : "Сохранить"}</button>
             </footer>
           </section>
+          </AdminModal>
         )}
         <section className="matchCalendarFilters">
           <label>
@@ -469,65 +475,68 @@ export default function MatchesPage() {
             Сбросить
           </button>
         </section>
-        <section className="matchAdminList">
+        <section className="matchAdminList adminMatchTable">
           <header>
             <span>КАЛЕНДАРЬ</span>
             <small>{data.total} матчей</small>
           </header>
+          <div className="matchAdminColumns" aria-hidden="true">
+            <span>Дома</span>
+            <span>Счёт</span>
+            <span>На выезде</span>
+            <span>Статус</span>
+            <span>Дата</span>
+            <span>Время</span>
+            <span>Стадион</span>
+            <span>Действия</span>
+          </div>
           {data.items.map((match: any) => {
             const winner = technicalWinner(match);
             const technical = match.resultType === "TECHNICAL" && Boolean(winner);
+            const dateTime = match.startsAt ? moscowDateTime(match.startsAt) : null;
+            const score = technical
+              ? [winner === match.homeTeamEntryId ? "+" : "−", winner === match.awayTeamEntryId ? "+" : "−"]
+              : match.status === "FINAL"
+                ? [match.homeScore ?? "—", match.awayScore ?? "—"]
+                : ["—", "—"];
             return <article
               className={`${match.isPlayoff ? "playoffMatch " : ""}${technical ? "technicalMatch " : ""}${match.needsTechnicalReview ? "technicalReviewMatch" : ""}`.trim()}
               key={match.id}
             >
-              <time>
-                <b>
-                  {match.startsAt
-                    ? new Date(match.startsAt).toLocaleDateString("ru-RU")
-                    : "Дата не указана"}
-                </b>
-                <small>
-                  {match.startsAt
-                    ? new Date(match.startsAt).toLocaleTimeString("ru-RU", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "—"}
-                </small>
-              </time>
-              <div className="matchAdminTeams">
-                <span>
-                  {match.division.competition.season.name} ·{" "}
-                  {match.division.name}
-                  {match.isPlayoff ? " · ПЛЕЙ-ОФФ" : ""}
-                  {technical ? " · ТЕХНИЧЕСКИЙ РЕЗУЛЬТАТ" : ""}
-                </span>
+              <a
+                className="matchAdminRowLink"
+                href={`/admin/match-protocol?match=${match.slug}`}
+                aria-label={`Открыть матч: ${match.homeTeamEntry.team.name} — ${match.awayTeamEntry.team.name}`}
+              />
+              <div className="matchAdminClub matchAdminHome" data-label="Дома">
+                <small>{match.division.competition.season.name} · {match.division.competition.name} · {match.division.name}</small>
                 <b>{match.homeTeamEntry.team.name}</b>
-                <strong>
-                  {technical
-                    ? `${winner === match.homeTeamEntryId ? "+" : "−"} : ${winner === match.awayTeamEntryId ? "+" : "−"}`
-                    : match.status === "FINAL"
-                    ? `${match.homeScore} : ${match.awayScore}`
-                    : "—"}
-                </strong>
-                <b>{match.awayTeamEntry.team.name}</b>
-                <small>
-                  {match.venue?.name || "Арена не указана"}
-                  {match.needsTechnicalReview ? " · Возможен технический результат — проверьте протокол" : ""}
-                </small>
+                {match.isPlayoff && <span className="matchAdminTag">Плей-офф</span>}
               </div>
-              <em className={technical ? "technical" : match.needsTechnicalReview ? "review" : match.status === "FINAL" ? "done" : "planned"}>
-                {technical ? "Технический" : match.needsTechnicalReview ? "Проверить" : statusName(match.status)}
-              </em>
+              <strong className="matchAdminScore" data-label="Счёт">
+                <span>{score[0]}</span><i>:</i><span>{score[1]}</span>
+              </strong>
+              <div className="matchAdminClub matchAdminAway" data-label="На выезде"><b>{match.awayTeamEntry.team.name}</b></div>
+              <div className="matchAdminStatus">
+                <em className={technical ? "technical" : match.needsTechnicalReview ? "review" : match.status === "FINAL" ? "done" : "planned"}>
+                  {technical ? "Технический" : match.needsTechnicalReview ? "Проверить" : statusName(match.status)}
+                </em>
+                {match.status === "FINAL" && <label className="matchAdminPlayoff"><input type="checkbox" checked={match.isPlayoff} disabled={saving || match.isPlayoff} onChange={() => changeExisting(match, false)} /> Плей-офф</label>}
+              </div>
+              <time className="matchAdminDate" dateTime={dateTime?.date} data-label="Дата">{dateTime ? new Date(match.startsAt).toLocaleDateString("ru-RU", { timeZone: "Europe/Moscow" }) : "Не указана"}</time>
+              <time className="matchAdminTime" dateTime={dateTime?.time} data-label="Время">{dateTime?.time || "—"}</time>
+              <div className="matchAdminVenueCell" data-label="Стадион">
+                <span className="matchAdminVenue">{match.venue?.name || "Не указан"}</span>
+                {!["LIVE", "FINAL"].includes(match.status) && <button className="matchAdminSchedule" onClick={() => startEditing(match)}>Дата и арена</button>}
+              </div>
               <div className="matchAdminActions">
-                {match.status==='SCHEDULED'&&<button disabled={saving} onClick={()=>changeExisting(match,true)}>Удалить пустой матч</button>}
-                {match.status==='FINAL'&&<label><input type="checkbox" checked={match.isPlayoff} disabled={saving||match.isPlayoff} onChange={()=>changeExisting(match,false)}/> Матч плей-офф</label>}
-                {!["LIVE", "FINAL"].includes(match.status) && <button onClick={() => startEditing(match)}>РАСПИСАНИЕ</button>}
-                <a href={`/admin/match-protocol?match=${match.slug}`}>{match.status === "FINAL" ? "ПРОТОКОЛ" : "ОТКРЫТЬ"}</a>
+                <a className="matchAdminDetails" href={`/admin/match-protocol?match=${match.slug}`}>Детали</a>
+                {match.status === "SCHEDULED" && <button className="matchAdminDelete" disabled={saving} onClick={() => changeExisting(match, true)}>Удалить</button>}
               </div>
+              {match.needsTechnicalReview && <p className="matchAdminWarning">Возможен технический результат — проверьте протокол</p>}
             </article>;
           })}
+          {data.items.length === 0 && <p className="matchAdminEmpty">Матчей по выбранным условиям нет.</p>}
         </section>
         <div className="adminPagination">
           <button disabled={page <= 1} onClick={() => setPage(page - 1)}>

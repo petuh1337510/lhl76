@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
@@ -147,7 +148,7 @@ export default function LeaguePageAdmin() {
 
     <section className="leagueAdminPeople">
       <header><div><span>02 / ЛИЦА ЛИГИ</span><h3>Люди лиги</h3><p>Порядок карточек меняется стрелками. Скрытые люди остаются в админке.</p></div><button onClick={() => { setForm({ ...emptyPerson }); setError(""); }}>+ ДОБАВИТЬ ЧЕЛОВЕКА</button></header>
-      {form ? <div className="leagueAdminEditor">
+      {form ? <AdminModal title={form.id ? "Редактировать карточку" : "Новая карточка"} onClose={() => setForm(null)}><div className="leagueAdminEditor">
         <div className="leagueAdminEditorHead"><h4>{form.id ? "Редактировать карточку" : "Новая карточка"}</h4><button onClick={() => setForm(null)} aria-label="Закрыть редактор">×</button></div>
         <div className="leagueAdminFormGrid">
           <label>Фамилия, имя, отчество<input value={form.name} maxLength={120} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
@@ -159,7 +160,7 @@ export default function LeaguePageAdmin() {
           <label className="leagueAdminPublished wide"><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} /><span>Показывать карточку на сайте</span></label>
         </div>
         <footer><button onClick={() => setForm(null)}>Отмена</button><button disabled={busy} onClick={savePerson}>{busy ? "СОХРАНЯЮ…" : "СОХРАНИТЬ КАРТОЧКУ"}</button></footer>
-      </div> : null}
+      </div></AdminModal> : null}
       <div className="leagueAdminList">{people.length ? people.map((person, index) => <article key={person.id} className={!person.active ? "isHidden" : ""}>
         <span className="leagueAdminNumber">{String(index + 1).padStart(2, "0")}</span>
         <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={person.photoUrl || "/images/player-placeholder.svg"} alt="" />

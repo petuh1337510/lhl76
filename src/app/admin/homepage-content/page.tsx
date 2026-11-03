@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
 import { ChangeEvent, useEffect, useState } from "react";
@@ -63,7 +64,7 @@ export default function HomepageContent() {
     <a className="backButton" href="/admin">← К панели управления</a>
     <div className="competitionHead"><div><span>КОНТЕНТ ГЛАВНОЙ СТРАНИЦЫ</span><h2>{tab === "banner" ? "Главный баннер" : "Промо-плитки"}</h2><p>Изменения после сохранения сразу появляются на главной.</p></div><button onClick={() => setEditing(blank(tab))}>+ ДОБАВИТЬ</button></div>
     <div className="matchAdminFilters"><button className={tab === "banner" ? "active" : ""} onClick={() => { setTab("banner"); setEditing(null); }}>Главный баннер</button><button className={tab === "tile" ? "active" : ""} onClick={() => { setTab("tile"); setEditing(null); }}>Промо-плитки</button></div>
-    {editing ? <section className="adminForm homepageEditor">
+    {editing ? <AdminModal title={editing.id ? "Редактировать материал" : "Новый материал"} onClose={() => setEditing(null)} wide><section className="adminForm homepageEditor">
       <h2>{editing.id ? "Редактировать материал" : "Новый материал"}</h2>
       <label>{editing.type === "banner" && editing.variant === "photo" ? "Название в админке (на баннере не показывается)" : "Заголовок"}<input value={editing.title} onChange={(event) => setEditing({...editing,title:event.target.value})}/></label>
       {editing.type !== "banner" || editing.variant !== "photo" ? <label>Короткий текст<input value={editing.subtitle} onChange={(event) => setEditing({...editing,subtitle:event.target.value})}/></label> : null}
@@ -85,7 +86,7 @@ export default function HomepageContent() {
       <label className="documentPublish"><input type="checkbox" checked={editing.active} onChange={(event) => setEditing({...editing,active:event.target.checked})}/><span><b>Показывать на главной</b><small>{editing.type === "banner" ? "Можно включить несколько слайдов — они будут сменять друг друга." : "Плитку можно временно скрыть."}</small></span></label>
       {error ? <p className="documentError">{error}</p> : null}
       <footer><button onClick={() => setEditing(null)}>Отмена</button><button disabled={busy} onClick={save}>{busy ? "СОХРАНЯЮ…" : "Сохранить"}</button></footer>
-    </section> : null}
+    </section></AdminModal> : null}
     <section className="homeContentList"><header><span>МАТЕРИАЛЫ</span><small>{visible.length}</small></header>{visible.length ? visible.map((item, index) => <article key={item.id}>
       <div className={`homeContentPreview ${item.type === "banner" ? "isBanner" : "isTile"} ${item.imageDesktop ? "hasImage" : ""}`} style={item.imageDesktop ? {backgroundImage:`url(${item.imageDesktop})`} : undefined}><span>№ {index + 1}</span>{!item.imageDesktop ? <strong>{item.title}</strong> : null}</div>
       <div><h3>{item.title}</h3><p>{item.subtitle || "Без описания"} · {item.link || "ссылка не указана"}</p></div>

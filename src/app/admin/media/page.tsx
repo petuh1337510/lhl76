@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
 import { ChangeEvent, useEffect, useState } from "react";
@@ -122,7 +123,7 @@ export default function MediaAdmin() {
     {error ? <p className="documentError">{error}</p> : null}
     {notice ? <p className="adminNotice">{notice}</p> : null}
 
-    {open ? <section className="mediaEditor">
+    {open ? <AdminModal title={form.id ? "Редактировать альбом" : "Новый альбом"} onClose={() => setOpen(false)} wide><section className="mediaEditor">
       <header><div><span>{form.id ? "РЕДАКТИРОВАНИЕ" : "НОВЫЙ АЛЬБОМ"}</span><h2>{form.title || "Без названия"}</h2></div><button onClick={() => setOpen(false)}>Закрыть ×</button></header>
       <div className="mediaEditorFields">
         <label>Название<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
@@ -133,7 +134,7 @@ export default function MediaAdmin() {
         <label className="wide documentPublish"><input type="checkbox" checked={form.isPublished} onChange={(event) => setForm({ ...form, isPublished: event.target.checked })} /><span><b>Опубликовать альбом</b><small>Альбом станет доступен в медиагалерее сайта.</small></span></label>
       </div>
       <footer><button onClick={() => setOpen(false)}>Отмена</button><button disabled={busy} onClick={save}>{busy ? "СОХРАНЯЮ…" : "СОХРАНИТЬ АЛЬБОМ"}</button></footer>
-    </section> : null}
+    </section></AdminModal> : null}
 
     <section className="mediaAdminGrid">{items.length ? items.map((item) => {
       const source = vkUrl(item.slug);

@@ -202,25 +202,58 @@ export async function getPublicMatch(
   });
   if (!match) return null;
 
+  const protocol =
+    match.protocolData && typeof match.protocolData === "object"
+      ? (match.protocolData as Record<string, unknown>)
+      : {};
   const legacyGoals = match.legacyEvents.filter(
     (event) => event.eventType.toLocaleLowerCase("ru") === "гол",
   );
   const legacyPenalties = match.legacyEvents.filter(
     (event) => event.eventType.toLocaleLowerCase("ru") === "штраф",
   );
-  // Imported JoomSport matches keep both normalized records (for statistics)
-  // and their original protocol rows (for the exact clock and chronology).
-  // Rendering both sources would duplicate every imported goal and penalty.
-  const publicGoals = legacyGoals.length > 0 ? [] : match.goals;
-  const publicPenalties = legacyPenalties.length > 0 ? [] : match.penalties;
+  // An edited protocol is authoritative. Legacy rows remain in the database
+  // for import history, but must not hide newly saved goals or resurrect deletions.
+  const editedProtocol = protocol.eventTimesAbsolute === true;
+  const publicGoals = editedProtocol || legacyGoals.length === 0 ? match.goals : [];
+  const publicPenalties = editedProtocol || legacyPenalties.length === 0 ? match.penalties : [];
+  const timelineLegacyGoals = editedProtocol ? [] : legacyGoals;
+  const timelineLegacyPenalties = editedProtocol ? [] : legacyPenalties;
   const clock = (seconds: number | null) =>
     seconds === null
       ? null
       : `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  const eventClock = (
+    seconds: number | null,
+    teamEntryId: string,
+    playerId: string | null,
+    legacyType: "Гол" | "Штраф",
+  ) => {
+    if (!editedProtocol || seconds === null) return clock(seconds);
+    // Older imports stored an absolute clock plus the period offset. Recover
+    // the original clock only for that exact offset; fresh edits keep their time.
+    const imported = match.legacyEvents.find((event) => {
+      if (
+        event.eventType !== legacyType ||
+        event.teamEntryId !== teamEntryId ||
+        event.playerId !== playerId ||
+        !/^\d+:\d{2}$/.test(event.minute || "")
+      ) return false;
+      const [minutes, remainder] = event.minute!.split(":").map(Number);
+      const difference = seconds - (minutes * 60 + remainder);
+      return difference > 0 && difference % 1200 === 0;
+    });
+    return imported?.minute || clock(seconds);
+  };
+  const eventSort = (value: string | null) => {
+    if (!value) return 0;
+    const [minutes, seconds] = value.split(":").map(Number);
+    return minutes * 60 + seconds;
+  };
   const events: (PublicMatchEvent & { sort: number })[] = [
     ...publicGoals.map((goal) => ({
       id: goal.id,
-      minute: clock(goal.clockSeconds),
+      minute: eventClock(goal.clockSeconds, goal.teamEntryId, goal.scorerId, "Гол"),
       type: "goal" as const,
       teamName: goal.teamEntry.team.name,
       playerName: playerName(goal.scorer),
@@ -238,23 +271,24 @@ export async function getPublicMatch(
             ]
               .filter(Boolean)
               .join(" · "),
-      sort: goal.clockSeconds ?? 0,
+      sort: eventSort(eventClock(goal.clockSeconds, goal.teamEntryId, goal.scorerId, "Гол")),
     })),
     ...publicPenalties.map((penalty) => ({
       id: penalty.id,
-      minute: clock(penalty.clockSeconds),
+      minute: eventClock(penalty.clockSeconds, penalty.teamEntryId, penalty.playerId, "Штраф"),
       type: "penalty" as const,
       teamName: penalty.teamEntry.team.name,
-      playerName: playerName(penalty.player),
+      playerName: penalty.playerId ? playerName(penalty.player) : "Командный штраф",
       detail:
         [
+          !penalty.playerId ? penalty.teamEntry.team.name : null,
           `${penalty.minutes} мин.`,
           penalty.reason,
           penalty.reasonCode ? `код ${penalty.reasonCode}` : null,
         ]
           .filter(Boolean)
           .join(" · ") || null,
-      sort: penalty.clockSeconds ?? 0,
+      sort: eventSort(eventClock(penalty.clockSeconds, penalty.teamEntryId, penalty.playerId, "Штраф")),
     })),
     ...match.penaltyShots.map((shot) => ({
       id: shot.id,
@@ -280,7 +314,7 @@ export async function getPublicMatch(
           ? 100000 + shot.attemptOrder
           : (shot.clockSeconds ?? 0),
     })),
-    ...legacyGoals.map((event) => {
+    ...timelineLegacyGoals.map((event) => {
       const assists = match.legacyEvents
         .filter(
           (candidate) =>
@@ -300,14 +334,14 @@ export async function getPublicMatch(
         sort: Number((event.minute || "0").replace(":", ".")),
       };
     }),
-    ...legacyPenalties.map((event) => ({
+    ...timelineLegacyPenalties.map((event) => ({
       id: event.id,
       minute: event.minute,
       type: "penalty" as const,
       teamName: event.teamEntry?.team.name ?? "Команда",
-      playerName: playerName(event.player),
+      playerName: event.playerId ? playerName(event.player) : "Командный штраф",
       detail:
-        [event.count ? `${event.count} мин.` : null, event.reason]
+        [!event.playerId ? event.teamEntry?.team.name : null, event.count ? `${event.count} мин.` : null, event.reason]
           .filter(Boolean)
           .join(" · ") || null,
       sort: Number((event.minute || "0").replace(":", ".")),
@@ -315,10 +349,6 @@ export async function getPublicMatch(
   ].sort((a, b) => a.sort - b.sort);
 
   const competition = match.division.competition;
-  const protocol =
-    match.protocolData && typeof match.protocolData === "object"
-      ? (match.protocolData as Record<string, unknown>)
-      : {};
   const technicalWinnerTeamEntryId =
     match.resultType === "TECHNICAL" &&
     typeof protocol.technicalWinnerTeamEntryId === "string"

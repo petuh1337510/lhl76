@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
 import { useEffect, useState } from "react";
@@ -91,7 +92,7 @@ export default function NewsAdminPage() {
     <div className="competitionHead newsAdminHeading"><div><span>КОНТЕНТ САЙТА</span><h2>Новости</h2><p>Создавай публикации с полноценным текстом, обложкой, фотогалереей и видео. На сайте отображаются только опубликованные материалы.</p></div><button onClick={() => setDraft({ ...emptyDraft })}>+ СОЗДАТЬ НОВОСТЬ</button></div>
     {error ? <p className="formError">{error}</p> : null}
 
-    {draft && <section className="newsEditor">
+    {draft && <AdminModal title={draft.id ? "Редактировать новость" : "Новая новость"} onClose={() => setDraft(null)} wide><section className="newsEditor">
       <header><div><span>{draft.id ? "РЕДАКТИРОВАНИЕ" : "НОВАЯ ПУБЛИКАЦИЯ"}</span><h2>{draft.title || "Без названия"}</h2></div><button onClick={() => setDraft(null)}>Закрыть ×</button></header>
       <div className="newsEditorGrid"><div className="newsEditorFields">
         <label>Заголовок<input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Например: Старт нового сезона ЛХЛ-76" /></label>
@@ -104,7 +105,7 @@ export default function NewsAdminPage() {
         <section><h3>Видео</h3><p>Загрузи MP4, WEBM или MOV до 150 МБ либо вставь внешнюю ссылку.</p>{draft.videoUrl && draft.videoUrl.startsWith("/uploads/") ? <video className="newsVideoPreview" src={draft.videoUrl} controls /> : null}<input value={draft.videoUrl} onChange={(event) => setDraft({ ...draft, videoUrl: event.target.value })} placeholder="https://vkvideo.ru/… или YouTube"/><label className="newsFileButton secondary">{uploading === "video" ? "Загружаю…" : "Загрузить видеофайл"}<input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => event.target.files?.[0] && upload(event.target.files[0], "video")}/></label>{draft.videoUrl ? <button className="newsRemoveMedia" onClick={() => setDraft({ ...draft, videoUrl: "" })}>Убрать видео</button> : null}</section>
       </aside></div>
       <footer><button onClick={() => setDraft(null)}>Отмена</button><button disabled={saving || Boolean(uploading)} onClick={save}>{saving ? "СОХРАНЯЮ…" : draft.status === "PUBLISHED" ? "СОХРАНИТЬ И ОПУБЛИКОВАТЬ" : "СОХРАНИТЬ ЧЕРНОВИК"}</button></footer>
-    </section>}
+    </section></AdminModal>}
 
     <section className="newsAdminList"><header><span>ПУБЛИКАЦИИ</span><small>{items.length} материалов</small></header>{items.length ? items.map((item) => <article key={item.id}>{item.imageUrl ? <div className="newsThumb hasImage"><PublicImage sizes="(max-width: 700px) 90vw, 320px" src={item.imageUrl} alt=""/></div> : <div className="newsThumb">ЛХЛ<br/>76</div>}<div><em>{item.category}</em><h3>{item.title}</h3><p>{item.excerpt}</p><small>{item.body ? "Полный текст" : "Только анонс"}{item.videoUrl ? " · Видео" : ""}{galleryOf(item.gallery).length ? ` · Фото: ${galleryOf(item.gallery).length}` : ""}</small></div><time>{item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("ru-RU") : "Не опубликована"}</time><span className={item.isPublished ? "published" : "draft"}>{item.isPublished ? "Опубликовано" : "Черновик"}</span><div className="newsRowActions"><button onClick={() => edit(item)}>Редактировать</button><button onClick={() => toggle(item)}>{item.isPublished ? "Снять" : "Опубликовать"}</button></div></article>) : <p className="registryEmpty">Новостей в базе пока нет. Создай первую публикацию кнопкой выше.</p>}</section>
   </section></main>;

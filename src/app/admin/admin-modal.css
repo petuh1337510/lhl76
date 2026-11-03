@@ -1,0 +1,205 @@
+.adminUI .adminModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #07111fcc;
+  box-sizing: border-box;
+}
+
+.adminUI[data-theme="light"] .adminModalBackdrop { background: #10233a99; }
+.adminUI .adminModalMount { display: contents; }
+
+.adminUI .adminModalPanel {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  border: 1px solid var(--admin-line);
+  border-radius: 18px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  box-shadow: 0 28px 80px #0209148c;
+  scrollbar-color: var(--admin-line) var(--admin-surface);
+}
+
+.adminUI .adminModalPanelWide { width: min(980px, 100%); }
+
+.adminUI .adminModalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--admin-line);
+  border-radius: 50%;
+  background: var(--admin-surface-raised);
+  color: var(--admin-ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.adminUI .adminModalClose:hover { border-color: var(--admin-accent); color: var(--admin-link); }
+.adminUI .adminModalClose:focus-visible { outline: 3px solid var(--admin-accent); outline-offset: 2px; }
+
+.adminUI .adminContent .adminModalPanel :is(.adminForm,.newsEditor,.mediaEditor,.documentEditor,.leagueAdminEditor,.suspensionEditor) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.adminUI .adminContent .adminModalPanel .adminForm { padding: 26px; }
+.adminUI .adminContent .adminModalPanel .adminForm > h2:first-child { padding-right: 44px; margin-top: 0; }
+.adminUI .adminContent .adminModalPanel :is(.newsEditor,.mediaEditor,.documentEditor,.leagueAdminEditor) > header { padding-right: 66px; }
+.adminUI .adminContent .adminModalPanel :is(.newsEditor,.mediaEditor,.documentEditor,.leagueAdminEditor) > header > button { display: none; }
+.adminUI .adminContent .adminModalPanel .leagueAdminEditorHead { padding-right: 48px; }
+.adminUI .adminContent .adminModalPanel .leagueAdminEditorHead > button { display: none; }
+.adminUI .adminContent .adminModalPanel .suspensionEditor { padding: 26px; }
+.adminUI .adminContent .adminModalPanel .competitionModalForm {
+  margin: 0;
+  padding: 26px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.adminUI .adminContent .adminModalPanel .competitionModalForm > h2:first-child { margin-top: 0; padding-right: 44px; }
+.adminUI .adminContent .adminModalPanel .competitionModalActions { justify-content: flex-end; padding-top: 14px; border-top: 1px solid var(--admin-line-soft); }
+.adminUI .adminContent .adminModalPanel .competitionModalActions button[type="submit"] { border-color: var(--admin-accent); background: var(--admin-accent); color: #fff; font-weight: 700; }
+.adminUI .adminContent .adminModalPanel :is(.adminForm,.newsEditor,.mediaEditor,.documentEditor,.leagueAdminEditor,.suspensionEditor) > footer {
+  justify-content: flex-end;
+  margin: 20px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--admin-line-soft);
+  background: var(--admin-surface);
+}
+
+.adminUI[data-theme="dark"] .adminModalPanel .playoffCreateToggle {
+  background: var(--admin-surface-raised);
+  border-color: var(--admin-line);
+  color: var(--admin-ink);
+}
+.adminUI[data-theme="dark"] .adminModalPanel .playoffCreateToggle :is(span,b) { color: var(--admin-muted); }
+.adminUI[data-theme="dark"] .adminModalPanel .mediaUpload { background: var(--admin-surface-raised); border-color: var(--admin-line); }
+.adminUI[data-theme="dark"] .adminModalPanel .mediaUpload > span { color: var(--admin-ink); }
+.adminUI[data-theme="dark"] .adminModalPanel .mediaUpload > a { background: var(--admin-surface); border-color: var(--admin-line); }
+.adminUI[data-theme="dark"] .adminModalPanel .mediaUpload small { color: var(--admin-muted); }
+.adminUI[data-theme="dark"] .adminModalPanel .mediaUpload input::file-selector-button { background: var(--admin-surface); border-color: var(--admin-line); color: var(--admin-ink); }
+.adminUI[data-theme="dark"] .adminModalPanel .documentPublish { background: var(--admin-surface-raised); border-color: var(--admin-line); color: var(--admin-ink); }
+.adminUI[data-theme="dark"] .adminModalPanel .documentPublish :is(span,b) { color: var(--admin-ink); }
+.adminUI[data-theme="dark"] .adminModalPanel .documentPublish small { color: var(--admin-muted); }
+
+.adminUI .matchRosterPicker > header { border-bottom: 1px solid var(--admin-line-soft); }
+.adminUI .matchRosterTeamCards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px 20px 20px; }
+.adminUI .adminContent .matchRosterTeamCard { display: grid; gap: 7px; width: 100%; min-width: 0; padding: 18px 20px; text-align: left; border: 1px solid var(--admin-line); border-radius: 12px; background: var(--admin-surface-raised); color: var(--admin-ink); cursor: pointer; }
+.adminUI .adminContent .matchRosterTeamCard:hover { border-color: var(--admin-accent); }
+.adminUI .adminContent .matchRosterTeamCard:focus-visible { outline: 3px solid var(--admin-accent); outline-offset: 2px; }
+.adminUI .matchRosterTeamName { font-size: 18px; font-weight: 800; }
+.adminUI .matchRosterTeamCount { color: var(--admin-muted); font-size: 13px; }
+.adminUI .matchRosterTeamCard strong { margin-top: 4px; color: var(--admin-link); font-size: 13px; }
+
+.adminUI .matchRosterModal { padding: 26px; }
+.adminUI .matchRosterModal > header { padding-right: 44px; }
+.adminUI .matchRosterModal > header > span { color: var(--admin-muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.adminUI .matchRosterModal h2 { margin: 5px 0 6px; color: var(--admin-ink); font-size: 25px; }
+.adminUI .matchRosterModal > header p { margin: 0; color: var(--admin-muted); font-size: 14px; line-height: 1.5; }
+.adminUI .matchRosterModalTools { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 20px 0 14px; }
+.adminUI .matchRosterModalTools label { display: grid; gap: 6px; flex: 1; max-width: 440px; color: var(--admin-muted); font-size: 12px; font-weight: 700; }
+.adminUI .matchRosterModalTools input,.adminUI .matchRosterModalNumber input { min-height: 42px; padding: 9px 12px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-surface-raised); color: var(--admin-ink); font: inherit; box-sizing: border-box; }
+.adminUI .matchRosterModalTools input { width: 100%; }
+.adminUI .matchRosterModalTools b { padding-bottom: 11px; white-space: nowrap; color: var(--admin-ink); font-size: 13px; }
+.adminUI .matchRosterModalList { max-height: min(50dvh, 530px); overflow: auto; border: 1px solid var(--admin-line); border-radius: 10px; scrollbar-color: var(--admin-line) var(--admin-surface); }
+.adminUI .matchRosterModalRow { display: grid; grid-template-columns: minmax(0, 1fr) 118px; gap: 12px; align-items: center; min-height: 64px; padding: 10px 16px; border-bottom: 1px solid var(--admin-line-soft); }
+.adminUI .matchRosterModalRow:last-child { border-bottom: 0; }
+.adminUI .matchRosterModalRow:nth-child(even) { background: var(--admin-surface-raised); }
+.adminUI .matchRosterModalPlayer { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; }
+.adminUI .matchRosterModalPlayer input { width: 18px; height: 18px; flex: 0 0 18px; accent-color: var(--admin-accent); }
+.adminUI .matchRosterModalPlayer span { display: grid; gap: 3px; min-width: 0; }
+.adminUI .matchRosterModalPlayer strong { overflow-wrap: anywhere; color: var(--admin-ink); font-size: 14px; }
+.adminUI .matchRosterModalPlayer small { color: var(--admin-muted); font-size: 12px; }
+.adminUI .matchRosterModalNumber { display: grid; gap: 5px; color: var(--admin-muted); font-size: 11px; font-weight: 700; }
+.adminUI .matchRosterModalNumber input { width: 100%; text-align: center; font-size: 15px; font-weight: 700; }
+.adminUI .matchRosterModalNumber input:disabled { opacity: .6; }
+.adminUI .matchRosterModalEmpty { margin: 0; padding: 24px 16px; color: var(--admin-muted); }
+.adminUI .matchRosterModal > footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--admin-line-soft); }
+.adminUI .adminContent .matchRosterModal > footer button { min-height: 42px; padding: 9px 16px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-surface-raised); color: var(--admin-ink); cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+.adminUI .adminContent .matchRosterModal > footer button:last-child { border-color: var(--admin-accent); background: var(--admin-accent); color: var(--admin-accent-ink); }
+.adminUI .adminContent .matchRosterModal > footer button:disabled { opacity: .6; cursor: wait; }
+
+.adminUI .adminContent .goalProtocolForm { padding: 26px; }
+.adminUI .adminContent .goalProtocolForm > h2 { margin-bottom: 18px; }
+.adminUI .goalRosterHint { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-surface-raised); color: var(--admin-muted); font-size: 13px; }
+.adminUI .adminContent .goalProtocolForm > .goalEntryTabs { display: flex; grid-template-columns: none; gap: 6px; margin-bottom: 18px; padding: 4px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface-raised); }
+.adminUI .goalEntryTabs button { flex: 1; min-height: 40px; border: 0; border-radius: 7px; background: transparent; color: var(--admin-muted); cursor: pointer; font: inherit; font-size: 13px; font-weight: 800; }
+.adminUI .goalEntryTabs button[aria-selected="true"] { background: var(--admin-accent); color: var(--admin-accent-ink); box-shadow: 0 2px 7px #06152a22; }
+.adminUI .goalEntryTabs button:focus-visible,.adminUI .goalNumberTile:focus-visible { outline: 3px solid var(--admin-accent); outline-offset: 2px; }
+.adminUI .adminContent .goalProtocolForm > .goalNameFields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.adminUI .adminContent .goalProtocolForm > .goalNumberMode { display: block; }
+.adminUI .goalNumberMode > p { margin: 0 0 14px; color: var(--admin-muted); font-size: 13px; line-height: 1.5; }
+.adminUI .goalNumberRoles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-bottom: 16px; }
+.adminUI .goalNumberRoles > div { display: grid; align-content: start; gap: 5px; min-height: 58px; padding: 10px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-surface-raised); }
+.adminUI .goalNumberRoles > div:first-child { border-top: 3px solid #c84151; }
+.adminUI .goalNumberRoles > div:not(:first-child) { border-top: 3px solid #d6a436; }
+.adminUI .goalNumberRoles span { color: var(--admin-muted); font-size: 11px; font-weight: 700; }
+.adminUI .goalNumberRoles strong { overflow-wrap: anywhere; color: var(--admin-ink); font-size: 12px; }
+.adminUI .goalNumberGrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; max-height: min(34dvh, 300px); overflow: auto; padding: 3px 3px 8px; scrollbar-color: var(--admin-line) var(--admin-surface); }
+.adminUI .goalNumberTile { display: grid; align-content: center; justify-items: center; gap: 5px; min-height: 72px; padding: 8px 4px; border: 1px solid var(--admin-line); border-top: 3px solid var(--admin-accent); border-radius: 9px; background: var(--admin-surface-raised); color: var(--admin-ink); cursor: pointer; }
+.adminUI .goalNumberTile b { font-size: 23px; line-height: 1; font-variant-numeric: tabular-nums; }
+.adminUI .goalNumberTile small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.adminUI .goalNumberTile.is-scorer { border-color: #b9364d; background: #b9364d; color: #fff; }
+.adminUI .goalNumberTile.is-assist { border-color: #deb044; background: #deb044; color: #172338; }
+.adminUI .goalNumberTile.is-penalty { border-color: #b9364d; background: #b9364d; color: #fff; }
+.adminUI .goalNumberTile.is-scorer small { color: #fff; }
+.adminUI .goalNumberTile.is-assist small { color: #172338; }
+.adminUI .goalNumberTile.is-penalty small { color: #fff; }
+.adminUI .goalNumberTile:disabled { opacity: .45; cursor: not-allowed; }
+.adminUI .goalNumberEmpty { padding: 16px; border: 1px dashed var(--admin-line); border-radius: 9px; }
+.adminUI .adminContent .goalProtocolForm > .goalCommonFields { display: grid; grid-template-columns: 150px 150px minmax(0, 1fr); gap: 12px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--admin-line-soft); }
+.adminUI .goalCommonFields label:last-child:nth-child(4) { grid-column: 1 / -1; }
+.adminUI .goalCommonFields input { width: 100%; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+.adminUI .adminContent .penaltyProtocolForm > .penaltyTargetChoice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.adminUI .penaltyTargetChoice button { min-height: 52px; padding: 10px 14px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface-raised); color: var(--admin-ink); cursor: pointer; font: inherit; font-size: 14px; font-weight: 800; text-align: left; }
+.adminUI .penaltyTargetChoice button.active { border-color: var(--admin-accent); background: var(--admin-accent); color: var(--admin-accent-ink); }
+.adminUI .penaltyTargetChoice button:focus-visible { outline: 3px solid var(--admin-accent); outline-offset: 2px; }
+.adminUI .penaltyTeamHint { margin: 0 0 18px; padding: 13px 15px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-surface-raised); color: var(--admin-muted); font-size: 13px; line-height: 1.5; }
+.adminUI .adminContent .penaltyProtocolForm > .penaltyNameFields { display: block; }
+.adminUI .penaltyNameFields label { max-width: 480px; }
+.adminUI .adminContent .penaltyProtocolForm > .penaltyCommonFields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--admin-line-soft); }
+.adminUI .penaltyCommonFields .penaltyReasonField { grid-column: 1 / -1; }
+.adminUI .penaltyCommonFields input { width: 100%; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 600px) {
+  .adminUI .adminModalBackdrop { padding: 8px; }
+  .adminUI .adminModalPanel { max-height: calc(100dvh - 16px); border-radius: 13px; }
+  .adminUI .adminContent .adminModalPanel .adminForm { padding: 20px 16px; }
+  .adminUI .adminContent .adminModalPanel .competitionModalForm { padding: 20px 16px; }
+  .adminUI .adminModalClose { top: 12px; right: 12px; }
+  .adminUI .matchRosterTeamCards { grid-template-columns: 1fr; padding: 14px; }
+  .adminUI .matchRosterModal { padding: 20px 16px; }
+  .adminUI .matchRosterModalTools { align-items: stretch; flex-direction: column; gap: 6px; }
+  .adminUI .matchRosterModalTools label { max-width: none; }
+  .adminUI .matchRosterModalTools b { padding: 0; }
+  .adminUI .matchRosterModalRow { grid-template-columns: minmax(0, 1fr) 90px; gap: 8px; padding: 10px; }
+  .adminUI .matchRosterModalPlayer { gap: 8px; }
+  .adminUI .adminContent .goalProtocolForm { padding: 20px 16px; }
+  .adminUI .adminContent .goalProtocolForm > .goalNameFields,.adminUI .adminContent .goalProtocolForm > .goalCommonFields { grid-template-columns: 1fr; gap: 4px; }
+  .adminUI .goalNumberRoles { grid-template-columns: 1fr; }
+  .adminUI .goalNumberRoles > div { min-height: 0; }
+  .adminUI .goalNumberGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); max-height: 260px; }
+  .adminUI .goalCommonFields label:last-child:nth-child(4) { grid-column: auto; }
+  .adminUI .adminContent .penaltyProtocolForm > .penaltyTargetChoice { grid-template-columns: 1fr; }
+  .adminUI .adminContent .penaltyProtocolForm > .penaltyCommonFields { grid-template-columns: 1fr; gap: 4px; }
+  .adminUI .penaltyCommonFields .penaltyReasonField { grid-column: auto; }
+}
