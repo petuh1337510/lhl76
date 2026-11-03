@@ -2,6 +2,8 @@ name: Build and deploy LHL-76
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -22,6 +24,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || (github.actor == 'petuh1337510' && github.event.head_commit.message == 'Run LHL-76 one-time local database replacement deployment')
     runs-on: ubuntu-latest
     permissions:
       contents: read
