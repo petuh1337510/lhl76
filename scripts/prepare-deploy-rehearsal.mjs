@@ -15,6 +15,8 @@ fs.cpSync(path.join(backup,'public-files'),path.join(destination,'public'),{recu
 // junctions break Next's Windows entrypoint resolution. Never copy a live .env.
 const working=new URL(process.env.DATABASE_URL),role=working.username;
 if(!/^lhl_app_\d+$/.test(role))throw Error('Unexpected application role');
+execFileSync('docker',['cp',path.join(source,'scripts/migrations/20261105-admin-usernames.sql'),report.target.container+':/tmp/20261105-admin-usernames.sql'],{stdio:'pipe'});
+execFileSync('docker',['exec',report.target.container,'psql','-U',report.target.user,'-d',report.target.database,'-v','ON_ERROR_STOP=1','-f','/tmp/20261105-admin-usernames.sql'],{stdio:'pipe'});
 execFileSync('docker',['exec',report.target.container,'psql','-U',report.target.user,'-d',report.target.database,'-v','ON_ERROR_STOP=1','-c',`GRANT USAGE ON SCHEMA public TO "${role}"; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO "${role}"; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO "${role}";`],{stdio:'pipe'});
 fs.writeFileSync(path.join(destination,'rehearsal.json'),JSON.stringify({source,backup,target:report.target,applicationPort:3020,preparedAt:new Date().toISOString()},null,2),{flag:'wx'});
 console.log(JSON.stringify({destination,database:report.target.database,port:3020,workingConnectionChanged:false}));

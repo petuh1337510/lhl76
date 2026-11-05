@@ -8,7 +8,7 @@ type AdminTheme = "dark" | "light";
 const sectionNames: Record<string, string> = {
   admin: "Обзор", seasons: "Сезоны", competitions: "Соревнования", matches: "Матчи и календарь",
   teams: "Команды", team: "Команда", "team-roster": "Заявки команд", players: "Игроки",
-  player: "Игрок", suspensions: "Дисквалификации", news: "Новости", media: "Медиагалерея",
+  player: "Игрок", suspensions: "Дисквалификации", news: "Новости", media: "Медиагалерея", "media-files": "Медиафайлы",
   broadcasts: "Трансляции", laureates: "Лауреаты", venues: "Стадионы",
   "homepage-content": "Главная страница", "league-page": "О лиге", "content-library": "Документы",
   users: "Пользователи", audit: "Контроль данных", standings: "Турнирные таблицы",

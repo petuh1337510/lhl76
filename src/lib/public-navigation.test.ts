@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { choice, pageNumber, safeReturn, withReturn } from "./public-navigation";
+import { choice, pageNumber, safeReturn, withPublicQuery, withReturn } from "./public-navigation";
 describe("public navigation", () => {
   it("validates tabs and restores valid state", () => {
     expect(choice("calendar", "table", ["table", "calendar"])).toBe("calendar");
@@ -16,5 +16,9 @@ describe("public navigation", () => {
   it("preserves filters without nesting return links", () => {
     const result = new URL(withReturn("/player/test", "/team/a?tab=roster&from=%2Fnews"), "https://local.invalid");
     expect(result.searchParams.get("from")).toBe("/team/a?tab=roster");
+  });
+  it("makes a tab link usable before hydration without dropping the selected competition", () => {
+    expect(withPublicQuery("/team/volki?competition=abc&tab=about#roster", "tab", "roster"))
+      .toBe("/team/volki?competition=abc&tab=roster#roster");
   });
 });

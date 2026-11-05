@@ -9,6 +9,8 @@ const database='playoff_test_'+Date.now(),remote='/tmp/'+database+'.dump';
 run(['cp',backup+'/database.dump',container+':'+remote]);run(['exec',container,'createdb','-U','reconcile_owner',database]);
 run(['exec',container,'pg_restore','-U','reconcile_owner','-d',database,'--exit-on-error','--no-owner','--no-privileges',remote]);
 run(['exec',container,'psql','-U','reconcile_owner','-d',database,'-v','ON_ERROR_STOP=1','-c',fs.readFileSync('scripts/migrations/20261029-playoff.sql','utf8')]);
+run(['cp','scripts/migrations/20261105-admin-usernames.sql',container+':/tmp/'+database+'-auth.sql']);
+run(['exec',container,'psql','-U','reconcile_owner','-d',database,'-v','ON_ERROR_STOP=1','-f','/tmp/'+database+'-auth.sql']);
 const password=config.Config.Env.find(x=>x.startsWith('POSTGRES_PASSWORD=')).slice(18);
 const url=`postgresql://reconcile_owner:${encodeURIComponent(password)}@127.0.0.1:55433/${database}`;
 const db=new PrismaClient({datasourceUrl:url});
@@ -19,8 +21,8 @@ function check(name,ok){report.push({name,ok});console.log(name+': '+(ok?'PASS':
 try{
   for(let i=0;i<60;i++){try{if((await request('/api/health')).ok)break}catch{}await new Promise(r=>setTimeout(r,500))}
   const pw=randomBytes(24).toString('hex'),salt=randomBytes(16);
-  user=await db.user.create({data:{email:database+'@test.invalid',name:'Isolated playoff test',role:'ADMIN',passwordHash:`scrypt:${salt.toString('hex')}:${scryptSync(pw,salt,64).toString('hex')}`}});
-  const login=await request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:user.email,password:pw})});check('login',login.ok);
+  user=await db.user.create({data:{username:database,email:database+'@test.invalid',name:'Isolated playoff test',role:'ADMIN',passwordHash:`scrypt:${salt.toString('hex')}:${scryptSync(pw,salt,64).toString('hex')}`}});
+  const login=await request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username:user.username,password:pw})});check('login',login.ok);
   const headers={Origin:base,'Content-Type':'application/json',Cookie:login.headers.get('set-cookie').split(';')[0]};
   const season=await db.season.findFirstOrThrow({where:{isActive:true}});
   const competition=await db.competition.create({data:{seasonId:season.id,name:'Проверка сетки',slug:database,type:'TOURNAMENT'}});

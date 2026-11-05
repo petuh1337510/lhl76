@@ -8,7 +8,19 @@ async function handleGET(request: NextRequest) {
   const teamEntryId = request.nextUrl.searchParams.get("teamEntryId");
   const choices = request.nextUrl.searchParams.get("choices");
   if (choices) {
-    const entries = await prisma.teamEntry.findMany({ include: { team: true, division: { include: { competition: { include: { season: true } } } } }, orderBy: { team: { name: "asc" } } });
+    const entries = await prisma.teamEntry.findMany({ include: { team: true, division: { include: { competition: { include: { season: true } } } } } });
+    entries.sort((left, right) => {
+      const leftCompetition = left.division.competition;
+      const rightCompetition = right.division.competition;
+      return rightCompetition.season.startsAt.getTime() - leftCompetition.season.startsAt.getTime()
+        || Number(leftCompetition.type === "TOURNAMENT") - Number(rightCompetition.type === "TOURNAMENT")
+        || leftCompetition.sortOrder - rightCompetition.sortOrder
+        || leftCompetition.name.localeCompare(rightCompetition.name, "ru")
+        || left.division.sortOrder - right.division.sortOrder
+        || left.division.name.localeCompare(right.division.name, "ru")
+        || left.team.name.localeCompare(right.team.name, "ru")
+        || left.id.localeCompare(right.id);
+    });
     return NextResponse.json(entries.map((entry) => ({
       id: entry.id,
       team: entry.team.name,

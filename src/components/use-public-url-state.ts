@@ -1,5 +1,6 @@
 "use client";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { SetStateAction, KeyboardEvent } from "react";
 import { choice, pageNumber } from "@/lib/public-navigation";
 
@@ -19,8 +20,18 @@ function update(key: string, value: (current: string | null) => string) {
 }
 export function usePublicChoice<T extends string>(key: string, fallback: T, allowed: readonly T[]) {
   const params = useSearchParams();
-  const value = choice(params.get(key), fallback, allowed);
-  const setValue = (next: SetStateAction<T>) => update(key, current => typeof next === "function" ? next(choice(current, fallback, allowed)) : next);
+  const paramValue = params.get(key);
+  const [optimistic, setOptimistic] = useState<T | null>(null);
+  useEffect(() => { if (optimistic !== null && paramValue === optimistic) setOptimistic(null); }, [optimistic, paramValue]);
+  const value = choice(optimistic ?? paramValue, fallback, allowed);
+  const setValue = (next: SetStateAction<T>) => {
+    let resolved = fallback;
+    update(key, current => {
+      resolved = typeof next === "function" ? next(choice(current, fallback, allowed)) : next;
+      return resolved;
+    });
+    setOptimistic(resolved);
+  };
   return [value, setValue] as const;
 }
 export function usePublicPage(key: string, maximum: number) {
@@ -37,8 +48,8 @@ export function usePublicLocation() {
 
 export function handleTabKeys(event: KeyboardEvent<HTMLElement>) {
   if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-  const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="tab"]'));
-  const current = tabs.indexOf(event.target as HTMLButtonElement);
+  const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]'));
+  const current = tabs.indexOf(event.target as HTMLElement);
   if (current < 0 || !tabs.length) return;
   event.preventDefault();
   const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;

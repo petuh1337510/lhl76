@@ -603,7 +603,10 @@ html,body{max-width:100%;overflow-x:clip}
 .playerHistory.goalkeeper>div,.playerHistory.goalkeeper>a{grid-template-columns:1.1fr 2fr 90px}
 .playerHistory.goalkeeper>div>span:last-child,.playerHistory.goalkeeper>a>span:last-child{text-align:center}
 .playerHistory.goalkeeperDetailed>div,.playerHistory.goalkeeperDetailed>a{grid-template-columns:1.25fr 1.7fr repeat(6,62px)}
-.playerPublic .playerContent{margin-top:24px}
+.playerPublic .playerContent{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px;background:transparent;border:0!important;border-radius:0;box-shadow:none;overflow:visible}
+.playerPublic .playerContent .tableScrollHint{padding:0}
+.playerPublic .playerHistoryBlock{background:#fff;border:1px solid var(--public-border);border-radius:15px;box-shadow:0 9px 26px #08244a0b;overflow-x:auto}
+.playerPublic .playerHistoryTitle>h2{margin:0;color:var(--ink);font:900 21px var(--font-condensed)}
 .playerHistoryTeam{display:flex;align-items:center;gap:11px;min-width:0}
 .playerHistory>div{height:48px;font-size:11px}
 .playerHistory>a{min-height:76px;font-size:15px}
@@ -928,3 +931,23 @@ body:has(.inlineSiteFooter) .globalPublicFooter{display:none}
 .playerSuspensionNotice small{display:block;color:#f2c8d2;font-size:11px;line-height:1.5}
 @media(max-width:850px){.assignmentTable .playerAssignmentEditor{grid-template-columns:1fr 1fr}.playerAssignmentIdentity{grid-column:1/-1}}
 @media(max-width:650px){.adminPlayer .playerInfo{grid-template-columns:repeat(2,minmax(0,1fr))}.assignmentTable .playerAssignmentEditor{grid-template-columns:1fr}}
+
+/* Give long team names room before allowing a wrap. */
+.teamProfile .teamIdentity{grid-template-columns:minmax(0,1fr) minmax(230px,400px) minmax(0,1fr)!important}
+.teamProfile .teamIdentityCenter{min-width:0}
+.teamProfile .teamIdentityCenter h1{max-width:100%;font-size:clamp(30px,3.6vw,45px)!important;line-height:1.04!important;overflow-wrap:anywhere;text-wrap:balance}
+.leagueTeamCard strong{overflow-wrap:anywhere}
+@media(max-width:700px){.teamProfile .teamIdentity{grid-template-columns:minmax(0,1fr)!important}.teamProfile .teamIdentityCenter h1{font-size:clamp(30px,8vw,39px)!important}}
+
+/* Slide one match card at a time while keeping the neighboring cards clipped. */
+.matchCarouselViewport{overflow:hidden}
+.matchCarousel .matchGrid{--matchStep:calc((100% + 12px) * .25);display:flex!important;gap:12px!important;margin:0!important;padding:0!important;overflow:visible!important;transform:translate3d(calc(-1 * var(--matchStep)),0,0)}
+.matchCarousel .matchGrid.isAnimating{transition:transform 420ms cubic-bezier(.22,1,.36,1)}
+.matchCarousel .matchGrid[data-direction="1"]{transform:translate3d(calc(-2 * var(--matchStep)),0,0)}
+.matchCarousel .matchGrid[data-direction="-1"]{transform:translate3d(0,0,0)}
+.matchCarousel .matchGrid>.match{display:block!important;flex:0 0 calc((100% - 36px) * .25);min-width:0;width:auto}
+.matchCarousel .matchGrid.isEmpty{transform:none}
+.matchCarousel .matchGrid.isEmpty .homeSectionEmpty{width:100%}
+@media(max-width:900px){.matchCarousel .matchGrid{--matchStep:calc((100% + 12px) * .5)}.matchCarousel .matchGrid>.match{flex-basis:calc((100% - 12px) * .5)}}
+@media(max-width:700px){.matchCarousel .matchGrid{--matchStep:calc(100% + 12px)}.matchCarousel .matchGrid>.match{flex-basis:100%;width:auto}}
+@media(prefers-reduced-motion:reduce){.matchCarousel .matchGrid.isAnimating{transition:none}}

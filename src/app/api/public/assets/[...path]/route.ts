@@ -10,7 +10,7 @@ const mime: Record<string, string> = { ".jpg": "image/jpeg", ".jpeg": "image/jpe
 
 export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const segments = (await context.params).path;
-  if (!segments.length || segments.some((part) => !/^[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9]+)?$/.test(part)) ||
+  if (!segments.length || segments.some((part) => part === "." || part === ".." || !/^[\p{L}\p{N}._-]+$/u.test(part)) ||
       !(segments[0] === "uploads" || segments[0] === "images" && segments[1] === "optimized")) {
     return new Response(null, { status: 404 });
   }

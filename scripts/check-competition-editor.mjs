@@ -12,6 +12,8 @@ run(['cp','backups/approved-2026-10-29T09-48-00-405Z/database.dump',container+':
 run(['exec',container,'createdb','-U','reconcile_owner',database]);
 run(['exec',container,'pg_restore','-U','reconcile_owner','-d',database,'--exit-on-error','--no-owner','--no-privileges',remote]);
 run(['exec',container,'psql','-U','reconcile_owner','-d',database,'-v','ON_ERROR_STOP=1','-c',readFileSync('scripts/migrations/20261029-playoff.sql','utf8')]);
+run(['cp','scripts/migrations/20261105-admin-usernames.sql',container+':/tmp/'+database+'-auth.sql']);
+run(['exec',container,'psql','-U','reconcile_owner','-d',database,'-v','ON_ERROR_STOP=1','-f','/tmp/'+database+'-auth.sql']);
 const password=config.Config.Env.find(x=>x.startsWith('POSTGRES_PASSWORD=')).slice(18);
 const url=`postgresql://reconcile_owner:${encodeURIComponent(password)}@127.0.0.1:55433/${database}`;
 if(!database.startsWith('competition_editor_'))throw Error('Unsafe target');
@@ -25,8 +27,8 @@ try{
   for(let i=0;i<60;i++){try{if((await request('/api/health')).ok)break}catch{}await new Promise(r=>setTimeout(r,500))}
   check('anonymous rejected',(await request('/api/admin/competitions')).status===401);
   const pw=randomBytes(24).toString('hex'),salt=randomBytes(16);
-  user=await db.user.create({data:{name:'Isolated competition test',email:database+'@test.invalid',role:'ADMIN',passwordHash:`scrypt:${salt.toString('hex')}:${scryptSync(pw,salt,64).toString('hex')}`}});
-  const login=await request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:user.email,password:pw})});
+  user=await db.user.create({data:{name:'Isolated competition test',username:database,email:database+'@test.invalid',role:'ADMIN',passwordHash:`scrypt:${salt.toString('hex')}:${scryptSync(pw,salt,64).toString('hex')}`}});
+  const login=await request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username:user.username,password:pw})});
   check('admin login',login.ok);
   const headers={Cookie:login.headers.get('set-cookie').split(';')[0],Origin:base,'Content-Type':'application/json'};
   const call=(method,body,override={})=>request('/api/admin/competitions',{method,headers:{...headers,...override},...(body?{body:JSON.stringify(body)}:{})});

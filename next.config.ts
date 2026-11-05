@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: process.env.NEXT_STANDALONE === '1' ? 'standalone' : undefined,
-  distDir: process.env.NEXT_DIST_DIR || ".next",
+  distDir: process.env.NEXT_DIST_DIR || (process.env.NODE_ENV === "development" ? ".next-dev" : ".next"),
   images: {
     localPatterns:[{pathname:'/images/**',search:''},{pathname:'/uploads/**',search:''},{pathname:'/legacy-media/**',search:''},{pathname:'/api/public/legacy-media'},{pathname:'/api/public/remote-image'},{pathname:'/icon.png',search:''}],
     remotePatterns: [],

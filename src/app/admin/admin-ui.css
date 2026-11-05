@@ -70,6 +70,8 @@
 .adminUI .playerAdminHead{flex-wrap:wrap}
 .adminUI .playerAdminHead>div:not(.playerPhoto){flex:1;min-width:150px}
 .adminUI .adminContent .usersList h3{font-size:15px}
+.adminUI .usersList article>footer{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.adminUI .usersList article>footer button{padding:4px 0;cursor:pointer}
 .adminUI .auditList :is(time,small,strong,summary,code),.adminUI .auditList article>span{font-size:12px;line-height:1.5}
 .adminUI .auditList article>div b{font-size:13px}
 .adminUI .auditList article{grid-template-columns:125px minmax(130px,1fr) 95px 125px minmax(100px,1fr) 75px}
@@ -91,7 +93,7 @@
   .adminUI .homeContentList article{grid-template-columns:150px minmax(0,1fr)}
   .adminUI .homeContentVisibility,.adminUI .homeContentActions{grid-column:2;justify-self:start}
   .adminUI .usersList article{grid-template-columns:44px minmax(0,1fr)}
-  .adminUI .usersList article>:is(b,span,button){grid-column:2;justify-self:start}
+  .adminUI .usersList article>:is(b,span,footer){grid-column:2;justify-self:start}
   .adminUI .adminContent :is(.teamEventColumns,.protocolRosterGrid,.protocolExtraGrid){grid-template-columns:minmax(0,1fr)}
   .adminUI .rosterAdminRow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .adminUI .rosterAdminPerson{grid-column:1/-1}

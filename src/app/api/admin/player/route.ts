@@ -26,7 +26,17 @@ function serialize(player: any, activeSuspensions: any[] = []) {
     rating: player.ratingCategory?.name ?? "",
     photoUrl: player.photoUrl ?? "",
     laureatePhotoUrl: player.laureatePhotoUrl ?? "",
-    assignments: player.rosterEntries.map((entry: any) => ({
+    assignments: [...player.rosterEntries]
+      .sort((left: any, right: any) => {
+        const leftCompetition = left.teamEntry.division.competition;
+        const rightCompetition = right.teamEntry.division.competition;
+        return rightCompetition.season.startsAt.getTime() - leftCompetition.season.startsAt.getTime()
+          || leftCompetition.name.localeCompare(rightCompetition.name, "ru")
+          || left.teamEntry.division.name.localeCompare(right.teamEntry.division.name, "ru")
+          || left.teamEntry.team.name.localeCompare(right.teamEntry.team.name, "ru")
+          || left.id.localeCompare(right.id);
+      })
+      .map((entry: any) => ({
       id: entry.id,
       updatedAt: entry.updatedAt.toISOString(),
       teamEntryId: entry.teamEntryId,
@@ -39,7 +49,7 @@ function serialize(player: any, activeSuspensions: any[] = []) {
       leadership: entry.leadership,
       status: entry.status === "INACTIVE" ? "INACTIVE" : activeSuspensions.length ? "SUSPENDED" : "ACTIVE",
       suspensions: activeSuspensions,
-    })),
+      })),
   };
 }
 

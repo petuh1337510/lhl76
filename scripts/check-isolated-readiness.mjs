@@ -9,6 +9,8 @@ const password=config.Config.Env.find(x=>x.startsWith('POSTGRES_PASSWORD=')).sli
 const source=new URL(process.env.DATABASE_URL);
 const url=new URL(`postgresql://audit_restore:${encodeURIComponent(password)}@127.0.0.1:55432/lhl76_safety_restored`);
 if(source.pathname===url.pathname||source.port===url.port||config.Name!=='/'+container)throw new Error('Isolation assertion failed');
+execFileSync('docker',['cp','scripts/migrations/20261105-admin-usernames.sql',container+':/tmp/20261105-admin-usernames.sql']);
+execFileSync('docker',['exec',container,'psql','-U','audit_restore','-d','lhl76_safety_restored','-v','ON_ERROR_STOP=1','-f','/tmp/20261105-admin-usernames.sql']);
 const db=new PrismaClient({datasourceUrl:url.href});
 const secret=randomBytes(48).toString('hex');
 const child=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-p','3001','-H','127.0.0.1'],{env:{...process.env,NODE_ENV:'production',NEXT_DIST_DIR:'.next-final-readiness',DATABASE_URL:url.href,AUTH_SECRET:secret,PUBLIC_SITE_URL:'https://lhl-76.ru',VK_API_ACCESS_TOKEN:'',RATE_LIMIT_DIR:'.runtime/isolated-limits-'+Date.now(),TRUST_PROXY_IP:'0'},stdio:['ignore','pipe','pipe']});
@@ -24,12 +26,12 @@ try{
  check('anonymous API',(await request('/api/admin/users')).status===401);
  check('anonymous admin redirect',[307,308].includes((await request('/admin')).status));
  check('cross origin rejected',(await request('/api/admin/auth/login',{method:'POST',headers:{Origin:'https://evil.invalid','Content-Type':'application/json'},body:'{}'})).status===403);
- const login=async(email,pw)=>request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
- const missing=await login('missing@audit.invalid','incorrect');check('generic invalid credentials',missing.status===401,{status:missing.status,body:await missing.text()});console.log('Login diagnostic',report.checks.at(-1).details);
+ const login=async(username,pw)=>request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username,password:pw})});
+ const missing=await login('missing-audit','incorrect');check('generic invalid credentials',missing.status===401,{status:missing.status,body:await missing.text()});console.log('Login diagnostic',report.checks.at(-1).details);
  const pw=randomBytes(24).toString('hex'),salt=randomBytes(16),hash=`scrypt:${salt.toString('hex')}:${scryptSync(pw,salt,64).toString('hex')}`;
  for(const role of ['SUPER_ADMIN','ADMIN','SECRETARY']){
-  const user=await db.user.create({data:{email:`${role.toLowerCase()}-${Date.now()}@audit.invalid`,name:'Isolated security check',role,passwordHash:hash,active:true}});users.push(user.id);
-  const response=await login(user.email,pw),cookie=response.headers.get('set-cookie');check(role+' login',response.status===200&&Boolean(cookie));
+  const user=await db.user.create({data:{username:`i-${role.toLowerCase()}-${Date.now()}`,email:`${role.toLowerCase()}-${Date.now()}@audit.invalid`,name:'Isolated security check',role,passwordHash:hash,active:true}});users.push(user.id);
+  const response=await login(user.username,pw),cookie=response.headers.get('set-cookie');check(role+' login',response.status===200&&Boolean(cookie));
   check(role+' cookie flags',cookie?.includes('HttpOnly')&&cookie?.includes('Secure')&&/SameSite=lax/i.test(cookie||''));
   const headers={Cookie:cookie?.split(';')[0]||'',Origin:base,'Content-Type':'application/json'};
   const list=await request('/api/admin/users',{headers});check(role+' users permissions',list.status===(role==='SUPER_ADMIN'?200:403));
@@ -55,16 +57,16 @@ try{
   check(role+' disabled session revoked',(await request('/api/admin/auth/me',{headers})).status===401);
   await db.user.update({where:{id:user.id},data:{active:true}});
   check(role+' old session remains revoked',(await request('/api/admin/auth/me',{headers})).status===401);
-  const fresh=await login(user.email,pw),freshHeaders={Cookie:fresh.headers.get('set-cookie').split(';')[0]};
+  const fresh=await login(user.username,pw),freshHeaders={Cookie:fresh.headers.get('set-cookie').split(';')[0]};
   await db.user.update({where:{id:user.id},data:{role:role==='SECRETARY'?'ADMIN':'SECRETARY'}});
   check(role+' changed role revokes session',(await request('/api/admin/auth/me',{headers:freshHeaders})).status===401);
-  const roleLogin=await login(user.email,pw),roleHeaders={Cookie:roleLogin.headers.get('set-cookie').split(';')[0]};
+  const roleLogin=await login(user.username,pw),roleHeaders={Cookie:roleLogin.headers.get('set-cookie').split(';')[0]};
   const replacementSalt=randomBytes(16);
   await db.user.update({where:{id:user.id},data:{passwordHash:`scrypt:${replacementSalt.toString('hex')}:${scryptSync(randomBytes(24),replacementSalt,64).toString('hex')}`}});
   check(role+' changed password revokes session',(await request('/api/admin/auth/me',{headers:roleHeaders})).status===401);
  }
  check('setup closed',(await request('/api/admin/auth/setup',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'})).status===409);
- const attempts=[];for(let i=0;i<11;i++)attempts.push((await login('rate-check@audit.invalid','bad')).status);check('login throttled',attempts.includes(429));
+ const attempts=[];for(let i=0;i<11;i++)attempts.push((await login('rate-check','bad')).status);check('login throttled',attempts.includes(429));
  for(const path of ['/','/news','/about','/documents','/media','/broadcasts','/venues','/teams','/tournaments','/laureates','/team/hctanki76?tab=roster','/player/egorov-artem','/competition/2026-27/championship/lyubitel-plyus','/robots.txt','/sitemap.xml','/icon.png','/apple-icon.png','/favicon.ico']){const r=await request(path);check('public '+path,r.status===200);if(path==='/sitemap.xml'){const xml=await r.text();check('sitemap origin and privacy',xml.includes('https://lhl-76.ru/')&&!xml.includes('localhost')&&!xml.includes('/admin'));}}
  const team=await db.team.findUnique({where:{slug:'hctanki76'},select:{teamPhotoUrl:true}});
  report.images=[];

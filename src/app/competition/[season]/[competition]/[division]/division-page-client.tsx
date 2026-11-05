@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef } from "react";
 import { usePublicChoice, usePublicPage, usePublicLocation, handleTabKeys } from "@/components/use-public-url-state";
-import { withReturn } from "@/lib/public-navigation";
+import { withPublicQuery, withReturn } from "@/lib/public-navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LiveMatchRefresh } from "@/components/live-match-refresh";
 import type { DivisionMatchTeam, DivisionPageData } from "@/lib/division-page";
@@ -238,27 +238,33 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
       </section>
       <section className="champContent">
         <div className="champTabs" role="tablist" aria-label="Разделы соревнования" onKeyDown={handleTabKeys}>
-          <button
+          <Link
+            href={withPublicQuery(location, "tab", "table")}
+            prefetch={false}
             className={tab === "table" ? "active" : ""}
             role="tab" aria-selected={tab === "table"}
-            onClick={() => setTab("table")}
+            onClick={(event) => { event.preventDefault(); setTab("table"); }}
           >
             Таблица
-          </button>
-          <button
+          </Link>
+          <Link
+            href={withPublicQuery(location, "tab", "calendar")}
+            prefetch={false}
             className={tab === "calendar" ? "active" : ""}
             role="tab" aria-selected={tab === "calendar"}
-            onClick={() => setTab("calendar")}
+            onClick={(event) => { event.preventDefault(); setTab("calendar"); }}
           >
             Календарь
-          </button>
-          <button
+          </Link>
+          <Link
+            href={withPublicQuery(location, "tab", "statistics")}
+            prefetch={false}
             className={tab === "statistics" ? "active" : ""}
             role="tab" aria-selected={tab === "statistics"}
-            onClick={() => { setTab("statistics"); setStatsScreen("overview"); setCategoryId("all"); }}
+            onClick={(event) => { event.preventDefault(); setTab("statistics"); setStatsScreen("overview"); setCategoryId("all"); }}
           >
             Статистика игроков
-          </button>
+          </Link>
         </div>
         {tab === "table" && <DivisionTable data={data} />}
         {tab === "calendar" && (

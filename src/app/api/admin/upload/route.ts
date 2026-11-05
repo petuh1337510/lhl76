@@ -5,6 +5,7 @@ import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 import { prepareImage } from "@/lib/image-processing";
 import {validFileSignature} from '@/lib/file-validation';
+import { safeUploadStem } from "@/lib/upload-files";
 
 const allowed: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -36,7 +37,7 @@ async function handlePOST(request: NextRequest) {
   const directory = path.join(process.cwd(), "public", "uploads", kind);
   await mkdir(directory, { recursive: true });
   const id = randomUUID();
-  const name = `${id}${extension}`;
+  const name = `${id}-original-${safeUploadStem(file.name)}${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   if(!buffer.length||(!file.type.startsWith('image/')&&(buffer.length<8||!validFileSignature(buffer,extension))))return NextResponse.json({error:'Содержимое файла не соответствует формату'},{status:400});
   let prepared: Awaited<ReturnType<typeof prepareImage>> = null;
@@ -52,8 +53,8 @@ async function handlePOST(request: NextRequest) {
     ]);
   }
   return NextResponse.json({
-    url: `/uploads/${kind}/${prepared ? `${id}-display.webp` : name}`,
-    originalUrl: `/uploads/${kind}/${name}`,
+    url: `/uploads/${kind}/${prepared ? `${id}-display.webp` : encodeURIComponent(name)}`,
+    originalUrl: `/uploads/${kind}/${encodeURIComponent(name)}`,
     thumbnailUrl: prepared ? `/uploads/${kind}/${id}-thumb.webp` : undefined,
     type: isVideo ? "video" : isDocument ? "document" : "image",
   });

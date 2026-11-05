@@ -25,8 +25,8 @@ try{
  await stop();await start('.next');check('rollback A preserves new data',!!await db.player.findUnique({where:{id:player.id}}));check('rollback A preserves upload',fs.readFileSync(file).equals(content));
  await stop();await start('.next-release-b');check('sports record counts unchanged',JSON.stringify(before)===JSON.stringify(await counts()));
  const password=randomBytes(24).toString('hex'),salt=randomBytes(16);
- user=await db.user.create({data:{email:`visual-${Date.now()}@audit.invalid`,name:'Temporary visual audit',role:'SUPER_ADMIN',active:true,passwordHash:`scrypt:${salt.toString('hex')}:${scryptSync(password,salt,64).toString('hex')}`}});
- fs.writeFileSync(path.join(root,'visual-session.json'),JSON.stringify({base,email:user.email,password}),{flag:'wx'});
+ user=await db.user.create({data:{username:`visual-${Date.now()}`,email:`visual-${Date.now()}@audit.invalid`,name:'Temporary visual audit',role:'SUPER_ADMIN',active:true,passwordHash:`scrypt:${salt.toString('hex')}:${scryptSync(password,salt,64).toString('hex')}`}});
+ fs.writeFileSync(path.join(root,'visual-session.json'),JSON.stringify({base,username:user.username,email:user.email,password}),{flag:'wx'});
  fs.writeFileSync(path.join(root,'release-cycle.json'),JSON.stringify({...report,completedAt:new Date().toISOString(),mode:'Next production; Docker packaging not claimed'},null,2));
  console.log('READY FOR VISUAL QA: '+base);
  await new Promise(resolve=>{process.on('SIGINT',resolve);process.on('SIGTERM',resolve)});

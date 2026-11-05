@@ -20,3 +20,10 @@ export function withReturn(target: string, from: string): string {
   url.searchParams.set("from", previous.pathname + previous.search);
   return url.pathname + url.search;
 }
+
+/** Give client-side tabs a working URL before JavaScript finishes loading. */
+export function withPublicQuery(current: string, key: string, value: string): string {
+  const url = new URL(current, "https://local.invalid");
+  url.searchParams.set(key, value);
+  return url.pathname + url.search + url.hash;
+}

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export type PublicSiteContext = {
   season: { name: string; slug: string };
   championship: { name: string; slug: string; path: string };
-  divisions: Array<{ name: string; slug: string; href: string }>;
+  divisions: Array<{ id: string; name: string; slug: string; href: string }>;
   seasons: Array<{ name: string; slug: string; href: string }>;
   tournaments: Array<{ name: string; slug: string; href: string }>;
   championshipHref: string;
@@ -44,6 +44,7 @@ export const getPublicSiteContext = cache(async function getPublicSiteContext():
   const divisions = championship.divisions.map((division) => {
     const divisionPath = publicSlug(division.name);
     return {
+      id: division.id,
       name: division.name,
       slug: divisionPath,
       href: `/competition/${season.slug}/${championshipPath}/${divisionPath}`,

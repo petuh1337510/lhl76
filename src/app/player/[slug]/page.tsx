@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PublicReturnLink } from "@/components/public-return-link";
 import { notFound } from "next/navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
-import { getPlayerPage } from "@/lib/player-page";
+import { getPlayerPage, type PlayerHistoryRow } from "@/lib/player-page";
 
 function formatBirthDate(value: string | null) {
   if (!value) return "Не указана";
@@ -25,6 +25,73 @@ function HeroFact({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PlayerHistorySection({
+  title,
+  rows,
+  emptyMessage,
+  isGoalkeeper,
+  hasGoalkeeperStats,
+}: {
+  title: string;
+  rows: PlayerHistoryRow[];
+  emptyMessage: string;
+  isGoalkeeper: boolean;
+  hasGoalkeeperStats: boolean;
+}) {
+  return (
+    <section className="playerHistoryBlock" tabIndex={0} role="region" aria-label={title}>
+      <div className="playerHistoryTitle">
+        <h2>{title}</h2>
+      </div>
+      {rows.length ? (
+        <div className={`playerHistory${isGoalkeeper && !hasGoalkeeperStats ? " goalkeeper" : hasGoalkeeperStats ? " goalkeeperDetailed" : ""}`}>
+          <div>
+            <span>СЕЗОН</span><span>КОМАНДА · СОРЕВНОВАНИЕ</span>
+            <span>И</span>
+            {hasGoalkeeperStats && <><span>МИН</span><span>БР</span><span>ПШ</span><span>%ОБ</span><span>КН</span></>}
+            {!isGoalkeeper && <><span>Г</span><span>А</span><span>ШТР</span><span>О</span></>}
+          </div>
+          {rows.map((row) => (
+            <Link
+              href={`/competition/${row.seasonSlug}/${row.competitionPath}/${row.divisionPath}`}
+              key={row.key}
+            >
+              <b>{row.seasonName}</b>
+              <strong className="playerHistoryTeam">
+                <i>
+                  {row.teamLogoUrl ? (
+                    <PublicImage width={160} height={160} sizes="160px" src={row.teamLogoUrl} alt="" />
+                  ) : (
+                    row.teamName.slice(0, 1)
+                  )}
+                </i>
+                <span>
+                  {row.teamName}
+                  <small>{row.competitionName} · {row.divisionName}</small>
+                </span>
+              </strong>
+              <span>{row.games}</span>
+              {hasGoalkeeperStats && <>
+                <span>{row.goalieGames ? Math.floor(row.goalieSeconds / 60) : "—"}</span>
+                <span>{row.goalieGames ? row.shotsAgainst : "—"}</span>
+                <span>{row.goalieGames ? row.goalieGoalsAgainst : "—"}</span>
+                <em>{row.goalieGames ? row.savePercentage : "—"}</em>
+                <span>{row.goalieGames ? row.goalsAgainstAverage : "—"}</span>
+              </>}
+              {!isGoalkeeper && <>
+                <span>{row.goals}</span><span>{row.assists}</span>
+                <span>{row.penalty}</span><em>{row.points}</em>
+              </>}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="matchEmpty">{emptyMessage}</p>
+      )}
+    </section>
+  );
+}
+
 export default async function PlayerPage({
   params,
 }: {
@@ -36,6 +103,8 @@ export default async function PlayerPage({
   const { player, current, history, totals, suspensions } = data;
   const isGoalkeeper = player.position.toLocaleLowerCase("ru").includes("вратар");
   const hasGoalkeeperStats = isGoalkeeper && totals.goalieGames > 0;
+  const championships = history.filter((row) => row.competitionType === "CHAMPIONSHIP");
+  const tournaments = history.filter((row) => row.competitionType === "TOURNAMENT");
   const currentHref = current
     ? `/competition/${current.seasonSlug}/${current.competitionPath}/${current.divisionPath}`
     : "/";
@@ -101,57 +170,8 @@ export default async function PlayerPage({
 
       <section className="playerContent">
         <p className="tableScrollHint">Смахивайте таблицу влево и вправо, чтобы увидеть все показатели.</p>
-        <div className="playerHistoryBlock" tabIndex={0} role="region" aria-label="Статистика игрока по соревнованиям">
-          <div className="playerHistoryTitle">
-            <span>СТАТИСТИКА ПО СОРЕВНОВАНИЯМ</span>
-            <b>{history.length} привязок</b>
-          </div>
-          {history.length ? (
-            <div className={`playerHistory${isGoalkeeper && !hasGoalkeeperStats ? " goalkeeper" : hasGoalkeeperStats ? " goalkeeperDetailed" : ""}`}>
-              <div>
-                <span>СЕЗОН</span><span>КОМАНДА · СОРЕВНОВАНИЕ</span>
-                <span>И</span>
-                {hasGoalkeeperStats && <><span>МИН</span><span>БР</span><span>ПШ</span><span>%ОБ</span><span>КН</span></>}
-                {!isGoalkeeper && <><span>Г</span><span>А</span><span>ШТР</span><span>О</span></>}
-              </div>
-              {history.map((row) => (
-                <Link
-                  href={`/competition/${row.seasonSlug}/${row.competitionPath}/${row.divisionPath}`}
-                  key={row.key}
-                >
-                  <b>{row.seasonName}</b>
-                  <strong className="playerHistoryTeam">
-                    <i>
-                      {row.teamLogoUrl ? (
-                        <PublicImage width={160} height={160} sizes="160px" src={row.teamLogoUrl} alt="" />
-                      ) : (
-                        row.teamName.slice(0, 1)
-                      )}
-                    </i>
-                    <span>
-                      {row.teamName}
-                      <small>{row.competitionName} · {row.divisionName}</small>
-                    </span>
-                  </strong>
-                  <span>{row.games}</span>
-                  {hasGoalkeeperStats && <>
-                    <span>{row.goalieGames ? Math.floor(row.goalieSeconds / 60) : "—"}</span>
-                    <span>{row.goalieGames ? row.shotsAgainst : "—"}</span>
-                    <span>{row.goalieGames ? row.goalieGoalsAgainst : "—"}</span>
-                    <em>{row.goalieGames ? row.savePercentage : "—"}</em>
-                    <span>{row.goalieGames ? row.goalsAgainstAverage : "—"}</span>
-                  </>}
-                  {!isGoalkeeper && <>
-                    <span>{row.goals}</span><span>{row.assists}</span>
-                    <span>{row.penalty}</span><em>{row.points}</em>
-                  </>}
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="matchEmpty">Игрок пока не привязан к соревнованиям.</p>
-          )}
-        </div>
+        <PlayerHistorySection title="Статистика по чемпионатам" rows={championships} emptyMessage="Нет статистики по чемпионатам." isGoalkeeper={isGoalkeeper} hasGoalkeeperStats={hasGoalkeeperStats} />
+        <PlayerHistorySection title="Статистика по турнирам" rows={tournaments} emptyMessage="Нет статистики по турнирам." isGoalkeeper={isGoalkeeper} hasGoalkeeperStats={hasGoalkeeperStats} />
       </section>
     </main>
   );

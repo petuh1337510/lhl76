@@ -231,8 +231,11 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
   const [leadersDivision, setLeadersDivision] = useState("Любитель Плюс");
   const [standingsDivision, setStandingsDivision] = useState("Любитель Плюс");
   const [offset, setOffset] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<-1 | 0 | 1>(0);
+  const [slideAnimating, setSlideAnimating] = useState(false);
   const [now, setNow] = useState(() => Date.parse(initialNow));
   const matchTouchStart = useRef<number | null>(null);
+  const slideFrame = useRef<number | null>(null);
   const [contentState, setContentState] = useState<"loading" | "ready" | "error">(initialSummary ? "ready" : "error");
   const [databaseMatches, setDatabaseMatches] = useState<any[]>(initialMatches);
   const [homeSummary, setHomeSummary] = useState<{
@@ -311,6 +314,11 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
     (match: any) => division === "Все" || match.division === division,
   );
   const shown = visibleHomeMatches(games, nearestHomeMatchIndex(games, now) + offset);
+  const trackMatches = shown.length ? [
+    ...visibleHomeMatches(games, nearestHomeMatchIndex(games, now) + offset - 1, 1),
+    ...shown,
+    ...visibleHomeMatches(games, nearestHomeMatchIndex(games, now) + offset + shown.length, 1),
+  ] : [];
   const featureMatch = sourceMatches.find((match: any) => match.status === "LIVE" || match.status === "SCHEDULED") ?? sourceMatches[nearestHomeMatchIndex(sourceMatches, now)];
   const heroSlides: HeroSlide[] = heroContent.map((item) => {
     const settings = heroSettings(item.style);
@@ -346,9 +354,17 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
     id:`broadcast-${featureBroadcast.id}`, title:featureBroadcast.title, subtitle:featureBroadcast.description ?? "Смотрите матчи ЛХЛ-76 в прямом эфире и в записи", link:"/broadcasts?filter=live", imageDesktop:featureBroadcast.imageUrl ?? "/images/optimized/hero-hockey-258d60f1efb5.webp", imageMobile:featureBroadcast.imageUrl ?? "/images/optimized/hero-hockey-258d60f1efb5.webp", variant:"broadcast", eyebrow:featureBroadcast.isLive ? "ПРЯМОЙ ЭФИР" : "ТРАНСЛЯЦИЯ ЛХЛ-76", buttonLabel:featureBroadcast.isLive ? "СМОТРЕТЬ ЭФИР" : "СМОТРЕТЬ ВИДЕО", duration:7500, live:featureBroadcast.isLive,
   });
   const move = (amount: number) => {
-    if (games.length < 2) return;
-    setOffset((current) => (current + amount + games.length) % games.length);
+    if (games.length < 2 || slideDirection !== 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setOffset((current) => (current + amount + games.length) % games.length);
+      return;
+    }
+    setSlideDirection(amount > 0 ? 1 : -1);
+    slideFrame.current = window.requestAnimationFrame(() => {
+      slideFrame.current = window.requestAnimationFrame(() => setSlideAnimating(true));
+    });
   };
+  useEffect(() => () => { if (slideFrame.current !== null) window.cancelAnimationFrame(slideFrame.current); }, []);
 
   return (
     <>
@@ -372,6 +388,9 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                   onClick={() => {
                     setDivision(item);
                     setOffset(0);
+                    if (slideFrame.current !== null) window.cancelAnimationFrame(slideFrame.current);
+                    setSlideDirection(0);
+                    setSlideAnimating(false);
                   }}
                   className={division === item ? "active" : ""}
                   key={item}
@@ -388,8 +407,16 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
               >
                 ‹
               </button> : null}
+              <div className="matchCarouselViewport">
               <div
-                className="matchGrid modern"
+                className={`matchGrid modern ${slideAnimating ? "isAnimating" : ""} ${shown.length ? "" : "isEmpty"}`}
+                data-direction={slideAnimating ? slideDirection : 0}
+                onTransitionEnd={(event) => {
+                  if (event.target !== event.currentTarget || event.propertyName !== "transform" || slideDirection === 0) return;
+                  setOffset((current) => (current + slideDirection + games.length) % games.length);
+                  setSlideAnimating(false);
+                  setSlideDirection(0);
+                }}
                 onTouchStart={(event) => { matchTouchStart.current = event.touches[0]?.clientX ?? null; }}
                 onTouchEnd={(event) => {
                   const start = matchTouchStart.current;
@@ -399,7 +426,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                 }}
                 onTouchCancel={() => { matchTouchStart.current = null; }}
               >
-                {shown.map((match: any, index) => {
+                {trackMatches.map((match: any, index) => {
                   const live = match.status === "LIVE";
                   const final = match.status === "FINAL" || match.status === "ЗАВЕРШЕН";
                   const scheduled = !live && !final;
@@ -411,7 +438,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                   return (
                     <article
                       className={`match ${live ? "isLive" : final ? "isFinal" : "isScheduled"} ${match.isPlayoff ? "playoffMatch" : ""}`}
-                      key={match.slug ?? match.home + match.away}
+                      key={`${match.slug ?? match.home + match.away}-${index}`}
                     >
                       <header>
                         <div className="homeMatchMeta"><time>{match.date} · {match.time}</time><span className={live ? "liveBadge" : final ? "finalBadge" : "scheduledBadge"}>{live ? "● ЛАЙВ" : final ? "ЗАВЕРШЁН" : awaitingResult ? "БЕЗ РЕЗУЛЬТАТА" : "СКОРО"}</span></div>
@@ -456,6 +483,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                   <b>{contentState === "loading" ? "Загружаем матчи…" : contentState === "error" ? "Матчи временно недоступны" : "Матчей пока нет"}</b>
                   <span>{contentState === "error" ? "Проверьте подключение к базе данных." : "Расписание появится после публикации матчей."}</span>
                 </div> : null}
+              </div>
               </div>
               {games.length > 1 ? <button
                 onClick={() => move(1)}

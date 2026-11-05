@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { usePublicChoice, usePublicPage, usePublicLocation, handleTabKeys } from "@/components/use-public-url-state";
 import { PublicReturnLink } from "@/components/public-return-link";
-import { withReturn } from "@/lib/public-navigation";
+import { withPublicQuery, withReturn } from "@/lib/public-navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LiveMatchRefresh } from "@/components/live-match-refresh";
 import type {
@@ -293,15 +293,17 @@ export function TeamProfileClient({ team }: { team: TeamProfileData }) {
             aria-label="Разделы команды"
           >
             {tabs.map(([value, label]) => (
-              <button
+              <Link
                 key={value}
+                href={withPublicQuery(location, "tab", value)}
+                prefetch={false}
                 role="tab"
                 aria-selected={tab === value}
                 className={tab === value ? "active" : ""}
-                onClick={() => setTab(value)}
+                onClick={(event) => { event.preventDefault(); setTab(value); }}
               >
                 {label}
-              </button>
+              </Link>
             ))}
           </div>
           {tab === "about" && (

@@ -16,11 +16,11 @@ const check=(name,ok)=>{report.checks.push({name,ok:Boolean(ok)});console.log((o
 const start=async()=>{child=spawn(process.execPath,[path.join(root,'node_modules/next/dist/bin/next'),'start','-p','3020','-H','127.0.0.1'],{cwd:root,env,stdio:['ignore','ignore','pipe']});child.stderr.on('data',()=>{});for(let i=0;i<60;i++){try{if((await request('/api/ready')).ok)return}catch{}await new Promise(r=>setTimeout(r,250))}throw Error('Server not ready')};
 const stop=async()=>{if(child&&!child.killed){child.kill();await new Promise(r=>child.once('exit',r))}};
 const users=[];const pw=randomBytes(20).toString('hex'),salt=randomBytes(16),passwordHash=`scrypt:${salt.toString('hex')}:${scryptSync(pw,salt,64).toString('hex')}`;
-const login=email=>request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+const login=username=>request('/api/admin/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({username,password:pw})});
 try{
  await start();
- const admin=await db.user.create({data:{email:`rehearsal-${Date.now()}@audit.invalid`,name:'Temporary rehearsal',role:'SUPER_ADMIN',active:true,passwordHash}});users.push(admin.id);
- const auth=await login(admin.email);check('admin login',auth.status===200);
+ const admin=await db.user.create({data:{username:`rehearsal-${Date.now()}`,email:`rehearsal-${Date.now()}@audit.invalid`,name:'Temporary rehearsal',role:'SUPER_ADMIN',active:true,passwordHash}});users.push(admin.id);
+ const auth=await login(admin.username);check('admin login',auth.status===200);
  const headers={Cookie:auth.headers.get('set-cookie').split(';')[0],Origin:base,'Content-Type':'application/json'};
  const uploadForm=new FormData();uploadForm.set('kind','players');
  const sharp=(await import('sharp')).default;
@@ -57,8 +57,8 @@ try{
  const suspension=await db.playerSuspension.findFirstOrThrow({where:{rosterEntryId:entry.id}});
  const sp={id:suspension.id,status:'CANCELLED',expectedUpdatedAt:suspension.updatedAt.toISOString()};const cr=await Promise.all([mutate('suspensions',sp),mutate('suspensions',sp)]);check('suspension concurrent update 200/409',cr.map(x=>x.status).sort().join(',')==='200,409');
  for(const role of ['ADMIN','SECRETARY']){
-  const u=await db.user.create({data:{email:`rehearsal-${role.toLowerCase()}-${Date.now()}@audit.invalid`,name:'Temporary role test',role,active:true,passwordHash}});users.push(u.id);
-  const r=await login(u.email),h={Cookie:r.headers.get('set-cookie').split(';')[0]};
+  const u=await db.user.create({data:{username:`r-${role.toLowerCase()}-${Date.now()}`,email:`rehearsal-${role.toLowerCase()}-${Date.now()}@audit.invalid`,name:'Temporary role test',role,active:true,passwordHash}});users.push(u.id);
+  const r=await login(u.username),h={Cookie:r.headers.get('set-cookie').split(';')[0]};
   check(role+' cannot access users',(await request('/api/admin/users',{headers:h})).status===403);
   check(role+' can access matches',(await request('/api/admin/matches',{headers:h})).status===200);
   await db.user.update({where:{id:u.id},data:{role:role==='ADMIN'?'SECRETARY':'ADMIN'}});check(role+' role change revokes session',(await request('/api/admin/auth/me',{headers:h})).status===401);
@@ -66,7 +66,7 @@ try{
  await db.user.update({where:{id:admin.id},data:{passwordHash:'disabled-test-password'}});check('password change revokes session',(await request('/api/admin/auth/me',{headers})).status===401);
  for(const p of ['/','/news','/about','/documents','/venues','/media','/broadcasts','/tournaments','/laureates','/team/hctanki76','/team/hctanki76/print','/competition/2026-27/championship/lyubitel-plyus','/robots.txt','/sitemap.xml','/favicon.ico']){const r=await request(p);check('public '+p,r.status===200);if(p==='/'){const html=await r.text();check('canonical production origin',html.includes('https://lhl-76.ru')&&!/property="og:url" content="http:\/\/localhost/.test(html))}}
  const publicFile=path.join(root,'public/uploads/rehearsal-persistence.txt');fs.writeFileSync(publicFile,'test-only '+Date.now(),{flag:'wx'});const digest=createHash('sha256').update(fs.readFileSync(publicFile)).digest('hex');
- for(let i=0;i<11;i++)await login('rehearsal-limit@audit.invalid');await stop();await start();check('limiter survives restart',(await login('rehearsal-limit@audit.invalid')).status===429);check('uploads survive restart',createHash('sha256').update(fs.readFileSync(publicFile)).digest('hex')===digest);
+ for(let i=0;i<11;i++)await login('rehearsal-limit');await stop();await start();check('limiter survives restart',(await login('rehearsal-limit')).status===429);check('uploads survive restart',createHash('sha256').update(fs.readFileSync(publicFile)).digest('hex')===digest);
  for(const concurrency of [1,3,5]){
   if(uploadedPath)check('uploaded original survives restart',createHash('sha256').update(fs.readFileSync(uploadedPath)).digest('hex')===uploadedHash);
   let count=0,errors=0;const durations=[],begin=performance.now();
