@@ -209,3 +209,43 @@
   .adminUI .adminPageHost .adminNotice {align-items:flex-start}
   .adminUI .adminAuthTheme {right:12px;top:12px}
 }
+
+.adminUI .adminPageHost .rosterBulkSaveBar {
+  position:sticky;
+  top:8px;
+  z-index:10;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:18px;
+  padding:10px 14px;
+  border:1px solid var(--admin-line);
+  border-radius:10px;
+  background:var(--admin-surface);
+  box-shadow:0 7px 20px #071b3b16;
+  color:var(--admin-muted);
+  font-size:12px;
+  font-weight:700;
+}
+.adminUI .adminPageHost .rosterBulkSaveBar button {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink);font-weight:800}
+.adminUI .adminPageHost .rosterBulkSaveBar button:disabled {opacity:.55;cursor:not-allowed}
+.adminUI .adminPageHost .rosterBulkSaveError {margin:8px 0 0;color:#c11232;font-weight:700}
+.adminUI .adminPageHost .rosterAdminRow.rosterDraftChanged {box-shadow:inset 3px 0 #e50830}
+.adminUI .adminPageHost .rosterAdminActions .suspensionButton {
+  width:82px;
+  max-width:82px;
+  min-height:27px!important;
+  padding:4px 3px;
+  background:#c11232!important;
+  border:1px solid #c11232!important;
+  color:#fff!important;
+  font-size:9px;
+  line-height:1.1;
+  overflow-wrap:anywhere;
+  text-align:center;
+}
+.adminUI .adminPageHost .rosterAdminActions .suspensionButton:hover:not(:disabled) {background:#a00d29!important}
+@media(max-width:600px) {
+  .adminUI .adminPageHost .rosterBulkSaveBar {top:4px;flex-wrap:wrap}
+}

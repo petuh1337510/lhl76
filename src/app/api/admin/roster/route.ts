@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {editVersion,nextEditVersion,WriteConflict} from '@/lib/edit-version';
 import { getPlayerSuspensionStates } from "@/lib/player-suspensions";
+import { rosterBulkSchema } from "@/lib/admin-input";
 
 async function handleGET(request: NextRequest) {
   const teamEntryId = request.nextUrl.searchParams.get("teamEntryId");
@@ -95,6 +96,53 @@ async function handlePATCH(request: NextRequest) {
   return NextResponse.json(entry);
 }
 
+async function handlePUT(request: NextRequest) {
+  const parsed = rosterBulkSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: "Проверьте изменения состава" }, { status: 400 });
+  const { teamEntryId, changes } = parsed.data;
+  if (new Set(changes.map((change) => change.id)).size !== changes.length) {
+    return NextResponse.json({ error: "Один игрок указан дважды" }, { status: 400 });
+  }
+  const categoryIds = [...new Set(changes.map((change) => change.categoryId).filter(Boolean))];
+  const categories = await prisma.classificationCategory.findMany({ where: { id: { in: categoryIds }, active: true }, select: { id: true } });
+  if (categories.length !== categoryIds.length) return NextResponse.json({ error: "Неизвестный рейтинг" }, { status: 400 });
+
+  await prisma.$transaction(async (tx) => {
+    const current = await tx.rosterEntry.findMany({
+      where: { id: { in: changes.map((change) => change.id) }, teamEntryId },
+      include: { player: { select: { baseNumber: true, ratingCategoryId: true } } },
+    });
+    if (current.length !== changes.length) throw new WriteConflict();
+    const byId = new Map(current.map((item) => [item.id, item]));
+    for (const change of changes) {
+      const item = byId.get(change.id);
+      if (!item) throw new WriteConflict();
+      const version = editVersion(change.expectedUpdatedAt);
+      const requestedNumber = change.number.trim();
+      const numberOverride = requestedNumber && requestedNumber !== item.player.baseNumber ? requestedNumber : null;
+      await tx.rosterEntry.update({
+        where: { id: item.id, updatedAt: version, teamEntryId },
+        data: {
+          updatedAt: nextEditVersion(version),
+          number: numberOverride,
+          leadership: change.leadership,
+          status: change.status,
+          leftAt: change.status === "INACTIVE" ? item.leftAt ?? new Date() : null,
+        },
+      });
+      if (item.player.ratingCategoryId !== (change.categoryId || null)) {
+        const playerVersion = editVersion(change.playerExpectedUpdatedAt);
+        await tx.player.update({
+          where: { id: item.playerId, updatedAt: playerVersion },
+          data: { ratingCategoryId: change.categoryId || null, updatedAt: nextEditVersion(playerVersion) },
+        });
+      }
+    }
+  }, { isolationLevel: "Serializable", timeout: 30000 });
+  return NextResponse.json({ updated: changes.length });
+}
+
 export const GET = withAdmin(handleGET);
 export const POST = withAdmin(handlePOST);
 export const PATCH = withAdmin(handlePATCH);
+export const PUT = withAdmin(handlePUT);

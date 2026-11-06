@@ -11,7 +11,7 @@ env:
   SERVER_PORT: "22"
   SERVER_USERNAME: root
   SERVER_APP_PATH: /opt/lhl76
-  PUBLIC_SITE_URL: https://191.217.231.118
+  PUBLIC_SITE_URL: https://lhl-76.ru
   MEDIA_ROOT: /opt/lhl76/public-files
   APP_PORT: "3000"
   COMPOSE_PROJECT_NAME: lhl76
@@ -69,7 +69,7 @@ jobs:
           done
           test "${SERVER_HOST}" = 191.217.231.118
           test "${SERVER_APP_PATH}" = /opt/lhl76
-          test "${PUBLIC_SITE_URL}" = https://191.217.231.118
+          test "${PUBLIC_SITE_URL}" = https://lhl-76.ru
 
       - name: Prepare SSH and runtime bundle
         env:
