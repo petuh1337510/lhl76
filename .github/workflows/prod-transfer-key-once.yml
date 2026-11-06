@@ -1,0 +1,32 @@
+name: Grant expiring LHL-76 database transfer access
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/prod-transfer-key-once.yml]
+permissions:
+  contents: read
+jobs:
+  grant:
+    if: github.actor == 'petuh1337510' && github.event.head_commit.message == 'Grant expiring LHL-76 database transfer access 2026-11-06'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grant short-lived SSH key
+        env:
+          SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SERVER_PRIVATE_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          cp docs/production-known-hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes root@191.217.231.118 'bash -se' <<'REMOTE'
+          set -euo pipefail
+          install -d -m 700 /root/.ssh
+          if ! grep -q 'lhl76-prod-transfer-20261103' /root/.ssh/authorized_keys; then
+            printf '%s\n' 'expiry-time="20261108" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB0Qz95VXmEmxicHbgmGGQOAcJVj2fRjFnglRAGrkabu lhl76-prod-transfer-20261103' >> /root/.ssh/authorized_keys
+          fi
+          chmod 600 /root/.ssh/authorized_keys
+          test "$(grep -c 'lhl76-prod-transfer-20261103' /root/.ssh/authorized_keys)" = 1
+          REMOTE
