@@ -2,8 +2,6 @@ name: Build and deploy LHL-76
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -24,7 +22,6 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || (github.actor == 'petuh1337510' && github.event.head_commit.message == 'Run LHL-76 local DB replacement deployment 2026-11-06')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,4 +118,4 @@ jobs:
           printf '%s' "${GHCR_TOKEN}" | ssh -i ~/.ssh/lhl76-deploy -p "${SERVER_PORT}" \
             "${SERVER_USERNAME}@${SERVER_HOST}" \
             "set -eu; export DOCKER_CONFIG=\$(mktemp -d); trap 'rm -rf \"\$DOCKER_CONFIG\"' EXIT; docker login ghcr.io -u '${{ github.actor }}' --password-stdin; chmod +x '${SERVER_APP_PATH}/release/deploy-release.sh'; '${SERVER_APP_PATH}/release/deploy-release.sh' '${SERVER_APP_PATH}'"
-          curl --fail --silent --show-error "https://${SERVER_HOST}/api/ready"
+          curl --fail --silent --show-error "${PUBLIC_SITE_URL}/api/ready"
