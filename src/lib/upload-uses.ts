@@ -7,6 +7,14 @@ export async function findUploadUses() {
   const uses = new Map<string, UploadUse[]>();
   const scan = (value: unknown, label: string, href: string): void => {
     if (typeof value === "string") {
+      // Banner settings are stored as JSON text, including escaped URL paths.
+      if (/^[\[{]/.test(value.trim())) {
+        try {
+          const parsed: unknown = JSON.parse(value);
+          scan(parsed, label, href);
+          return;
+        } catch { /* Legacy plain text still needs the URL scan below. */ }
+      }
       for (const match of value.matchAll(/\/uploads\/(?:teams|players|news|documents|media|general)\/[^\s"'<>),;]+/g)) {
         const key = uploadFamilyKey(match[0]);
         if (!key) continue;
@@ -29,7 +37,7 @@ export async function findUploadUses() {
     prisma.document.findMany({ select: { title: true, fileUrl: true } }),
     prisma.mediaAlbum.findMany({ select: { title: true, coverUrl: true, photos: true, description: true } }),
     prisma.broadcast.findMany({ select: { title: true, imageUrl: true, videoUrl: true } }),
-    prisma.homepageContent.findMany({ select: { title: true, imageDesktop: true, imageMobile: true, link: true } }),
+    prisma.homepageContent.findMany({ select: { title: true, imageDesktop: true, imageMobile: true, link: true, style: true } }),
     prisma.leaguePage.findMany({ select: { headline: true, intro: true } }),
     prisma.leaguePerson.findMany({ select: { name: true, photoUrl: true, description: true } }),
     prisma.laureate.findMany({ select: { name: true, imageUrl: true, link: true } }),
@@ -42,7 +50,7 @@ export async function findUploadUses() {
   for (const item of documents) scan(item.fileUrl, `Документ «${item.title}»`, "/admin/content-library");
   for (const item of albums) scan([item.coverUrl, item.photos, item.description], `Альбом «${item.title}»`, "/admin/media");
   for (const item of broadcasts) scan([item.imageUrl, item.videoUrl], `Трансляция «${item.title}»`, "/admin/broadcasts");
-  for (const item of homepage) scan([item.imageDesktop, item.imageMobile, item.link], `Главная: ${item.title}`, "/admin/homepage-content");
+  for (const item of homepage) scan([item.imageDesktop, item.imageMobile, item.link, item.style], `Главная: ${item.title}`, "/admin/homepage-content");
   for (const item of leaguePages) scan(item.intro, `О лиге: ${item.headline}`, "/admin/league-page");
   for (const item of leaguePeople) scan([item.photoUrl, item.description], `О лиге: ${item.name}`, "/admin/league-page");
   for (const item of laureates) scan([item.imageUrl, item.link], `Лауреат ${item.name}`, "/admin/laureates");
