@@ -40,8 +40,8 @@ export default function Users() {
   }
 
   return <section className="adminContent divisionPage usersAdmin">
-    <a className="backButton" href="/admin">← К панели управления</a>
-    <div className="competitionHead"><div><span>БЕЗОПАСНОСТЬ</span><h2>Пользователи и роли</h2><p>Управляйте логинами и доступом сотрудников к панели сайта.</p></div><button onClick={() => { setError(""); setForm({ ...blank }); setOpen(true); }}>+ ДОБАВИТЬ ПОЛЬЗОВАТЕЛЯ</button></div>
+
+    <div className="competitionHead"><div><h1>Пользователи и роли</h1></div><button onClick={() => { setError(""); setForm({ ...blank }); setOpen(true); }}>+ Добавить пользователя</button></div>
     {open && <AdminModal title={form.id ? "Редактировать пользователя" : "Новый пользователь"} onClose={() => setOpen(false)}><section className="adminForm usersForm">
       <h2>{form.id ? "Редактировать пользователя" : "Новый пользователь"}</h2>
       <div><label>Имя<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label>Логин<input value={form.username} maxLength={32} autoComplete="off" onChange={(event) => setForm({ ...form, username: event.target.value })} /><small>3–32 латинских символа, цифры, точка, дефис или подчёркивание</small></label></div>

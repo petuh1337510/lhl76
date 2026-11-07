@@ -87,11 +87,11 @@ export default function Audit() {
 
   return (
     <section className="adminContent divisionPage auditPage">
-      <a className="backButton" href="/admin">← К панели управления</a>
+
       <div className="competitionHead">
         <div>
-          <span>КОНТРОЛЬ СИСТЕМЫ</span>
-          <h2>{mode === "data" ? "Качество данных" : "Журнал действий"}</h2>
+
+          <h1>{mode === "data" ? "Качество данных" : "Журнал действий"}</h1>
           <p>
             {mode === "data"
               ? "Проверка исторических матчей без автоматического изменения результатов."

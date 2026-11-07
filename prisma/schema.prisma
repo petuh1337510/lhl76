@@ -119,6 +119,7 @@ model Team {
   description      String?     @db.Text
   achievements     Json?
   logoUrl          String?
+  calendarAccent   String?     @db.VarChar(7)
   teamPhotoUrl     String?
   vkUrl            String?
   telegramUrl      String?

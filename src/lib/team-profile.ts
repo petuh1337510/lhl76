@@ -39,6 +39,7 @@ export type TeamProfileMatchTeam = {
   name: string;
   city: string | null;
   logoUrl: string | null;
+  calendarAccent: string | null;
 };
 
 export type TeamProfileStatistic = {
@@ -255,12 +256,14 @@ export async function getTeamProfile(
             name: match.homeTeamEntry.team.name,
             city: match.homeTeamEntry.team.city,
             logoUrl: match.homeTeamEntry.team.logoUrl,
+            calendarAccent: match.homeTeamEntry.team.calendarAccent,
           },
           away: {
             slug: match.awayTeamEntry.team.slug,
             name: match.awayTeamEntry.team.name,
             city: match.awayTeamEntry.team.city,
             logoUrl: match.awayTeamEntry.team.logoUrl,
+            calendarAccent: match.awayTeamEntry.team.calendarAccent,
           },
         }),
       );

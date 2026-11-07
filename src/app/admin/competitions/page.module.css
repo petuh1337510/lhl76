@@ -2,8 +2,8 @@
 .workspace{border:0;padding:0;margin:0;min-width:0}
 .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px;margin:16px 0}
 .choices label{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--admin-line);border-radius:8px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
-.choices input[type=checkbox]{width:18px;height:18px;min-height:18px;flex-shrink:0;accent-color:#164b78}
+.choices input[type=checkbox]{width:18px;height:18px;min-height:18px;flex-shrink:0;accent-color:var(--admin-accent)}
 .teamChoices{max-height:300px;overflow-y:auto;overscroll-behavior:contain;padding:3px}
 .entries{list-style:none;padding:0}.entries li{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 0;border-bottom:1px solid var(--admin-line-soft)}
 .newDivision{margin-top:24px}.newDivision summary{cursor:pointer;padding:12px 0;font-weight:600}.newDivision form{display:grid;gap:12px;margin-top:12px}
-.page .danger{border-color:#c62643;color:#a51730}.page fieldset:disabled button{cursor:wait;opacity:.6}
+.page .danger{border-color:var(--admin-danger);color:var(--admin-danger)}.page fieldset:disabled button{cursor:wait;opacity:.6}

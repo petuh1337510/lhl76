@@ -24,7 +24,6 @@ export default function Setup() {
   if (available === false) return <main className="authPage"><section><h1>Администратор уже создан</h1><a href="/admin/login">Перейти ко входу →</a></section></main>;
   return <main className="authPage"><form onSubmit={submit}>
     <div className="authLogo">ЛХЛ <b>76</b></div>
-    <span>ПЕРВЫЙ ЗАПУСК</span>
     <h1>Главный администратор</h1>
     <p>Эта учётная запись получит полный доступ к сайту.</p>
     <label>Имя<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
@@ -32,6 +31,6 @@ export default function Setup() {
     <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
     <label>Пароль<input type="password" minLength={10} value={password} onChange={(event) => setPassword(event.target.value)} required /><small>Минимум 10 символов</small></label>
     {error && <em role="alert">{error}</em>}
-    <button>СОЗДАТЬ АДМИНИСТРАТОРА</button>
+    <button>Создать администратора</button>
   </form></main>;
 }

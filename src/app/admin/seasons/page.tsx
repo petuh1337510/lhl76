@@ -57,12 +57,12 @@ export default function SeasonsPage() {
   };
 
   return <main className="adminShell"><section className="adminContent divisionPage adminSeasons">
-    <div className="adminRegistryHead"><div><span>СОРЕВНОВАНИЯ</span><h1>Сезоны</h1><p>Активный сезон определяет содержимое главной, календаря, таблиц и статистики.</p></div></div>
+    <div className="adminRegistryHead"><div><h1>Сезоны</h1><p>Главная, календарь, таблицы и статистика используют активный сезон.</p></div></div>
     {message ? <div className={`seasonMessage ${message.includes("назначен") ? "success" : "error"}`}>{message}</div> : null}
-    <div className="seasonSafety"><b>Как работает переключение</b><span>Активным может быть только один сезон. Старые сезоны не удаляются и остаются в архиве.</span></div>
+    <div className="seasonSafety"><span>При смене активного сезона прежний переходит в архив.</span></div>
     <section className="seasonManagerList">
       {loading ? <p className="registryEmpty">Загружаю сезоны…</p> : items.map((season) => <article className={season.isActive ? "active" : ""} key={season.id}>
-        <header><div><span>СЕЗОН</span><h2>{season.name}</h2><p>{date(season.startsAt)} — {date(season.endsAt)}</p></div>{season.isActive ? <em>● АКТИВНЫЙ</em> : null}</header>
+        <header><div><h2>{season.name}</h2><p>{date(season.startsAt)} — {date(season.endsAt)}</p></div>{season.isActive ? <em>Активный</em> : null}</header>
         <div className="seasonManagerStats">
           <span><b>{season.competitions}</b> соревнований</span>
           <span><b>{season.divisions}</b> дивизионов</span>
@@ -71,8 +71,8 @@ export default function SeasonsPage() {
         </div>
         <footer>
           <a href={`/admin/competitions?seasonId=${encodeURIComponent(season.id)}`}>Открыть соревнования</a>
-          <small>{season.canActivate ? "Сезон готов к публикации" : "Для публикации нужны чемпионат, дивизион и команда"}</small>
-          <button disabled={season.isActive || !season.canActivate || switching !== null} onClick={() => activate(season)}>{season.isActive ? "УЖЕ АКТИВЕН" : switching === season.id ? "ПЕРЕКЛЮЧАЮ…" : "СДЕЛАТЬ АКТИВНЫМ"}</button>
+          {!season.isActive && !season.canActivate && <small>Для публикации нужны чемпионат, дивизион и команда</small>}
+          {!season.isActive && <button disabled={!season.canActivate || switching !== null} onClick={() => activate(season)}>{switching === season.id ? "Переключение…" : "Сделать активным"}</button>}
         </footer>
       </article>)}
     </section>

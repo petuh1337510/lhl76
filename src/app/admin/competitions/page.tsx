@@ -45,7 +45,7 @@ function Manager(){
     await mutate('/api/admin/competitions/manage','POST',{action:'reorder',seasonId:season.id,items:list.map(c=>({id:c.id,updatedAt:c.updatedAt}))},'Порядок соревнований сохранён.');
   }
   return <main className="adminShell"><section className={`adminContent divisionPage ${styles.page}`}>
-    <header><h1>Соревнования</h1><p>Сезон → соревнование → дивизионы и команды.</p></header>
+    <header><h1>Соревнования</h1></header>
     <label className={styles.selector}>Сезон<select value={season?.id||''} disabled={busy||loading} onChange={e=>navigate(e.target.value)}><option value="" disabled>Выберите сезон</option>{seasons.map(s=><option key={s.id} value={s.id}>{s.name}{s.isActive?' · активный':''}</option>)}</select></label>
     {error&&<div role="alert" className={styles.error}>{error} <button disabled={busy||loading} onClick={()=>{setError('');setRevision(v=>v+1)}}>Обновить список</button></div>}{notice&&<p role="status">{notice}</p>}
     {loading&&<p role="status">Обновляю список…</p>}
@@ -64,7 +64,7 @@ function Manager(){
           <section className={styles.card}><h2>Удаление соревнования</h2><p>Удалить можно только пустое соревнование. При наличии команд, заявок, матчей, таблиц или плей-офф удаление заблокировано.</p><button className={styles.danger} onClick={()=>remove(competition)}>Удалить соревнование</button></section>
         </>}
       </>:<><div className={styles.actions}><h2>Сезон {season.name}</h2><button onClick={()=>navigate(season.id,'new')}>+ Добавить соревнование</button></div>
-        <p>Порядок карточек: используйте «Раньше» и «Позже». Новое соревнование добавляется в конец списка. На результаты и места команд это не влияет.</p>
+        <p>Порядок карточек на сайте можно изменить кнопками «Раньше» и «Позже».</p>
         {competitionId&&<p role="alert">Соревнование не найдено в этом сезоне.</p>}
         <div className={styles.grid}>{season.competitions.map((c,index)=><article className={styles.card} key={c.id}><small>{c.type==='CHAMPIONSHIP'?'ЧЕМПИОНАТ':'ТУРНИР'}</small><h2>{c.name}</h2><p>Дивизионов: {c.divisions.length} · Команд: {c.divisions.reduce((n,d)=>n+d._count.teamEntries,0)} · Матчей: {c.divisions.reduce((n,d)=>n+d._count.matches,0)}</p><button onClick={()=>navigate(season.id,c.id)}>Открыть соревнование</button><div className={styles.actions}><button disabled={index===0} aria-label={`Раньше: ${c.name}`} onClick={()=>move(index,-1)}>↑ Раньше</button><button disabled={index===season.competitions.length-1} aria-label={`Позже: ${c.name}`} onClick={()=>move(index,1)}>↓ Позже</button></div></article>)}</div>
         {!season.competitions.length&&<p>В этом сезоне ещё нет соревнований.</p>}

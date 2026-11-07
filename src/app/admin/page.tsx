@@ -1,4 +1,68 @@
 "use client";
-import {useEffect,useState} from "react";
-type DashboardData={activeSeason:{id:string;name:string}|null;counts:{upcomingMatches:number;teams:number;players:number;draftNews:number};nextMatches:Array<{id:string;slug:string;division:string;home:string;away:string;startsAt:string|null;status:string}>};
-export default function Admin(){const[data,setData]=useState<DashboardData|null>(null),[user,setUser]=useState<{name:string;role:string}|null>(null);useEffect(()=>{fetch("/api/admin/dashboard",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(setData);fetch("/api/admin/auth/me",{cache:"no-store"}).then(r=>r.json()).then(d=>setUser(d.user??null))},[]);const secretary=user?.role==="SECRETARY";const cards=secretary?[["Предстоящие матчи",data?.counts.upcomingMatches??"—","Открыть матчи","/admin/matches"]]:[["Предстоящие матчи",data?.counts.upcomingMatches??"—","+ Создать матч","/admin/matches"],["Команды в сезоне",data?.counts.teams??"—","Смотреть команды","/admin/teams"],["Игроки в заявках",data?.counts.players??"—","Открыть игроков","/admin/players"],["Черновики новостей",data?.counts.draftNews??"—","Открыть новости","/admin/news"]];return <section className="adminContent adminDashboard"><header className="adminTop"><div><span>ПАНЕЛЬ УПРАВЛЕНИЯ</span><h1>{secretary?"Работа с матчами":"Главная"}</h1></div><div className="adminUser"><b>{user?.name?.slice(0,1)||"А"}</b><p>{user?.name||"Пользователь"}<br/><small>{secretary?"Секретарь":user?.role==="SUPER_ADMIN"?"Главный администратор":"Администратор"}</small></p></div></header><div className="adminNotice"><b>{data?.activeSeason?`Активный сезон: ${data.activeSeason.name}`:"Активный сезон не выбран"}</b><span>{secretary?"Здесь доступны создание, редактирование и ведение протоколов матчей.":"Все показатели рассчитаны по текущему активному сезону."}</span>{!secretary?<a href="/admin/seasons">Управление сезонами →</a>:null}</div><div className="adminStats">{cards.map(card=><article key={String(card[0])}><small>{card[0]}</small><strong>{card[1]}</strong><a href={String(card[3])}>{card[2]}</a></article>)}</div><div className="adminGrid"><article className="adminPanel dashboardMatches"><header><h2>Ближайшие матчи</h2><a href="/admin/matches">Все матчи</a></header>{data?.nextMatches.length?<ul>{data.nextMatches.map(match=><li key={match.id}><a href={`/admin/match-protocol?match=${match.id}`}><b>{match.home} — {match.away}</b><span>{match.status==="LIVE"?"● ЛАЙВ":match.startsAt?new Date(match.startsAt).toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"Дата не назначена"} · {match.division}</span></a></li>)}</ul>:<p className="dashboardEmpty">Предстоящих матчей пока нет.</p>}</article><article className="adminPanel"><header><h2>Быстрые действия</h2></header><ul><li><a href="/admin/matches"><b>Создать или открыть матч</b><span>Календарь и протоколы</span></a></li>{!secretary?<><li><a href="/admin/team-roster"><b>Проверить заявки команд</b><span>Составы активного сезона</span></a></li><li><a href="/admin/news"><b>Опубликовать новость</b><span>Текст, фотографии и видео</span></a></li></>:null}</ul></article></div></section>}
+
+import { useEffect, useState } from "react";
+
+type DashboardData = {
+  activeSeason: { id: string; name: string } | null;
+  counts: { upcomingMatches: number; teams: number; players: number; draftNews: number };
+  nextMatches: Array<{ id: string; slug: string; division: string; home: string; away: string; startsAt: string | null; status: string }>;
+};
+
+export default function Admin() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  useEffect(() => {
+    fetch("/api/admin/dashboard", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(setData);
+    fetch("/api/admin/auth/me", { cache: "no-store" }).then(r => r.json()).then(d => setUser(d.user ?? null));
+  }, []);
+
+  const secretary = user?.role === "SECRETARY";
+  const cards = [
+    { label: "Предстоящие матчи", value: data?.counts.upcomingMatches, href: "/admin/matches" },
+    ...(!secretary ? [
+      { label: "Команды в сезоне", value: data?.counts.teams, href: "/admin/teams" },
+      { label: "Игроки в заявках", value: data?.counts.players, href: "/admin/players" },
+      { label: "Черновики новостей", value: data?.counts.draftNews, href: "/admin/news" },
+    ] : []),
+  ];
+
+  return (
+    <section className="adminContent adminDashboard">
+      <header className="adminTop">
+        <h1>{secretary ? "Работа с матчами" : "Обзор"}</h1>
+        {user && <div className="adminUser">
+          <b aria-hidden="true">{user.name.slice(0, 1)}</b>
+          <p>{user.name}<br /><small>{secretary ? "Секретарь" : user.role === "SUPER_ADMIN" ? "Главный администратор" : "Администратор"}</small></p>
+        </div>}
+      </header>
+      <div className="adminNotice">
+        <b>{data?.activeSeason ? `Активный сезон · ${data.activeSeason.name}` : "Активный сезон не выбран"}</b>
+        {!secretary && <a href="/admin/seasons">Управление сезонами →</a>}
+      </div>
+      <div className="adminStats">
+        {cards.map(card => <a key={card.href} href={card.href}>
+          <span>{card.label}</span>
+          <strong>{card.value ?? "—"}</strong>
+        </a>)}
+      </div>
+      <div className="adminGrid">
+        <article className="adminPanel dashboardMatches">
+          <header><h2>Ближайшие матчи</h2><a href="/admin/matches">Все матчи</a></header>
+          {data?.nextMatches.length ? <ul>{data.nextMatches.map(match => <li key={match.id}>
+            <a href={`/admin/match-protocol?match=${match.id}`}>
+              <b>{match.home} — {match.away}</b>
+              <span>{match.status === "LIVE" ? "В эфире" : match.startsAt ? new Date(match.startsAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "Дата не назначена"} · {match.division}</span>
+            </a>
+          </li>)}</ul> : <p className="dashboardEmpty">Предстоящих матчей пока нет.</p>}
+        </article>
+        {!secretary && <article className="adminPanel">
+          <header><h2>Быстрый доступ</h2></header>
+          <ul>
+            <li><a href="/admin/team-roster"><b>Заявки команд</b></a></li>
+            <li><a href="/admin/news"><b>Редактор новостей</b></a></li>
+          </ul>
+        </article>}
+      </div>
+    </section>
+  );
+}

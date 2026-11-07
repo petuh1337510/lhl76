@@ -21,8 +21,8 @@ export default function AdminNav() {
     || (href === "/admin/players" && pathname === "/admin/player")
     || (href === "/admin/matches" && pathname === "/admin/match-protocol");
   return <aside className="adminSide adminSideGlobal" id="admin-navigation" aria-label="Разделы админки">
-    <a className="adminBrand" href="/"><span>ЛХЛ<br/><b>76</b></span><i>УПРАВЛЕНИЕ<br/>ЛИГОЙ</i></a>
+    <a className="adminBrand" href="/admin" aria-label="Обзор ЛХЛ-76"><span aria-hidden="true">ЛХЛ<br/><b>76</b></span><i>Панель лиги</i></a>
     {groups.filter(group=>visible(group.title)).map((group) => <section key={group.title}><small>{group.title}</small>{group.links.filter(([label])=>role!=="SECRETARY"||["Обзор","Матчи и календарь"].includes(label)).map(([label, href]) => <a key={href} className={`adminNavLink ${isCurrent(href) ? "active" : ""}`} aria-current={isCurrent(href) ? "page" : undefined} href={href}>{label}</a>)}</section>)}
-    <a className="adminPublicLink" href="/">← На сайт</a><button className="adminLogout" onClick={async()=>{await fetch("/api/admin/auth/logout",{method:"POST"});location.href="/admin/login"}}>Выйти</button>
+    <button className="adminLogout" onClick={async()=>{await fetch("/api/admin/auth/logout",{method:"POST"});location.href="/admin/login"}}>Выйти</button>
   </aside>;
 }

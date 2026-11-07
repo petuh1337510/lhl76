@@ -230,6 +230,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
   const [division, setDivision] = useState("Все");
   const [leadersDivision, setLeadersDivision] = useState("Любитель Плюс");
   const [standingsDivision, setStandingsDivision] = useState("Любитель Плюс");
+  const [expandedStandingTeam, setExpandedStandingTeam] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [slideDirection, setSlideDirection] = useState<-1 | 0 | 1>(0);
   const [slideAnimating, setSlideAnimating] = useState(false);
@@ -503,50 +504,78 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
             link="ВСЕ ТАБЛИЦЫ →"
           />
           <div className="tabs standingTabs" aria-label="Выбор дивизиона">
-            {divisions.map((item) => <button onClick={() => setStandingsDivision(item)} className={standingsDivision === item ? "active" : ""} key={item}>{item}</button>)}
+            {divisions.map((item) => (
+              <button
+                type="button"
+                onClick={() => {
+                  setStandingsDivision(item);
+                  setExpandedStandingTeam(null);
+                }}
+                className={standingsDivision === item ? "active" : ""}
+                key={item}
+              >{item}</button>
+            ))}
           </div>
           <div className="standingGrid">
             {selectedStanding ? (
               <article className="standing standingFeatured">
                 <h3>{selectedStanding.name}</h3>
                 <div className="tableHead">
-                  <span>РАНГ</span>
+                  <span><span className="standingWide">РАНГ</span><span className="standingCompact">#</span></span>
                   <span>КОМАНДА</span>
-                  <span>С</span>
-                  <span>В</span>
-                  <span>Н</span>
-                  <span>П</span>
-                  <span>Ш</span>
-                  <span>О</span>
-                  <span>ПОСЛЕДНИЕ ИГРЫ</span>
+                  <span className="standingGames"><span className="standingWide">С</span><span className="standingCompact">И</span></span>
+                  <span className="standingWide">В</span>
+                  <span className="standingWide">Н</span>
+                  <span className="standingWide">П</span>
+                  <span className="standingWide">Ш</span>
+                  <span className="standingCompact standingRecord">В-Н-П</span>
+                  <span className="standingPoints">О</span>
+                  <span className="standingWide">ПОСЛЕДНИЕ ИГРЫ</span>
                 </div>
-                {selectedStanding.teams.map((team, rank) => (
-                  <div className="row" key={team.id}>
-                    <span>{team.rank ?? rank + 1}</span>
-                    <Link href={`/team/${team.slug}`}>
-                      <Mark name={team.name} logoUrl={team.logoUrl} />
-                      {team.name}
-                    </Link>
-                    <span>{team.games}</span>
-                    <span>{team.wins}</span>
-                    <span>{team.draws}</span>
-                    <span>{team.losses}</span>
-                    <span>{team.goalsFor}–{team.goalsAgainst}</span>
-                    <strong>{team.points}</strong>
-                    <i>
-                      {team.form.slice(-5).map((game: any, gameIndex: number) => (
-                        <Link
-                          href={`/match/${game.matchSlug}`}
-                          className={game.result === "w" ? "win" : game.result === "l" ? "loss" : "draw"}
-                          aria-label="Открыть последний матч"
-                          key={`${game.matchSlug}-${gameIndex}`}
-                        >
-                          {game.result === "w" ? "В" : game.result === "l" ? "П" : "Н"}
-                        </Link>
-                      ))}
-                    </i>
-                  </div>
-                ))}
+                {selectedStanding.teams.map((team, rank) => {
+                  const expanded = expandedStandingTeam === team.id;
+                  const detailsId = `standing-details-${team.id}`;
+                  return (
+                    <div className="row" key={team.id}>
+                      <span>{team.rank ?? rank + 1}</span>
+                      <Link href={`/team/${team.slug}`}>
+                        <Mark name={team.name} logoUrl={team.logoUrl} />
+                        {team.name}
+                      </Link>
+                      <button
+                        type="button"
+                        className="standingCompact standingExpand"
+                        aria-label={`Статистика команды «${team.name}»`}
+                        aria-expanded={expanded}
+                        aria-controls={detailsId}
+                        onClick={() => setExpandedStandingTeam(expanded ? null : team.id)}
+                      ><UiIcon name="chevron-right" /></button>
+                      <span className="standingGames">{team.games}</span>
+                      <span className="standingWide">{team.wins}</span>
+                      <span className="standingWide">{team.draws}</span>
+                      <span className="standingWide">{team.losses}</span>
+                      <span className="standingWide">{team.goalsFor}–{team.goalsAgainst}</span>
+                      <span className="standingCompact standingRecord">{team.wins}-{team.draws}-{team.losses}</span>
+                      <strong className="standingPoints">{team.points}</strong>
+                      <i className="standingWide">
+                        {team.form.slice(-5).map((game: any, gameIndex: number) => (
+                          <Link
+                            href={`/match/${game.matchSlug}`}
+                            className={game.result === "w" ? "win" : game.result === "l" ? "loss" : "draw"}
+                            aria-label="Открыть последний матч"
+                            key={`${game.matchSlug}-${gameIndex}`}
+                          >
+                            {game.result === "w" ? "В" : game.result === "l" ? "П" : "Н"}
+                          </Link>
+                        ))}
+                      </i>
+                      <dl id={detailsId} className="standingRowDetails" hidden={!expanded}>
+                        <div><dt>Забито шайб</dt><dd>{team.goalsFor}</dd></div>
+                        <div><dt>Пропущено шайб</dt><dd>{team.goalsAgainst}</dd></div>
+                      </dl>
+                    </div>
+                  );
+                })}
                 <Link href={divisionHref(selectedStanding.name)}>
                   ОТКРЫТЬ РАЗДЕЛ ДИВИЗИОНА →
                 </Link>

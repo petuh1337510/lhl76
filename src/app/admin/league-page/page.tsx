@@ -134,11 +134,11 @@ export default function LeaguePageAdmin() {
   };
 
   return <section className="adminContent divisionPage leaguePageAdmin">
-    <a className="backButton" href="/admin">← К панели управления</a>
-    <div className="competitionHead"><div><span>КОНТЕНТ САЙТА</span><h2>О лиге</h2><p>Управление вступлением и разделом «Лица лиги».</p></div><a className="leagueAdminPublicLink" href="/about" target="_blank" rel="noopener noreferrer">ПОСМОТРЕТЬ НА САЙТЕ ↗</a></div>
+
+    <div className="competitionHead"><div><h1>О лиге</h1></div><a className="leagueAdminPublicLink" href="/about" target="_blank" rel="noopener noreferrer">На сайте ↗</a></div>
 
     <section className="leagueAdminIntro">
-      <header><span>01 / ВСТУПЛЕНИЕ</span><h3>Первый экран</h3><p>Короткий текст о лиге — без привязки к конкретному сезону.</p></header>
+      <header><h2>Вступление</h2></header>
       <div className="leagueAdminFields">
         <label>Крупный заголовок<input value={headline} maxLength={160} onChange={(event) => setHeadline(event.target.value)} placeholder="Хоккей объединяет Ярославль." /></label>
         <label>Короткий текст<textarea value={intro} maxLength={900} rows={4} onChange={(event) => setIntro(event.target.value)} placeholder="Расскажите о лиге в двух-трёх предложениях." /></label>
@@ -147,7 +147,7 @@ export default function LeaguePageAdmin() {
     </section>
 
     <section className="leagueAdminPeople">
-      <header><div><span>02 / ЛИЦА ЛИГИ</span><h3>Люди лиги</h3><p>Порядок карточек меняется стрелками. Скрытые люди остаются в админке.</p></div><button onClick={() => { setForm({ ...emptyPerson }); setError(""); }}>+ ДОБАВИТЬ ЧЕЛОВЕКА</button></header>
+      <header><div><h2>Лица лиги</h2></div><button onClick={() => { setForm({ ...emptyPerson }); setError(""); }}>+ Добавить человека</button></header>
       {form ? <AdminModal title={form.id ? "Редактировать карточку" : "Новая карточка"} onClose={() => setForm(null)}><div className="leagueAdminEditor">
         <div className="leagueAdminEditorHead"><h4>{form.id ? "Редактировать карточку" : "Новая карточка"}</h4><button onClick={() => setForm(null)} aria-label="Закрыть редактор">×</button></div>
         <div className="leagueAdminFormGrid">
@@ -172,7 +172,7 @@ export default function LeaguePageAdmin() {
           <button onClick={() => toggle(person)}>{person.active ? "Скрыть" : "Показать"}</button>
           <button className="remove" onClick={() => remove(person)}>Удалить</button>
         </nav>
-      </article>) : <p className="registryEmpty">Людей пока нет. Добавьте первую карточку.</p>}</div>
+      </article>) : <p className="registryEmpty">Карточек пока нет.</p>}</div>
     </section>
     {error ? <p className="documentError" role="alert">{error}</p> : null}
     {notice ? <p className="leagueAdminNotice" role="status">{notice}</p> : null}

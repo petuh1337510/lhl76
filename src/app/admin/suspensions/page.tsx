@@ -14,7 +14,7 @@ export default function SuspensionsPage() {
   useEffect(() => { load(''); }, [load]);
   const changeStatus = (value: string) => { setStatus(value); load(value); };
   return <main className="adminShell"><section className="adminContent divisionPage">
-    <div className="competitionHead"><div><span>СПОРТИВНАЯ ЧАСТЬ</span><h2>Дисквалификации</h2><p>Блокируют игрока во всех командах. Срок отсчитывается по матчам команды, где назначена санкция.</p></div></div>
+    <div className="competitionHead"><div><h1>Дисквалификации</h1><p>Дисквалификация действует во всех командах игрока. Срок считают по матчам команды, в которой назначена санкция.</p></div></div>
     <div className="matchAdminFilters">
       {[['','Все'],['ACTIVE','Действующие'],['COMPLETED','Завершённые'],['CANCELLED','Отменённые']].map(([value,label])=><button key={value} className={status===value?"active":""} onClick={()=>changeStatus(value)}>{label}</button>)}
     </div>

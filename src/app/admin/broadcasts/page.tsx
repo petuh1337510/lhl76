@@ -94,9 +94,9 @@ export default function BroadcastAdmin() {
 
   return (
     <section className="adminContent divisionPage broadcastAdmin">
-      <a className="backButton" href="/admin">← К панели управления</a>
+
       <div className="competitionHead">
-        <div><span>КОНТЕНТ САЙТА</span><h2>Трансляции</h2><p>Добавляйте прямые эфиры и записи матчей.</p></div>
+        <div><h1>Трансляции</h1></div>
         <button onClick={() => { setForm(blank); setOpen(true); }}>+ ДОБАВИТЬ ВИДЕО</button>
       </div>
 

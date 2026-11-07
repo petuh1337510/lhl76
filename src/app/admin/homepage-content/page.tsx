@@ -61,8 +61,8 @@ export default function HomepageContent() {
   const visible = items.filter((item) => item.type === tab);
 
   return <main className="adminShell adminHomepage"><section className="adminContent divisionPage">
-    <a className="backButton" href="/admin">← К панели управления</a>
-    <div className="competitionHead"><div><span>КОНТЕНТ ГЛАВНОЙ СТРАНИЦЫ</span><h2>{tab === "banner" ? "Главный баннер" : "Промо-плитки"}</h2><p>Изменения после сохранения сразу появляются на главной.</p></div><button onClick={() => setEditing(blank(tab))}>+ ДОБАВИТЬ</button></div>
+
+    <div className="competitionHead"><div><h1>{tab === "banner" ? "Главный баннер" : "Промо-плитки"}</h1><p>Изменения после сохранения сразу появляются на главной.</p></div><button onClick={() => setEditing(blank(tab))}>+ ДОБАВИТЬ</button></div>
     <div className="matchAdminFilters"><button className={tab === "banner" ? "active" : ""} onClick={() => { setTab("banner"); setEditing(null); }}>Главный баннер</button><button className={tab === "tile" ? "active" : ""} onClick={() => { setTab("tile"); setEditing(null); }}>Промо-плитки</button></div>
     {editing ? <AdminModal title={editing.id ? "Редактировать материал" : "Новый материал"} onClose={() => setEditing(null)} wide><section className="adminForm homepageEditor">
       <h2>{editing.id ? "Редактировать материал" : "Новый материал"}</h2>

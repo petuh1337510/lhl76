@@ -6,6 +6,8 @@ import { PublicImage } from "@/components/public-image";
 import { RosterSurname } from "@/components/roster-surname";
 import { RosterAverageAge } from "@/components/roster-average-age";
 import { UiIcon } from "@/components/ui-icon";
+import { CalendarMatchCard } from "@/components/calendar-match-card";
+import calendarStyles from "@/components/calendar-match-card.module.css";
 
 
 import Link from "next/link";
@@ -17,7 +19,6 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { LiveMatchRefresh } from "@/components/live-match-refresh";
 import type {
   TeamProfileData,
-  TeamProfileMatchTeam,
   TeamProfilePlayer,
 } from "@/lib/team-profile";
 
@@ -47,40 +48,6 @@ function pluralMatches(value: number) {
 
 function isPosition(player: TeamProfilePlayer, needle: string) {
   return player.position.toLocaleLowerCase("ru").includes(needle);
-}
-
-function formatMatchDate(value: string | null) {
-  if (!value) return { date: "Дата уточняется", time: "—" };
-  const date = new Date(value);
-  return {
-    date: new Intl.DateTimeFormat("ru-RU", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      timeZone: "Europe/Moscow",
-    }).format(date),
-    time: new Intl.DateTimeFormat("ru-RU", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Europe/Moscow",
-    }).format(date),
-  };
-}
-
-function MatchTeam({ team }: { team: TeamProfileMatchTeam }) {
-  return (
-    <Link className="teamMatchSide" href={`/team/${team.slug}`}>
-      <i className={team.logoUrl ? "tankiMark" : "opponentMark"}>
-        {team.logoUrl ? (
-          <PublicImage width={160} height={160} sizes="160px" src={team.logoUrl} alt="" />
-        ) : (
-          team.name.slice(0, 1)
-        )}
-      </i>
-      <strong>{team.name}</strong>
-      <small>{team.city || ""}</small>
-    </Link>
-  );
 }
 
 export function TeamProfileClient({ team }: { team: TeamProfileData }) {
@@ -435,72 +402,17 @@ export function TeamProfileClient({ team }: { team: TeamProfileData }) {
                         {pluralMatches(selected.matches.length)}
                       </b>
                     </header>
-                    <div className="teamSchedule">
-                      {visibleGames.map((game, index) => {
-                        const when = formatMatchDate(game.startsAt);
-                        const isFinal = game.status === "FINAL",
-                          live = game.status === "LIVE",
-                          technical = isFinal && game.technicalWinner !== null;
-                        return (
-                          <article
-                            className={`teamMatchCard ${live ? "isLive" : ""} ${game.isPlayoff ? "playoffMatch" : ""}`}
-                            key={game.id}
-                          >
-                            <MatchTeam team={game.home} />
-                            <Link
-                              className="teamMatchCenter"
-                              href={withReturn(`/match/${game.slug}`, location)}
-                            >
-                              <span>
-                                #
-                                {(calendarPage - 1) * calendarPageSize +
-                                  index +
-                                  1}
-                              </span>
-                              <b
-                                className={
-                                  isFinal || live
-                                    ? "finishedScore"
-                                    : "futureTime"
-                                }
-                              >
-                                {technical
-                                  ? `${game.technicalWinner === "home" ? "+" : "−"} — ${game.technicalWinner === "away" ? "+" : "−"}`
-                                  : isFinal || live
-                                  ? `${game.homeScore} — ${game.awayScore}`
-                                  : when.time}
-                              </b>
-                              <small>
-                                {live
-                                  ? "Счёт обновляется онлайн"
-                                  : isFinal
-                                    ? technical
-                                      ? "Технический результат"
-                                      : game.periodScores || "Матч завершён"
-                                    : "Начало матча"}
-                              </small>
-                              <time>
-                                {when.date} ·{" "}
-                                {isFinal || live
-                                  ? when.time
-                                  : game.venue || "Место уточняется"}
-                              </time>
-                              <em className={live ? "live" : ""}>
-                                {live
-                                  ? "● ЛАЙВ"
-                                  : isFinal
-                                    ? game.isPlayoff
-                                      ? "Плей-офф · завершён"
-                                      : "Завершён"
-                                    : game.isPlayoff
-                                      ? "Плей-офф"
-                                      : "Предстоящий матч"}
-                              </em>
-                            </Link>
-                            <MatchTeam team={game.away} />
-                          </article>
-                        );
-                      })}
+                    <div className={calendarStyles.grid}>
+                      {visibleGames.map((game) => (
+                        <CalendarMatchCard
+                          key={game.id}
+                          match={game}
+                          href={withReturn(`/match/${game.slug}`, location)}
+                          homeHref={`/team/${game.home.slug}`}
+                          awayHref={`/team/${game.away.slug}`}
+                          technicalWinner={game.technicalWinner}
+                        />
+                      ))}
                     </div>
                     {calendarTotalPages > 1 && (
                       <nav

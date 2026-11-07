@@ -36,16 +36,13 @@ function LoginForm() {
 
   return <main className="authPage"><form onSubmit={submit}>
     <div className="authLogo">ЛХЛ <b>76</b></div>
-    <span>ПАНЕЛЬ УПРАВЛЕНИЯ</span>
     <h1>Вход в админку</h1>
-    <p>Введите логин и пароль вашей учётной записи.</p>
     <label>Логин<input type="text" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required /></label>
     <label>Пароль<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
     {error && <em role="alert">{error}</em>}
-    <button>ВОЙТИ</button>
-    <p>Забыли пароль? Напишите администратору: <a href="mailto:lhl-76@mail.ru">lhl-76@mail.ru</a></p>
+    <button>Войти</button>
+    <p>Восстановление доступа: <a href="mailto:lhl-76@mail.ru">lhl-76@mail.ru</a></p>
     {setup && <a href="/admin/setup">Создать первого администратора →</a>}
-    <small>Доступ только для сотрудников ЛХЛ-76</small>
   </form></main>;
 }
 

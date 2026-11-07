@@ -189,11 +189,11 @@ export default function MatchesPage() {
       <section className="adminContent divisionPage">
         <div className="competitionHead">
           <div>
-            <span>СПОРТИВНАЯ ЧАСТЬ</span>
-            <h2>Матчи и календарь</h2>
-            <p>Матч создаётся только между командами одного дивизиона.</p>
+
+            <h1>Матчи и календарь</h1>
+
           </div>
-          <button onClick={() => setOpen(true)}>+ СОЗДАТЬ МАТЧ</button>
+          <button onClick={() => setOpen(true)}>+ Создать матч</button>
         </div>
         {open && (
           <AdminModal title="Новый матч" onClose={() => setOpen(false)} wide>
@@ -475,7 +475,7 @@ export default function MatchesPage() {
             Сбросить
           </button>
         </section>
-        <section className="matchAdminList adminMatchTable">
+        <section className="matchAdminList adminMatchTable adminSpacedRows">
           <header>
             <span>КАЛЕНДАРЬ</span>
             <small>{data.total} матчей</small>
@@ -533,7 +533,7 @@ export default function MatchesPage() {
                 <a className="matchAdminDetails" href={`/admin/match-protocol?match=${match.slug}`}>Детали</a>
                 {match.status === "SCHEDULED" && <button className="matchAdminDelete" disabled={saving} onClick={() => changeExisting(match, true)}>Удалить</button>}
               </div>
-              {match.needsTechnicalReview && <p className="matchAdminWarning">Возможен технический результат — проверьте протокол</p>}
+              {match.needsTechnicalReview && <p className="matchAdminWarning">Проверьте технический результат</p>}
             </article>;
           })}
           {data.items.length === 0 && <p className="matchAdminEmpty">Матчей по выбранным условиям нет.</p>}

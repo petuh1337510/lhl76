@@ -16,8 +16,8 @@
 .uses a{color:var(--admin-link)}
 .actions{display:flex;align-items:center;gap:8px}
 .actions a,.actions button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:1px solid var(--admin-line);border-radius:7px;background:var(--admin-surface-raised);color:var(--admin-ink);font-size:12px;font-weight:700;text-decoration:none}
-.actions button{border-color:#b84856;color:#b84856}
-.actions button:not(:disabled):hover{background:#b84856;color:#fff}
+.actions button{border-color:var(--admin-danger);color:var(--admin-danger)}
+.actions button:not(:disabled):hover{background:var(--admin-danger);color:var(--admin-surface)}
 .error{padding:12px;border-left:3px solid #c90930;border-radius:6px;background:var(--admin-warning-bg);color:var(--admin-warning-ink)}
 .empty{margin:0;padding:30px;border:1px solid var(--admin-line);border-radius:12px;background:var(--admin-surface);color:var(--admin-muted);text-align:center}
 .more{display:block;margin:18px auto 0;padding:10px 22px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-surface);color:var(--admin-ink);font-weight:700;cursor:pointer}

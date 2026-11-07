@@ -105,8 +105,8 @@ export default function MediaFilesPage() {
   }
 
   return <section className="adminContent divisionPage">
-    <a className="backButton" href="/admin">← К панели управления</a>
-    <div className="competitionHead"><div><span>КОНТЕНТ</span><h2>Медиафайлы</h2><p>Загруженные файлы и архивные фотографии игроков и команд. Используемые файлы защищены от удаления; архивные изображения доступны для просмотра.</p></div></div>
+
+    <div className="competitionHead"><div><h1>Медиафайлы</h1><p>Используемые файлы защищены от удаления. Архивные изображения доступны для просмотра.</p></div></div>
 
     <div className={styles.filters} aria-label="Фильтры медиафайлов">
       <label className={styles.name}>Название или файл<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Поиск по названию" type="search" /></label>

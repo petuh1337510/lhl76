@@ -50,7 +50,7 @@ main.publicChamp .champHero h1{font-size:47px!important;margin:7px 0!important}m
 
 /* Таблицы: последние матчи — видимые кликабельные круглые маркеры. */
 .standing{background:#fff}.standing .tableHead,.standing .row{grid-template-columns:38px minmax(145px,1.65fr) repeat(4,31px) 58px 38px 108px!important}.standing .row i{display:flex!important;justify-content:flex-start!important;gap:5px!important;min-width:0}.standing .row i a{width:15px!important;height:15px!important;border-radius:50%!important;background:#25a35b!important;color:#fff!important;font-size:7px!important;line-height:1!important}.standing .row i a.loss{background:#e4374f!important}.standing .row i a:hover{filter:brightness(.94);box-shadow:0 0 0 3px #113b6820;outline:0!important}.leaders{background:#f4f7fa!important;color:var(--ink)!important;margin-top:0!important;padding:15px 0 42px!important}.leaders .sectionTitle a{color:var(--blue)!important}.leaders .tabs button{background:#fff}.leaders .tabs .active{background:var(--red)}
-@media(max-width:800px){.siteHeaderMinimal{height:82px!important}.siteHeaderMinimal .siteHeaderInner{justify-content:flex-start!important}.homePromoInner{padding-left:20px!important;padding-right:20px!important}.homePromoControls{display:flex!important;justify-content:space-between!important;margin-top:10px}.homePromoControls button{position:static!important;transform:none!important}.homePromoControls button:hover{transform:scale(1.04)!important}.standing .tableHead,.standing .row{grid-template-columns:32px minmax(110px,1fr) 25px 33px 94px!important}.standing .tableHead span:nth-child(4),.standing .tableHead span:nth-child(5),.standing .tableHead span:nth-child(6),.standing .tableHead span:nth-child(7),.standing .row>span:nth-of-type(n+2){display:none}.standing .row i a{width:14px!important;height:14px!important}.matchSection .slideArrow{display:none!important}}
+@media(max-width:800px){.siteHeaderMinimal{height:82px!important}.siteHeaderMinimal .siteHeaderInner{justify-content:flex-start!important}.homePromoInner{padding-left:20px!important;padding-right:20px!important}.homePromoControls{display:flex!important;justify-content:space-between!important;margin-top:10px}.homePromoControls button{position:static!important;transform:none!important}.homePromoControls button:hover{transform:scale(1.04)!important}.matchSection .slideArrow{display:none!important}}
 
 /* Фирменная двухъярусная шапка. */
 .siteHeaderLeague{height:96px!important;background:#fff!important;box-shadow:0 1px 0 #d9e4ec,0 6px 18px #06204212!important}.leagueMasthead{height:96px;background:#fff}.leagueMastheadInner{height:100%;max-width:1360px;margin:0 auto;padding:0 34px;display:flex;align-items:center;position:relative}.leagueBrand{height:96px;display:flex;align-items:center;gap:13px;color:#071d3f;text-decoration:none}.leagueBrand img{width:76px;height:76px;object-fit:cover;border-radius:50%;box-shadow:0 3px 10px #061d3d26}.leagueBrand span{font:900 10px/1.45 var(--font-inter);text-transform:uppercase;letter-spacing:.8px}.leagueMotto{margin-left:auto;margin-right:34px;color:#08264d;text-align:right;text-transform:uppercase;font:800 11px/1.45 var(--font-inter);letter-spacing:1.2px}.leagueMotto b{font-weight:900}.leagueMotto i{display:block;width:48px;border-top:4px solid var(--red);margin:8px 0 0 auto}.leagueSocial{display:flex;gap:9px}.leagueSocial a{display:grid;place-items:center;width:20px;height:20px;color:#fff;background:#08264d;text-decoration:none;border-radius:4px;font:900 9px var(--font-inter);transition:transform .18s,background .18s}.leagueSocial a:hover{background:var(--red);transform:translateY(-2px)}.siteHeaderLeague .siteHeaderNav{position:absolute;left:50%;top:0;height:96px;background:transparent;border:0;transform:translateX(-50%)}.siteHeaderLeague .siteHeaderInner{max-width:960px!important;height:100%;display:flex!important;justify-content:center!important;align-items:center!important;position:relative!important}.siteHeaderLeague nav{justify-content:center!important;gap:31px!important}.siteHeaderLeague nav>a,.siteHeaderLeague .siteDropdown>a{padding:17px 0!important;color:#102a4d!important;font-size:11px!important;font-weight:900!important;text-transform:uppercase}.siteHeaderLeague .siteDropdownMenu{top:73px!important}.siteHeaderLeague .siteDropdown>a:after{left:0!important;right:0!important}.headerSearch{display:none}.siteHeaderLeague .mobileMenu{display:none}
@@ -344,13 +344,6 @@ html,body{max-width:100%;overflow-x:clip}
   .homePage .matchCarousel .slideArrow.left{left:-8px}
   .homePage .matchCarousel .slideArrow.right{right:-8px}
   .homePage .standing{overflow:hidden!important}
-  .homePage .standing .tableHead,.homePage .standing .row{min-width:0!important;grid-template-columns:31px minmax(118px,1fr) 31px 34px 82px!important;column-gap:5px;padding-left:10px!important;padding-right:10px!important}
-  .homePage .standing .tableHead span:nth-child(4),.homePage .standing .tableHead span:nth-child(5),.homePage .standing .tableHead span:nth-child(6),.homePage .standing .tableHead span:nth-child(7),.homePage .standing .row>span:nth-of-type(n+3){display:none!important}
-  .homePage .standing .row>span:nth-of-type(2){display:block!important}
-  .homePage .standing .row i{display:flex!important}
-  .homePage .standing .row i a{width:13px!important;height:13px!important;font-size:6px!important}
-  .homePage .standing .row>a{min-width:0;font-size:12px}
-  .homePage .standing .row .mark{width:25px;height:25px}
   .homePage .leadersContext{font-size:9px}
   .homePage .leaderGrid.reference{display:grid!important;grid-template-columns:1fr!important;gap:11px}
   .homePage .leaderBoard{width:100%;min-width:0!important;padding:18px;border-radius:19px}
@@ -736,28 +729,93 @@ html,body{max-width:100%;overflow-x:clip}
 .homePage .standingTabs button{padding:10px 18px;font-size:15px}
 .homePage .standingFeatured h3{padding:18px 21px;font-size:27px}
 .homePage .standingFeatured .tableHead,
-.homePage .standingFeatured .row{grid-template-columns:52px minmax(230px,1.9fr) repeat(4,46px) 86px 52px 150px!important;column-gap:8px;padding-left:18px;padding-right:18px}
+.homePage .standingFeatured .row{grid-template-columns:52px minmax(0,1fr) repeat(4,46px) 86px 52px 150px!important;min-width:0;column-gap:8px;padding-left:18px;padding-right:18px}
 .homePage .standingFeatured .tableHead{min-height:51px;padding-top:16px;padding-bottom:16px;font-size:11px;letter-spacing:.25px}
 .homePage .standingFeatured .row{min-height:70px;padding-top:14px;padding-bottom:14px;font-size:16px}
-.homePage .standingFeatured .row>a{gap:12px;font-size:17px}
+.homePage .standingFeatured .row>a{min-width:0;gap:12px;font-size:17px;overflow-wrap:anywhere}
 .homePage .standingFeatured .row .mark{width:36px;height:36px;font-size:10px}
 .homePage .standingFeatured .row strong{font-size:20px}
 .homePage .standingFeatured .row i{gap:6px!important}
-.homePage .standingFeatured .row i a{width:18px!important;height:18px!important;font-size:8px!important}
+.homePage .standingFeatured .row i a{flex:none;width:18px!important;height:18px!important;font-size:8px!important}
 .homePage .standingFeatured>a{padding:19px;font-size:15px}
+.homePage .standingFeatured .standingCompact,
+.homePage .standingFeatured .standingRowDetails{display:none}
 
-@media(max-width:800px){
+@media(max-width:900px){
   .homePage .standingTabs button{padding:9px 15px;font-size:14px}
   .homePage .standingFeatured h3{padding:16px 18px;font-size:24px}
   .homePage .standingFeatured .tableHead,
-  .homePage .standingFeatured .row{grid-template-columns:40px minmax(120px,1fr) 30px 38px 108px!important;column-gap:5px;padding-left:12px;padding-right:12px}
-  .homePage .standingFeatured .tableHead{min-height:48px;padding-top:14px;padding-bottom:14px;font-size:10px}
-  .homePage .standingFeatured .row{min-height:66px;padding-top:12px;padding-bottom:12px;font-size:15px}
-  .homePage .standingFeatured .row>a{gap:9px;font-size:16px}
-  .homePage .standingFeatured .row .mark{width:34px;height:34px}
-  .homePage .standingFeatured .row strong{font-size:19px}
-  .homePage .standingFeatured .row i a{width:17px!important;height:17px!important;font-size:8px!important}
+  .homePage .standingFeatured .row{
+    grid-template-columns:24px minmax(0,1fr) 40px 34px 62px 32px!important;
+    column-gap:6px;
+    padding-inline:12px;
+  }
+  .homePage .standingFeatured .standingWide,
+  .homePage .standingFeatured .row i.standingWide{display:none!important}
+  .homePage .standingFeatured .standingCompact{display:block}
+  .homePage .standingFeatured .tableHead .standingCompact{display:inline}
+  .homePage .standingFeatured .tableHead .standingGames{grid-column:4}
+  .homePage .standingFeatured :is(.standingGames,.standingRecord,.standingPoints){text-align:center}
+  .homePage .standingFeatured .standingRecord{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .homePage .standingFeatured .tableHead{
+    min-height:36px;
+    padding-block:8px;
+    background:#fff;
+    border-bottom:1px solid #c9d4e3;
+    font-size:11px;
+  }
+  .homePage .standingFeatured .row{
+    min-height:60px;
+    padding-block:7px;
+    border-color:#d5deeb;
+    font-size:13px;
+  }
+  .homePage .standingFeatured .row:nth-child(odd){background:#fff}
+  .homePage .standingFeatured .row:nth-child(even){background:#f1f5fc}
+  .homePage .standingFeatured .row>a{gap:8px;font-size:14px;line-height:1.25}
+  .homePage .standingFeatured .row .mark{width:30px;height:30px;border-radius:7px}
+  .homePage .standingFeatured .row .standingPoints{color:var(--ink);font-size:16px}
+  .homePage .standingFeatured .standingExpand{
+    display:grid;
+    place-items:center;
+    align-self:center;
+    width:100%;
+    min-height:44px;
+    padding:0;
+    border:0;
+    border-radius:6px;
+    background:transparent;
+    color:#4c6078;
+    cursor:pointer;
+  }
+  .homePage .standingFeatured .standingExpand svg{width:14px;height:14px;transform:rotate(90deg)}
+  .homePage .standingFeatured .standingExpand[aria-expanded="true"] svg{transform:rotate(-90deg)}
+  .homePage .standingFeatured .standingExpand:focus-visible{outline:2px solid #14649e;outline-offset:-2px}
+  .homePage .standingFeatured .standingRowDetails:not([hidden]){
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 24px;
+    grid-column:2/-1;
+    margin:0 0 5px;
+    padding-top:8px;
+    border-top:1px solid #d5deeb;
+    color:#536982;
+    font-size:12px;
+  }
+  .homePage .standingFeatured .standingRowDetails>div{display:flex;align-items:baseline;gap:6px}
+  .homePage .standingFeatured .standingRowDetails dd{margin:0;color:var(--ink);font-weight:800}
   .homePage .standingFeatured>a{padding:17px 13px;font-size:13px}
+}
+
+@media(max-width:600px){
+  .homePage .standingFeatured .tableHead,
+  .homePage .standingFeatured .row{
+    grid-template-columns:16px minmax(0,1fr) 36px 22px 46px 24px!important;
+    column-gap:4px;
+    padding-inline:8px;
+  }
+  .homePage .standingFeatured .row>a{gap:6px;font-size:13px}
+  .homePage .standingFeatured .row .mark{width:28px;height:28px}
 }
 
 /* Homepage media showcase: admin slides plus automatic match/broadcast cards. */

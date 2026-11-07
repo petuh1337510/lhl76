@@ -1,29 +1,37 @@
 /* The administration palette is scoped to the admin layout. */
 .adminUI {
-  --admin-bg: #111b28;
-  --admin-sidebar: #172333;
-  --admin-sidebar-ink: #f4f8fe;
-  --admin-sidebar-muted: #b3c4d8;
-  --admin-sidebar-raised: #29394e;
-  --admin-sidebar-line: #40536a;
-  --admin-sidebar-link: #94bbff;
-  --admin-toolbar: #1b293a;
-  --admin-surface: #202e40;
-  --admin-surface-raised: #29394e;
-  --admin-surface-soft: #192637;
-  --admin-line: #40536a;
-  --admin-line-soft: #34475d;
-  --admin-ink: #f4f8fe;
-  --admin-muted: #b3c4d8;
-  --admin-link: #94bbff;
-  --admin-accent: #568de9;
-  --admin-accent-hover: #71a3f4;
+  --admin-bg: #1b2531;
+  --admin-sidebar: #1b2634;
+  --admin-sidebar-ink: #e3eaf2;
+  --admin-sidebar-muted: #b4c0ce;
+  --admin-sidebar-heading: #b4a292;
+  --admin-sidebar-raised: #2b3848;
+  --admin-sidebar-line: #3e4e61;
+  --admin-sidebar-link: #adc3df;
+  --admin-toolbar: #232e3b;
+  --admin-surface: #242f3c;
+  --admin-surface-raised: #2c3846;
+  --admin-surface-soft: #212d39;
+  --admin-line: #425163;
+  --admin-line-soft: #384653;
+  --admin-ink: #e2e8ef;
+  --admin-muted: #b0becd;
+  --admin-link: #adc3e5;
+  --admin-accent: #42638d;
+  --admin-accent-hover: #4b6d96;
   --admin-accent-ink: #fff;
   --admin-warning-bg: #3a3030;
-  --admin-warning-ink: #ffd4ac;
-  --admin-success-bg: #203b3b;
-  --admin-success-ink: #9ce2c7;
-  --admin-shadow: 0 14px 38px #07111f25;
+  --admin-warning-ink: #e8c9a8;
+  --admin-success-bg: #293b38;
+  --admin-success-ink: #b1d3c1;
+  --admin-danger: #e7a6ae;
+  --admin-danger-bg: #3c2d36;
+  --admin-control-line: #4b5c70;
+  --admin-focus: #91b4d7;
+  --admin-sidebar-active: #30435a;
+  --admin-modal-backdrop: #101a298c;
+  --admin-shadow: 0 2px 6px #07111f21;
+  --admin-gutter: clamp(16px, 3vw, 40px);
   color-scheme: dark;
   color: var(--admin-ink);
   background: var(--admin-bg);
@@ -31,10 +39,9 @@
 
 .adminUI[data-theme="light"] {
   --admin-bg: #f0f4f9;
-  --admin-sidebar: #172333;
   --admin-toolbar: #fff;
   --admin-surface: #fff;
-  --admin-surface-raised: #f7f9fc;
+  --admin-surface-raised: #f5f8fb;
   --admin-surface-soft: #edf3fa;
   --admin-line: #d3deeb;
   --admin-line-soft: #e1e8f1;
@@ -48,23 +55,35 @@
   --admin-warning-ink: #8d4c13;
   --admin-success-bg: #e8f7ef;
   --admin-success-ink: #14643c;
-  --admin-shadow: 0 14px 38px #1734530d;
+  --admin-danger: #99203c;
+  --admin-danger-bg: #fff0f3;
+  --admin-control-line: var(--admin-line);
+  --admin-focus: #448ac4;
+  --admin-modal-backdrop: #24334766;
+  --admin-shadow: 0 2px 6px #1734530d;
   color-scheme: light;
 }
 
 .adminUI.adminShellGlobal {background:var(--admin-bg)}
-.adminUI .adminPageHost {min-height:100vh;background:var(--admin-bg)}
+.adminUI .adminPageHost {background:var(--admin-bg)}
 .adminUI .adminPageHost>.adminShell {background:var(--admin-bg)}
-.adminUI .adminContent {color:var(--admin-ink);padding-top:34px}
+.adminUI .adminContent {color:var(--admin-ink);padding-top:28px}
 .adminUI .adminContent :is(h1,h2,h3,strong,b) {color:inherit}
 .adminUI .adminContent h1 {font-family:var(--font-inter),Arial,sans-serif;font-weight:800;letter-spacing:-.035em}
 .adminUI .adminContent h2 {font-family:var(--font-inter),Arial,sans-serif;font-size:20px;font-weight:750;letter-spacing:-.025em}
 .adminUI .adminContent h3 {font-family:var(--font-inter),Arial,sans-serif;font-size:17px;font-weight:750}
 .adminUI .adminContent :is(p,small,label,time) {color:var(--admin-muted)}
-.adminUI .adminContent :is(a:not(.backButton),button:not(:disabled)) {transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s}
+@media (prefers-reduced-motion: no-preference) {
+  .adminUI :is(a, button:not(:disabled), input, select, textarea) {
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  }
+}
 .adminUI .adminContent a {color:var(--admin-link)}
 .adminUI .adminContent a:hover {color:var(--admin-ink)}
-.adminUI .adminContent .competitionHead {background:var(--admin-surface);border-color:var(--admin-line);color:var(--admin-ink);box-shadow:var(--admin-shadow)}
+.adminUI .adminContent .competitionHead {padding:0;margin-bottom:20px;background:transparent;border:0;color:var(--admin-ink)}
+.adminUI .adminContent :is(.competitionHead,.adminRegistryHead) h1 {margin:0}
+.adminUI .adminMatches .competitionHead h1 {font-size:20px;font-weight:750;letter-spacing:-.025em}
+.adminUI .adminContent :is(.competitionHead,.adminRegistryHead) h1 + p {margin-top:6px}
 .adminUI .adminContent .competitionHead span {color:var(--admin-muted)}
 .adminUI .adminContent .competitionHead h2 {color:var(--admin-ink)}
 .adminUI .adminContent .competitionHead p {color:var(--admin-muted)}
@@ -72,75 +91,86 @@
 .adminUI .adminContent .competitionHead>button:hover {background:var(--admin-accent-hover)}
 
 /* Persistent navigation and a small toolbar shared by every admin page. */
-.adminUI .adminSideGlobal {background:var(--admin-sidebar);color:var(--admin-sidebar-muted);border-right:1px solid var(--admin-sidebar-line);padding:26px 14px 18px;scrollbar-color:var(--admin-sidebar-line) var(--admin-sidebar)}
-.adminUI .adminBrand {margin:0 10px 32px;color:var(--admin-sidebar-ink)}
-.adminUI .adminBrand span {border-color:var(--admin-sidebar-line);background:var(--admin-sidebar-raised);width:46px;height:46px}
+.adminUI .adminSideGlobal {grid-area:sidebar;box-sizing:border-box;height:100dvh;--admin-focus:var(--admin-sidebar-link);background:var(--admin-sidebar);color:var(--admin-sidebar-muted);border-right:1px solid var(--admin-sidebar-line);padding:20px 14px 12px;scrollbar-color:var(--admin-sidebar-line) var(--admin-sidebar)}
+.adminUI .adminBrand {margin:0 8px 22px;color:var(--admin-sidebar-ink)}
+.adminUI .adminBrand span {border-color:var(--admin-sidebar-line);background:var(--admin-sidebar-raised);width:44px;height:44px;flex:0 0 44px;box-sizing:border-box;line-height:.9}
 .adminUI .adminBrand span b {color:#e9576c}
-.adminUI .adminBrand i {font-size:11px;letter-spacing:.06em}
-.adminUI .adminSide section {margin:23px 0}
-.adminUI .adminSide section small {color:var(--admin-sidebar-muted);opacity:.75;letter-spacing:.12em}
-.adminUI .adminSide .adminNavLink {color:var(--admin-sidebar-muted);border:1px solid transparent;border-radius:9px;padding:10px 12px;font-weight:600}
+.adminUI .adminBrand i {font-size:13px;letter-spacing:0}
+.adminUI .adminSide section {margin:16px 0}
+.adminUI .adminSide section small {color:var(--admin-sidebar-heading);font-size:10px;font-weight:650;letter-spacing:.09em}
+.adminUI .adminSide .adminNavLink {color:var(--admin-sidebar-muted);border:1px solid transparent;border-radius:9px;padding:8px 12px;font-weight:600;box-sizing:border-box}
 .adminUI .adminSide .adminNavLink:hover {background:var(--admin-sidebar-raised);border-color:var(--admin-sidebar-line);color:var(--admin-sidebar-ink)}
-.adminUI .adminSide .adminNavLink.active {background:var(--admin-accent);border-color:var(--admin-accent);box-shadow:0 8px 22px #3069c026;color:var(--admin-accent-ink)}
-.adminUI .adminPublicLink {display:block;margin:20px 12px 4px;color:var(--admin-sidebar-link);font-size:13px;font-weight:700;text-decoration:none}
-.adminUI .adminPublicLink:hover {text-decoration:underline}
-.adminUI .adminLogout {margin:8px 0 16px;border:1px solid var(--admin-sidebar-line);background:var(--admin-sidebar-raised);color:var(--admin-sidebar-ink);text-align:center;border-radius:9px;font-size:12px}
-.adminUI .adminLogout:hover {border-color:var(--admin-accent)}
-.adminToolbar {min-height:70px;padding:12px clamp(16px,3vw,40px);box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--admin-line-soft);background:var(--admin-toolbar)}
-.adminToolbarContext {display:flex;align-items:center;gap:12px;min-width:0}
-.adminToolbarContext span {color:var(--admin-muted);font-size:12px;font-weight:700;white-space:nowrap}
-.adminToolbarContext span:after {content:"/";margin-left:12px;color:var(--admin-line)}
-.adminToolbarContext b {font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize}
-.adminToolbarActions {display:flex;align-items:center;gap:16px}
-.adminThemeSwitch {display:flex;align-items:center;gap:3px;padding:4px;border:1px solid var(--admin-line);background:var(--admin-surface-soft);border-radius:11px}
-.adminThemeSwitch button {border:0;border-radius:7px;background:transparent;color:var(--admin-muted);font:700 12px var(--font-inter),Arial,sans-serif;padding:7px 12px;cursor:pointer}
-.adminThemeSwitch button[aria-pressed="true"] {background:var(--admin-surface-raised);color:var(--admin-ink);box-shadow:0 1px 6px #08152725}
+.adminUI .adminSide .adminNavLink.active {background:var(--admin-sidebar-active);border-color:var(--admin-sidebar-line);box-shadow:inset 2px 0 #819ab8;color:var(--admin-sidebar-ink)}
+.adminUI .adminLogout {margin:8px 0 4px;border:1px solid var(--admin-sidebar-line);background:var(--admin-sidebar-raised);color:var(--admin-sidebar-ink);text-align:center;border-radius:9px;font-size:13px;cursor:pointer}
+.adminUI .adminLogout:hover {border-color:var(--admin-sidebar-link)}
+.adminToolbar {grid-area:toolbar;min-height:60px;padding:8px var(--admin-gutter);display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px 14px;border-bottom:1px solid var(--admin-line);background:var(--admin-toolbar)}
+.adminMenuButton {display:none}
+.adminThemeSwitch {display:flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--admin-line);background:var(--admin-surface-soft);border-radius:9px}
+.adminThemeSwitch button {min-height:34px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--admin-muted);font:650 13px var(--font-inter),Arial,sans-serif;padding:4px 8px;cursor:pointer}
+.adminThemeSwitch button[aria-pressed="true"] {background:var(--admin-surface);border-color:var(--admin-control-line);color:var(--admin-ink)}
 .adminThemeSwitch button:hover:not([aria-pressed="true"]) {color:var(--admin-ink)}
-.adminToolbarSite {border:1px solid var(--admin-line);border-radius:9px;padding:8px 12px;color:var(--admin-ink);font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap}
-.adminToolbarSite:hover {border-color:var(--admin-accent);color:var(--admin-link)}
-.adminToolbarSite span {margin-left:5px;color:var(--admin-link)}
+.adminToolbarSite,.adminMenuButton {min-height:40px;box-sizing:border-box;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-surface);color:var(--admin-ink);font:650 13px var(--font-inter),Arial,sans-serif;text-decoration:none;white-space:nowrap}
+.adminToolbarSite {display:inline-flex}
+.adminToolbarSite:hover,.adminMenuButton:hover,.adminMenuButton[aria-expanded="true"] {border-color:var(--admin-control-line);background:var(--admin-surface-soft);color:var(--admin-link)}
+.adminToolbarSite span {color:var(--admin-link)}
 
 /* Clear separation between the page, cards, forms, and table rows. */
-.adminUI .adminPageHost :is(.adminStats article,.adminPanel,.adminForm,.adminRegistry,.adminRegistrySearch,.matchAdminList,.matchCalendarFilters,.adminStandingsTable,.usersList,.mediaEditor,.newsEditor,.documentEditor,.leagueAdminEditor,.seasonManagerList,.suspensionRegistry,.libraryList,.documentList,.newsAdminList,.venueEditor,.laureateEditor,.teamEventPanel,.protocolExtra,.playoffBoard,.dataAuditList,.auditList,.adminEmpty) {
+.adminUI .adminPageHost :is(.adminPanel,.adminForm,.adminRegistry,.adminRegistrySearch,.matchAdminList,.matchCalendarFilters,.adminStandingsTable,.usersList,.mediaEditor,.newsEditor,.documentEditor,.leagueAdminEditor,.seasonManagerList,.suspensionRegistry,.libraryList,.documentList,.newsAdminList,.venueEditor,.laureateEditor,.teamEventPanel,.protocolExtra,.playoffBoard,.dataAuditList,.auditList,.adminEmpty) {
   background:var(--admin-surface);border-color:var(--admin-line);color:var(--admin-ink);box-shadow:var(--admin-shadow);
 }
-.adminUI .adminPageHost :is(.adminStats article,.adminPanel,.adminForm,.adminRegistry,.matchAdminList,.usersList,.mediaEditor,.newsEditor,.documentEditor) {border-radius:14px}
+.adminUI .adminPageHost :is(.adminPanel,.adminForm,.adminRegistry,.matchAdminList,.usersList,.mediaEditor,.newsEditor,.documentEditor) {border-radius:14px}
 .adminUI .adminPageHost :is(.adminRegistry header,.matchAdminList header,.adminTableHeader,.adminStandingsTable header,.leagueAdminEditorHead) {background:var(--admin-surface-raised);border-color:var(--admin-line);color:var(--admin-muted)}
 .adminUI .adminPageHost :is(.adminRegistry article,.matchAdminList article,.usersList article,.adminPanel li,.adminStandingsTable article,.homeContentList article,.seasonList article,.auditList article) {border-color:var(--admin-line-soft);color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.adminRegistry article,.matchAdminList article,.usersList article,.adminStandingsTable article):hover {background:var(--admin-surface-raised)}
-.adminUI .adminPageHost :is(.adminRegistryHead span,.teamAdminHero span,.adminTop span,.adminStats small,.adminPanel li span,.matchAdminTeams small,.matchAdminList time small,.adminUser small,.adminListHead p,.adminRegistryHead p,.teamAdminHero p) {color:var(--admin-muted)}
-.adminUI .adminPageHost :is(.adminStats article>a,.adminPanel header>a,.adminRegistry article>a,.matchAdminList article>a,.adminPanel li>a) {color:var(--admin-link)}
+.adminUI .adminPageHost :is(.adminRegistryHead span,.teamAdminHero span,.adminPanel li span,.matchAdminTeams small,.matchAdminList time small,.adminUser small,.adminListHead p,.adminRegistryHead p,.teamAdminHero p) {color:var(--admin-muted)}
+.adminUI .adminPageHost :is(.adminPanel header>a,.adminRegistry article>a,.matchAdminList article>a,.adminPanel li>a) {color:var(--admin-link)}
 .adminUI .adminPageHost .adminPanel li>a b {color:var(--admin-ink)}
 .adminUI .adminPageHost .adminPanel li>a:hover b {color:var(--admin-link)}
-.adminUI .adminPageHost .adminStats article {position:relative;overflow:hidden;padding:22px 24px}
-.adminUI .adminPageHost .adminStats article:before {content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--admin-accent)}
-.adminUI .adminPageHost .adminStats article:nth-child(2):before {background:#4ac5a7}
-.adminUI .adminPageHost .adminStats article:nth-child(3):before {background:#e8ac55}
-.adminUI .adminPageHost .adminStats article:nth-child(4):before {background:#af8aef}
-.adminUI .adminPageHost .adminStats strong {font-family:var(--font-inter),Arial,sans-serif;font-size:38px;font-weight:800;letter-spacing:-.04em;color:var(--admin-ink)}
+.adminUI .adminDashboard .adminTop {margin-bottom:20px}
+.adminUI .adminDashboard .adminTop h1 {margin:0}
+.adminUI .adminDashboard .adminStats {grid-template-columns:repeat(auto-fit,minmax(min(100%,138px),1fr));gap:12px;margin:18px 0}
+.adminUI .adminDashboard .adminStats a {display:grid;gap:8px;padding:16px 18px;border:1px solid var(--admin-line);border-radius:12px;background:var(--admin-surface);color:var(--admin-ink);text-decoration:none;box-shadow:var(--admin-shadow)}
+.adminUI .adminDashboard .adminStats a:hover {border-color:var(--admin-control-line);background:var(--admin-surface-raised);color:var(--admin-link)}
+.adminUI .adminDashboard .adminStats span {color:var(--admin-muted);font-size:13px}
+.adminUI .adminDashboard .adminStats strong {margin:0;font:700 30px/1.1 var(--font-inter),Arial,sans-serif;font-variant-numeric:tabular-nums}
+.adminUI .adminDashboard .adminGrid {grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.adminUI .adminDashboard .adminGrid:has(> :only-child) {grid-template-columns:minmax(0,1fr)}
+.adminUI .adminPanel header {gap:8px 12px;flex-wrap:wrap}
+.adminUI .adminPanel :is(header>a,li span) {font-size:13px}
+.adminUI .adminPanel li b {font-size:14px}
 .adminUI .adminPageHost .adminPanel header {border-color:var(--admin-line-soft)}
-.adminUI .adminPageHost .adminNotice {display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;background:var(--admin-success-bg);border:1px solid var(--admin-line);border-left:4px solid #4ac5a7;border-radius:11px;color:var(--admin-success-ink);padding:16px 18px}
-.adminUI .adminPageHost .adminNotice :is(b,span,a) {color:var(--admin-success-ink);margin:0}
-.adminUI .adminPageHost .adminUser>b {background:var(--admin-accent);box-shadow:0 5px 15px #326dce36}
-.adminUI .adminPageHost .adminUser p {color:var(--admin-ink)}
+.adminUI .adminPageHost .adminNotice {display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;background:var(--admin-surface-soft);border:1px solid var(--admin-line);border-radius:10px;color:var(--admin-ink);padding:12px 16px;font-size:14px}
+.adminUI .adminPageHost .adminNotice span {color:var(--admin-muted)}
+.adminUI .adminPageHost .adminNotice a {margin:0 0 0 auto;color:var(--admin-link);font-size:13px;white-space:normal}
+.adminUI .adminPageHost .adminNotice a:hover {text-decoration:underline}
+.adminUI .adminPageHost .adminUser>b {background:var(--admin-accent);color:var(--admin-accent-ink)}
+.adminUI .adminPageHost .adminUser p {color:var(--admin-ink);font-size:13px}
+.adminUI .adminPageHost .adminUser small {font-size:12px}
+.adminUI .dashboardMatches li a span:first-letter {color:inherit}
 
-.adminUI .adminContent :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea) {background:var(--admin-surface-raised);border:1px solid var(--admin-line);border-radius:9px;color:var(--admin-ink)}
-.adminUI .adminContent :is(input,textarea)::placeholder {color:var(--admin-muted);opacity:.8}
-.adminUI .adminContent :is(input,select,textarea):focus {border-color:var(--admin-accent)}
-.adminUI .adminContent :is(label,small) {color:var(--admin-muted)}
+.adminUI .adminContent :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea) {background:var(--admin-surface-raised);border:1px solid var(--admin-control-line);border-radius:9px;color:var(--admin-ink)}
+.adminUI .adminContent :is(input,select,textarea):hover:not(:disabled):not(:focus) {border-color:color-mix(in srgb,var(--admin-link) 30%,var(--admin-control-line))}
+.adminUI .adminContent :is(input,textarea)::placeholder {color:var(--admin-muted);opacity:1}
+.adminUI :is(input:not([type=checkbox],[type=radio],[type=button],[type=submit],[type=reset]),select,textarea):focus {
+  border-color:var(--admin-focus);
+  outline:2px solid var(--admin-focus);
+  outline-offset:-2px;
+}
 .adminUI .adminContent :is(.adminRegistrySearch,.matchCalendarFilters) {box-shadow:none}
-.adminUI .adminContent :is(.adminRegistrySearch button,.adminRegistryHead button,.teamAdminHero button,.adminListHead>button,.adminForm footer button:last-child,.matchAdminFilters button.active) {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink);border-radius:9px}
-.adminUI .adminContent :is(.adminRegistrySearch button,.adminRegistryHead button,.teamAdminHero button,.adminListHead>button,.adminForm footer button:last-child,.matchAdminFilters button.active):hover {background:var(--admin-accent-hover)}
-.adminUI .adminContent :is(.matchAdminFilters button:not(.active),.matchCalendarFilters button,.adminForm footer button:first-child,.adminPagination button,.calendarPagination button) {background:var(--admin-surface-raised);border:1px solid var(--admin-line);color:var(--admin-ink);border-radius:9px}
-.adminUI .adminContent :is(.matchAdminFilters button:not(.active),.matchCalendarFilters button,.adminForm footer button:first-child,.adminPagination button,.calendarPagination button):hover {border-color:var(--admin-accent)}
-.adminUI .adminPageHost :is(.matchAdminList article.playoffMatch,.matchAdminList article.technicalMatch,.matchAdminList article.technicalReviewMatch) {background:var(--admin-surface-raised)}
+.adminUI .adminContent :is(.adminRegistrySearch button,.adminRegistryHead button,.teamAdminHero button,.adminListHead>button,.adminForm footer button:last-of-type,.matchAdminFilters button.active) {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink);border-radius:9px}
+.adminUI .adminContent :is(.adminRegistrySearch button,.adminRegistryHead button,.teamAdminHero button,.adminListHead>button,.adminForm footer button:last-of-type,.matchAdminFilters button.active):hover:not(:disabled) {background:var(--admin-accent-hover)}
+.adminUI .adminContent :is(.matchAdminFilters button:not(.active),.matchCalendarFilters button,.adminForm footer button:not(:last-of-type),.adminPagination button,.calendarPagination button) {background:var(--admin-surface-raised);border:1px solid var(--admin-line);color:var(--admin-ink);border-radius:9px}
+.adminUI .adminContent :is(.matchAdminFilters button:not(.active),.matchCalendarFilters button,.adminForm footer button:not(:last-of-type),.adminPagination button,.calendarPagination button):hover {border-color:var(--admin-accent)}
+.adminUI .adminPageHost :is(.matchAdminList article.playoffMatch,.matchAdminList article.technicalMatch,.matchAdminList article.technicalReviewMatch) {background:var(--admin-surface-raised);box-shadow:none}
 .adminUI .adminPageHost :is(.matchAdminList article.playoffMatch .matchAdminTeams>span,.matchAdminList article.technicalMatch .matchAdminTeams>span) {color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.adminForm footer,.adminContent footer) {color:var(--admin-ink)}
-.adminUI .adminPageHost .protocolScore {background:linear-gradient(120deg,#18375a,#102944 65%,#0b2038);border:1px solid #365679;color:#f4f8fe;box-shadow:0 16px 36px #07152526}
-.adminUI .adminPageHost .protocolScore :is(b,strong) {color:#fff}
-.adminUI .adminPageHost .protocolScore span {color:#afc8e7}
-.adminUI .adminPageHost .protocolScore p {color:#cad9ea}
-.adminUI .adminPageHost .protocolScoreBoard>strong i {color:#87a9d0}
+.adminUI .adminPageHost .protocolScore {background:var(--admin-surface-raised);border:1px solid var(--admin-line);color:var(--admin-ink);box-shadow:var(--admin-shadow)}
+.adminUI .adminPageHost .protocolScore :is(b,strong) {color:var(--admin-ink)}
+.adminUI .adminPageHost .protocolScore :is(span,p) {color:var(--admin-muted)}
+.adminUI .adminContent .protocolScoreBoard {grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:clamp(8px,2vw,24px);letter-spacing:normal}
+.adminUI .adminContent .protocolScoreBoard>b {min-width:0;font:750 clamp(16px,2.25vw,28px)/1.25 var(--font-inter),Arial,sans-serif;overflow-wrap:anywhere}
+.adminUI .adminContent .protocolScoreBoard>strong {min-width:0;font:800 clamp(28px,4.4vw,52px)/1 var(--font-inter),Arial,sans-serif;font-variant-numeric:tabular-nums}
+.adminUI .adminPageHost .protocolScoreBoard>strong i {color:var(--admin-muted)}
 .adminUI .adminPageHost .periodScoreInputs>div {background:var(--admin-surface-raised);border:1px solid var(--admin-line-soft)}
 .adminUI .adminPageHost .periodScoreInputs b {color:var(--admin-ink)}
 .adminUI .adminPageHost .protocolEvents .teamEventPanel {background:var(--admin-surface);color:var(--admin-ink)}
@@ -150,30 +180,29 @@
 .adminUI .protocolPageLinks .protocolPublicLink:hover {border-color:var(--admin-accent);background:var(--admin-surface-raised)}
 .adminUI .protocolPageLinks .protocolPublicLink:focus-visible {outline:3px solid var(--admin-accent);outline-offset:2px}
 .adminUI .adminPageHost .protocolEvents .teamEventColumns {align-items:start;gap:16px;padding:18px;background:var(--admin-surface-raised)}
-.adminUI .adminPageHost .protocolEvents .teamEventPanel {display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--admin-line);border-top:3px solid #5288e9;border-radius:12px;background:var(--admin-surface-raised);box-shadow:var(--admin-shadow)}
-.adminUI .adminPageHost .protocolEvents .teamEventPanel+ .teamEventPanel {border-left:1px solid var(--admin-line);border-top:3px solid #39a9a1}
+.adminUI .adminPageHost .protocolEvents .teamEventPanel {display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--admin-line);border-radius:12px;background:var(--admin-surface-raised);box-shadow:var(--admin-shadow)}
 .adminUI .adminPageHost .teamEventPanel>header {background:var(--admin-surface-raised);border-color:var(--admin-line-soft)}
-.adminUI .adminPageHost .teamEventPanel .teamEventGroup {margin:12px 14px 0;padding:14px 16px;border:1px solid var(--admin-line);border-left:3px solid #5288e9;border-radius:10px;background:var(--admin-surface)}
-.adminUI .adminPageHost .teamEventPanel .teamEventGroup+ .teamEventGroup {margin-top:12px;margin-bottom:14px;border:1px solid var(--admin-line);border-left:3px solid #d58a35}
+.adminUI .adminPageHost .teamEventPanel .teamEventGroup {margin:12px 14px 0;padding:14px 16px;border:1px solid var(--admin-line);border-radius:10px;background:var(--admin-surface)}
+.adminUI .adminPageHost .teamEventPanel .teamEventGroup+ .teamEventGroup {margin-bottom:14px}
 .adminUI .adminPageHost .teamEventPanel .teamEventGroup h4 {margin-top:0}
-.adminUI[data-theme="dark"] .adminPageHost .teamEventGroup article>div button {color:#94beff}
-.adminUI[data-theme="dark"] .adminPageHost .teamEventGroup article>div button+button {color:#ff9eaa}
+.adminUI[data-theme="dark"] .adminPageHost .teamEventGroup article>div button {color:var(--admin-link)}
+.adminUI[data-theme="dark"] .adminPageHost .teamEventGroup article>div button+button {color:var(--admin-danger)}
 .adminUI .adminPageHost .protocolEvents>header p {color:var(--admin-muted)}
 .adminUI .adminPageHost :is(.teamEventPanel+ .teamEventPanel,.teamEventGroup+ .teamEventGroup,.teamEventGroup article) {border-color:var(--admin-line-soft)}
 .adminUI .adminPageHost .protocolSave {background:var(--admin-surface);border-color:var(--admin-line);color:var(--admin-ink)}
 
 /* The older editors and registries use their own class names. */
-.adminUI .adminPageHost :is(.seasonList article,.divisionAdminGrid article,.teamAdminHero,.rosterAdmin,.protocolResult,.protocolRoster,.protocolEvents,.matchRosterSelect,.playoffProtocol,.situationHelp,.seasonManagerList article,.mediaAdminGrid article,.venueAdminGrid article,.laureateAdminGrid article,.homeContentList,.mediaVkImport,.newsMediaPanel,.suspensionEditor,.suspensionHistory,.dataAuditScope,.seasonSafety,.seasonManagerStats,.shootoutProtocol) {
+.adminUI .adminPageHost :is(.seasonList article,.divisionAdminGrid article,.teamAdminHero,.playerAdminHead,.rosterAdmin,.protocolResult,.protocolRoster,.protocolEvents,.matchRosterSelect,.playoffProtocol,.situationHelp,.seasonManagerList article,.mediaAdminGrid article,.venueAdminGrid article,.laureateAdminGrid article,.homeContentList,.mediaVkImport,.newsMediaPanel,.suspensionEditor,.suspensionHistory,.dataAuditScope,.seasonSafety,.seasonManagerStats,.shootoutProtocol) {
   background:var(--admin-surface);border-color:var(--admin-line);color:var(--admin-ink);
 }
 .adminUI .adminPageHost :is(.rosterAdmin>header,.protocolRoster header,.protocolEvents>header,.newsAdminList>header,.homeContentList header,.suspensionRegistry header,.dataAuditList article>header,.seasonManagerStats,.newsMediaPanel) {background:var(--admin-surface-raised);border-color:var(--admin-line-soft);color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.rosterAdminRow,.newsAdminList article,.homeContentList article,.suspensionRegistry article,.protocolEvents article,.dataAuditList article) {border-color:var(--admin-line-soft);color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.rosterAdminRow.suspended,.rosterAdminRow.inactive) {background:var(--admin-surface-raised);opacity:1}
-.adminUI .adminPageHost :is(.teamAdminLogo,.rosterAdmin>header span,.rosterAdminPerson>b,.playerSearchResults button>b,.usersList article>div,.seasonDropdown b) {background:var(--admin-surface-raised);color:var(--admin-link)}
+.adminUI .adminPageHost :is(.teamAdminLogo,.registryIdentity>b,.rosterAdmin>header span,.rosterAdminPerson>b,.playerSearchResults button>b,.usersList article>div,.seasonDropdown b) {background:var(--admin-surface-raised);color:var(--admin-link)}
 .adminUI .adminPageHost :is(.seasonManagerList h2,.seasonManagerStats b,.newsMediaPanel h3,.dataAuditList h3,.protocolRoster label,.suspensionRegistry article>a) {color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.seasonList p,.divisionAdminGrid p,.seasonManagerList header p,.newsAdminList p,.homeContentList p,.dataAuditList header span,.auditList time,.rosterAdminPerson small) {color:var(--admin-muted)}
 .adminUI .adminPageHost :is(.seasonList button,.competitionActions a,.mediaAdminGrid button,.laureateAdminGrid button,.protocolEvents header .secondary,.newsEditor>footer button:not(:last-child),.documentEditor>footer button:not(:last-child),.mediaEditor>footer button:not(:last-child),.suspensionEditor footer button:not(:last-child)) {background:var(--admin-surface-raised);border:1px solid var(--admin-line);color:var(--admin-ink)}
-.adminUI .adminPageHost :is(.rosterAdminActions button:not(.quiet),.protocolEvents header button:not(.secondary),.protocolSave button,.seasonManagerList footer button:not(:disabled),.newsEditor>footer button:last-child,.documentEditor>footer button:last-child,.mediaEditor>footer button:last-child,.suspensionEditor footer button:last-child) {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink)}
+.adminUI .adminPageHost :is(.rosterAdminActions button:not(.quiet):not(.suspensionButton),.protocolEvents header button:not(.secondary),.protocolSave button,.seasonManagerList footer button:not(:disabled),.newsEditor>footer button:last-child,.documentEditor>footer button:last-child,.mediaEditor>footer button:last-child,.suspensionEditor footer button:last-child) {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink)}
 .adminUI .adminPageHost :is(.newsEditor>header,.documentEditor>header,.mediaEditor>header) {background:var(--admin-surface-raised);border-color:var(--admin-line);color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.newsEditor>header span,.newsEditor>header button,.documentEditor>header button,.mediaEditor>header button) {color:var(--admin-ink);border-color:var(--admin-line)}
 .adminUI .adminPageHost :is(.newsEditor>footer,.documentEditor>footer,.mediaEditor>footer,.seasonManagerList footer) {background:var(--admin-surface);border-color:var(--admin-line-soft)}
@@ -185,29 +214,34 @@
 .adminUI .adminPageHost :is(.auditFilters button,.auditModeTabs button,.dataAuditFilters select) {background:var(--admin-surface-raised);border-color:var(--admin-line);color:var(--admin-ink)}
 .adminUI .adminPageHost :is(.auditFilters button.active,.auditModeTabs button.active) {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink)}
 
-.adminUI.adminAuthShell {min-height:100vh;position:relative;background:var(--admin-bg)}
-.adminUI .adminAuthTheme {position:absolute;right:24px;top:22px;z-index:3}
-.adminUI .authPage {background:radial-gradient(circle at 80% 10%,#4672a42a,transparent 38%),var(--admin-bg);color:var(--admin-ink)}
-.adminUI .authPage :is(form,section) {background:var(--admin-surface);border:1px solid var(--admin-line);color:var(--admin-ink);box-shadow:var(--admin-shadow)}
-.adminUI .authPage :is(h1,p,label,small) {color:var(--admin-ink)}
-.adminUI .authPage p,.adminUI .authPage label small {color:var(--admin-muted)}
-.adminUI .authPage input {background:var(--admin-surface-raised);border-color:var(--admin-line);color:var(--admin-ink)}
-.adminUI .authPage button {background:var(--admin-accent);color:var(--admin-accent-ink)}
-.adminUI .authPage a {color:var(--admin-link)}
+.adminUI.adminAuthShell {min-height:100vh;background:var(--admin-bg)}
+.adminUI .adminAuthTheme {display:flex;justify-content:flex-end;padding:16px var(--admin-gutter)}
+.adminUI .authPage {min-height:calc(100dvh - 74px);align-items:center;padding-top:12px;padding-bottom:42px;background:var(--admin-bg);color:var(--admin-ink)}
+.adminUI .authPage :is(form,section) {background:var(--admin-surface);border:1px solid var(--admin-line);border-radius:14px;color:var(--admin-ink);box-shadow:var(--admin-shadow)}
+.adminUI .authPage h1 {margin:16px 0 20px;color:var(--admin-ink);font:750 clamp(24px,4vw,30px)/1.2 var(--font-inter),Arial,sans-serif;letter-spacing:-.025em}
+.adminUI .authPage label {color:var(--admin-muted);font-size:13px;font-weight:650}
+.adminUI .authPage :is(p,label small) {color:var(--admin-muted);font-size:13px}
+.adminUI .authPage button + p {margin:16px 0 0}
+.adminUI .authPage input {background:var(--admin-surface-raised);border-color:var(--admin-control-line);color:var(--admin-ink);min-width:0}
+.adminUI .authPage button {background:var(--admin-accent);color:var(--admin-accent-ink);font-weight:700;cursor:pointer}
+.adminUI .authPage button:hover {background:var(--admin-accent-hover)}
+.adminUI .authPage a {color:var(--admin-link);font-size:13px}
+.adminUI .authPage em {color:var(--admin-danger);font-size:13px}
+.adminUI .authLogo b {color:#ffacb9}
 
 @media(max-width:1000px) {
-  .adminUI .adminMobileBar {background:var(--admin-toolbar);border-bottom:1px solid var(--admin-line-soft)}
-  .adminUI .adminMobileBar>a {color:var(--admin-ink)}
-  .adminUI .adminMobileBar button {background:var(--admin-surface-raised);border-color:var(--admin-line);color:var(--admin-ink)}
+  .adminUI .adminMenuButton {display:inline-flex;margin-right:auto;cursor:pointer}
   .adminUI .adminSideGlobal {height:auto;border-right:0;border-bottom:1px solid var(--admin-line)}
+  .adminUI .adminDashboard .adminGrid {grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:600px) {
-  .adminToolbar {padding:12px 16px;align-items:flex-start;flex-direction:column}
-  .adminToolbarActions {width:100%;justify-content:space-between;gap:8px}
-  .adminToolbarSite {padding:8px 10px}
-  .adminUI .adminContent {padding-top:24px}
+  .adminToolbar {gap:8px}
+  .adminToolbarSite,.adminMenuButton {padding-inline:7px;min-height:44px}
+  .adminThemeSwitch button {min-height:36px}
+  .adminUI .adminContent {padding-top:20px}
   .adminUI .adminPageHost .adminNotice {align-items:flex-start}
-  .adminUI .adminAuthTheme {right:12px;top:12px}
+  .adminUI .adminPageHost .adminNotice a {margin-left:0}
+  .adminUI .authPage input {font-size:16px}
 }
 
 .adminUI .adminPageHost .rosterBulkSaveBar {
@@ -228,24 +262,107 @@
   font-size:12px;
   font-weight:700;
 }
-.adminUI .adminPageHost .rosterBulkSaveBar button {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink);font-weight:800}
+.adminUI .adminPageHost .rosterBulkSaveBar button {background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-accent-ink);font-weight:650}
 .adminUI .adminPageHost .rosterBulkSaveBar button:disabled {opacity:.55;cursor:not-allowed}
-.adminUI .adminPageHost .rosterBulkSaveError {margin:8px 0 0;color:#c11232;font-weight:700}
-.adminUI .adminPageHost .rosterAdminRow.rosterDraftChanged {box-shadow:inset 3px 0 #e50830}
+.adminUI .adminPageHost .rosterBulkSaveError {margin:8px 0 0;color:var(--admin-danger);font-weight:700}
+.adminUI .adminPageHost .rosterAdminRow.rosterDraftChanged {box-shadow:inset 2px 0 var(--admin-focus)}
 .adminUI .adminPageHost .rosterAdminActions .suspensionButton {
-  width:82px;
-  max-width:82px;
-  min-height:27px!important;
-  padding:4px 3px;
-  background:#c11232!important;
-  border:1px solid #c11232!important;
-  color:#fff!important;
-  font-size:9px;
-  line-height:1.1;
+  min-height:36px;
+  padding:6px 9px;
+  background:var(--admin-danger-bg);
+  border:1px solid var(--admin-line);
+  color:var(--admin-danger)!important;
+  font-size:12px;
+  line-height:1.3;
   overflow-wrap:anywhere;
   text-align:center;
 }
-.adminUI .adminPageHost .rosterAdminActions .suspensionButton:hover:not(:disabled) {background:#a00d29!important}
+.adminUI .adminPageHost .rosterAdminActions .suspensionButton:hover:not(:disabled) {border-color:var(--admin-danger)}
 @media(max-width:600px) {
   .adminUI .adminPageHost .rosterBulkSaveBar {top:4px;flex-wrap:wrap}
+}
+
+/* Theme shared surfaces that still use the original editor styles. */
+.adminUI .adminContent :is(.documentList>header,.leagueAdminIntro>header,.leagueAdminPeople>header,.leagueAdminPhoto,.mediaUpload) {
+  background:var(--admin-surface-raised);
+  border-color:var(--admin-line);
+  color:var(--admin-ink);
+}
+.adminUI .adminContent :is(.leagueAdminIntro,.leagueAdminPeople,.assignmentTable,.playerSearchResults,.playerInfo article) {
+  background:var(--admin-surface);
+  border-color:var(--admin-line);
+  color:var(--admin-ink);
+  box-shadow:var(--admin-shadow);
+}
+.adminUI .adminContent .playerInfo small {font-size:12px}
+.adminUI .adminContent .playerInfo b {font-weight:650}
+.adminUI .adminContent .playerAdminHead h1 {font-weight:750}
+.adminUI .adminContent .playerPhoto {background:var(--admin-surface-soft);color:var(--admin-muted)}
+.adminUI .adminContent :is(.leagueAdminList h4,.leagueAdminPeople>header h3,.leagueAdminEditorHead h4) {color:var(--admin-ink)}
+.adminUI .adminContent :is(.leagueAdminList article,.assignmentTable article,.matchRosterSelect>header,.seasonManagerStats span) {border-color:var(--admin-line)}
+.adminUI .adminContent :is(.adminPagination span,.documentList>header span,.documentList>header small,.newsAdminList header small,.leagueAdminNumber,.mediaUpload>span,.seasonManagerStats span,.seasonManagerList footer small,.shotsGrid span,.matchRosterSelect header span,.protocolEvents header span) {
+  color:var(--admin-muted);
+  font-size:13px;
+}
+.adminUI .adminContent .emptyEvents {color:var(--admin-muted)!important}
+.adminUI .adminContent :is(.textAdd,.usersList article>footer button,.venueAdminGrid article>button,.playerSearchResults button,.playerAdminHead>button) {color:var(--admin-link)}
+.adminUI .adminContent :is(.textAdd,.usersList article>footer button,.venueAdminGrid article>button,.playerSearchResults button):hover:not(:disabled) {color:var(--admin-ink)}
+.adminUI .adminContent :is(.leagueAdminList nav button,.leagueAdminEditor>footer>button:first-child,.leagueAdminPhoto>button,.playerAdminHead>button) {
+  border-color:var(--admin-control-line);
+  background:var(--admin-surface-raised);
+}
+.adminUI .adminContent :is(.leagueAdminList nav button.remove,.leagueAdminPhoto>button,.mediaVkImport .mediaVkWarning,.rosterAdminActions .quiet,.rosterAdminPerson em) {color:var(--admin-danger)}
+.adminUI .adminContent .mediaVkImport :is(h3,span) {color:var(--admin-ink)}
+.adminUI .adminContent :is(.leagueAdminFields>button,.leagueAdminPeople>header>button,.leagueAdminEditor>footer>button:last-child,.mediaVkImport button) {background:var(--admin-accent);color:var(--admin-accent-ink)}
+.adminUI .adminContent :is(.leagueAdminFields>button,.leagueAdminPeople>header>button,.leagueAdminEditor>footer>button:last-child,.mediaVkImport button):hover:not(:disabled) {background:var(--admin-accent-hover)}
+.adminUI .adminContent .leagueAdminList article.isHidden {opacity:1}
+.adminUI .adminContent .leagueAdminList small {font-size:12px}
+.adminUI .adminContent .leagueAdminList article:not(.isHidden) small {color:var(--admin-success-ink)}
+.adminUI .adminContent .seasonSafety {background:var(--admin-surface-soft);color:var(--admin-ink);border:1px solid var(--admin-line);border-radius:9px}
+.adminUI .adminContent .seasonSafety span {color:var(--admin-muted)}
+.adminUI .adminContent .seasonManagerList {gap:16px;background:transparent;border:0;box-shadow:none}
+.adminUI .adminContent .seasonManagerList footer {margin:0}
+.adminUI .adminContent .seasonManagerStats span {font-size:12px}
+.adminUI .adminContent .protocolScore>em:not(.live) {background:var(--admin-success-bg);color:var(--admin-success-ink);font-size:12px}
+.adminUI .adminContent .protocolScore>em.live {background:var(--admin-danger-bg);color:var(--admin-danger);font-size:12px;box-shadow:none}
+.adminUI .adminContent .protocolNotice {background:var(--admin-surface-soft);border-color:var(--admin-control-line);color:var(--admin-ink)}
+.adminUI .adminContent .protocolNotice span {color:var(--admin-muted)}
+.adminUI .adminContent .rosterAdminActions .suspensionDone {background:var(--admin-success-bg)!important;color:var(--admin-success-ink)!important}
+.adminUI .adminContent .rosterAdminActions .suspensionButton {font-size:12px}
+.adminUI .adminContent .rosterAdminPerson em {font-size:12px}
+
+@media(max-width:600px) {
+  .adminUI .adminContent :is(.competitionHead,.adminRegistryHead)>button {margin-top:0}
+  .adminUI .adminContent .competitionHead {display:flex;align-items:flex-start}
+  .adminUI .adminContent .seasonManagerStats {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .adminUI .adminContent .teamEventGroup article {flex-wrap:wrap}
+}
+
+.adminUI .adminContent .newsAdminList article small {color:var(--admin-muted);font-size:12px}
+.adminUI .adminContent .documentList .published {color:var(--admin-success-ink)}
+.adminUI .adminContent .documentList .draft {color:var(--admin-muted)}
+.adminUI .adminContent .documentList article>button {color:var(--admin-link)}
+.adminUI .adminContent .documentList article>button:hover {color:var(--admin-ink)}
+.adminUI .adminContent .newsRowActions button {background:var(--admin-surface-raised)!important;border-color:var(--admin-control-line)!important;color:var(--admin-ink)}
+.adminUI .adminContent .newsRowActions button:first-child {background:var(--admin-accent)!important;border-color:var(--admin-accent)!important;color:var(--admin-accent-ink)!important}
+.adminUI .adminContent .newsRowActions button:first-child:hover {background:var(--admin-accent-hover)!important}
+
+.adminUI .adminPageHost .adminContent .adminSpacedRows {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.adminUI .adminContent .adminSpacedRows > :is(header, h2, summary) {
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background: var(--admin-surface-raised);
+}
+
+.adminUI .adminContent .adminSpacedRows > article {
+  margin-top: 6px;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background-color: var(--admin-surface);
 }

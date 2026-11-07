@@ -5,11 +5,10 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: #07111fcc;
+  background: var(--admin-modal-backdrop);
   box-sizing: border-box;
 }
 
-.adminUI[data-theme="light"] .adminModalBackdrop { background: #10233a99; }
 .adminUI .adminModalMount { display: contents; }
 
 .adminUI .adminModalPanel {
@@ -21,7 +20,7 @@
   border-radius: 18px;
   background: var(--admin-surface);
   color: var(--admin-ink);
-  box-shadow: 0 28px 80px #0209148c;
+  box-shadow: 0 20px 56px #101e3145;
   scrollbar-color: var(--admin-line) var(--admin-surface);
 }
 
@@ -115,7 +114,7 @@
 .adminUI .matchRosterModal > header > span { color: var(--admin-muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
 .adminUI .matchRosterModal h2 { margin: 5px 0 6px; color: var(--admin-ink); font-size: 25px; }
 .adminUI .matchRosterModal > header p { margin: 0; color: var(--admin-muted); font-size: 14px; line-height: 1.5; }
-.adminUI .matchRosterModalTools { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 20px 0 14px; }
+.adminUI .matchRosterModalTools { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 20px 0 14px; }
 .adminUI .matchRosterModalTools label { display: grid; gap: 6px; flex: 1; max-width: 440px; color: var(--admin-muted); font-size: 12px; font-weight: 700; }
 .adminUI .matchRosterModalTools input,.adminUI .matchRosterModalNumber input { min-height: 42px; padding: 9px 12px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-surface-raised); color: var(--admin-ink); font: inherit; box-sizing: border-box; }
 .adminUI .matchRosterModalTools input { width: 100%; }

@@ -504,7 +504,7 @@ export default function MatchProtocolPage() {
               {match.division.competition.season.name} ·{" "}
               {match.division.competition.name} · {match.division.name}
             </span>
-            <div className="protocolScoreBoard">
+            <h1 className="protocolScoreBoard">
               <b>{match.homeTeamEntry.team.name}</b>
               <strong>
                 {resultType === "TECHNICAL"
@@ -516,7 +516,7 @@ export default function MatchProtocolPage() {
                   : awayScore}
               </strong>
               <b>{match.awayTeamEntry.team.name}</b>
-            </div>
+            </h1>
             <p>
               {match.startsAt
                 ? new Date(match.startsAt).toLocaleString("ru-RU")
@@ -622,7 +622,6 @@ export default function MatchProtocolPage() {
         <section className="matchRosterSelect matchRosterPicker">
           <header>
             <div>
-              <span>СОСТАВ НА МАТЧ</span>
               <h2>Участники игры</h2>
               <p>{selected.length} игроков выбрано · выберите команду для редактирования состава</p>
             </div>
@@ -652,7 +651,6 @@ export default function MatchProtocolPage() {
         <section className="protocolEvents">
           <header>
             <div>
-              <span>СОБЫТИЯ</span>
               <h2>Голы и удаления</h2>
               <p>
                 Время указывается от начала матча — период определяется

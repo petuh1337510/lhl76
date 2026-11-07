@@ -16,8 +16,20 @@
   background: var(--admin-surface-raised);
   border-top: 1px solid var(--admin-line-soft);
   color: var(--admin-muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
+}
+
+@media (min-width: 1321px) {
+  .adminUI .adminContent .adminMatchTable > header {
+    border-radius: 9px 9px 0 0;
+  }
+
+  .adminUI .adminContent .adminMatchTable .matchAdminColumns {
+    border: 1px solid var(--admin-line);
+    border-top: 0;
+    border-radius: 0 0 9px 9px;
+  }
 }
 
 .adminUI .adminContent .adminMatchTable article {
@@ -34,7 +46,7 @@
   z-index: 1;
   border: 0;
   background: transparent;
-  border-radius: 0;
+  border-radius: inherit;
   cursor: pointer;
 }
 
@@ -54,7 +66,7 @@
 .adminUI .adminContent .adminMatchTable .matchAdminClub small {
   max-width: 100%;
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -67,7 +79,7 @@
 
 .adminUI .adminContent .adminMatchTable .matchAdminTag {
   color: var(--admin-link);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -98,7 +110,7 @@
 }
 
 .adminUI .adminContent .adminMatchTable article.technicalMatch .matchAdminScore span {
-  color: #e9576c;
+  color: var(--admin-danger);
 }
 
 .adminUI .adminContent .adminMatchTable .matchAdminStatus {
@@ -112,7 +124,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 8px 7px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.2;
 }
 
@@ -147,7 +159,7 @@
   border: 0;
   background: transparent;
   color: var(--admin-link);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
   text-align: left;
@@ -175,7 +187,7 @@
   border: 0;
   background: transparent;
   color: var(--admin-link);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 750;
   line-height: 1.35;
   text-align: left;
@@ -214,13 +226,13 @@
 
 .adminUI .adminContent .adminMatchTable .matchAdminActions .matchAdminDelete {
   margin-left: 8px;
-  color: #e48795;
-  font-size: 10px;
+  color: var(--admin-danger);
+  font-size: 12px;
   font-weight: 650;
 }
 
 .adminUI[data-theme="light"] .adminContent .adminMatchTable .matchAdminActions .matchAdminDelete {
-  color: #af2842;
+  color: var(--admin-danger);
 }
 
 .adminUI .adminContent .adminMatchTable .matchAdminPlayoff {
@@ -230,7 +242,7 @@
   align-items: center;
   gap: 7px;
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.3;
   cursor: pointer;
 }
@@ -247,7 +259,7 @@
   margin: 0;
   padding: 5px 0 0;
   color: var(--admin-warning-ink);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .adminUI .adminContent .adminMatchTable .matchAdminEmpty {
@@ -257,7 +269,7 @@
   font-size: 13px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1320px) {
   .adminUI .adminContent .adminMatchTable .matchAdminColumns { display: none; }
   .adminUI .adminContent .adminMatchTable article {
     grid-template-columns: minmax(0, 1fr) 78px minmax(0, 1fr);
@@ -270,7 +282,7 @@
   .adminUI .adminContent .adminMatchTable .matchAdminStatus { grid-column: 1; grid-row: 2; }
   .adminUI .adminContent .adminMatchTable .matchAdminStatus > em { width: auto; }
   .adminUI .adminContent .adminMatchTable .matchAdminDate { grid-column: 2; grid-row: 2; }
-  .adminUI .adminContent .adminMatchTable .matchAdminTime { grid-column: 3; grid-row: 2; }
+  .adminUI .adminContent .adminMatchTable .matchAdminTime { grid-column: 2; grid-row: 3; }
   .adminUI .adminContent .adminMatchTable .matchAdminVenueCell { grid-column: 1 / 3; grid-row: 3; }
   .adminUI .adminContent .adminMatchTable .matchAdminActions {
     grid-column: 3;
@@ -282,21 +294,20 @@
   .adminUI .adminContent .adminMatchTable :is(.matchAdminDate,.matchAdminTime,.matchAdminVenueCell)::before {
     content: attr(data-label) " · ";
     color: var(--admin-muted);
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 
 @media (max-width: 600px) {
-  .adminUI .adminContent .adminMatchTable article { gap: 12px 8px; padding: 16px; }
+  .adminUI .adminContent .adminMatchTable article { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px; }
   .adminUI .adminContent .adminMatchTable .matchAdminHome { min-width: 0; }
-  .adminUI .adminContent .adminMatchTable .matchAdminScore { min-width: 72px; }
-  .adminUI .adminContent .adminMatchTable .matchAdminDate { grid-column: 1 / 3; grid-row: 2; }
-  .adminUI .adminContent .adminMatchTable .matchAdminTime { grid-column: 3; grid-row: 2; }
-  .adminUI .adminContent .adminMatchTable .matchAdminStatus { grid-column: 1; grid-row: 3; }
-  .adminUI .adminContent .adminMatchTable .matchAdminVenueCell { grid-column: 2 / 4; grid-row: 3; }
-  .adminUI .adminContent .adminMatchTable .matchAdminActions { grid-column: 1 / -1; grid-row: 4; }
-  .adminUI .adminContent .adminMatchTable .matchAdminWarning { grid-row: 5; }
-  .adminUI .adminContent .adminMatchTable .matchAdminDate::before,
-  .adminUI .adminContent .adminMatchTable .matchAdminTime::before,
+  .adminUI .adminContent .adminMatchTable .matchAdminAway { grid-column: 1; grid-row: 2; }
+  .adminUI .adminContent .adminMatchTable .matchAdminScore { grid-row: 1 / 3; min-width: 72px; }
+  .adminUI .adminContent .adminMatchTable .matchAdminDate { grid-column: 1; grid-row: 3; }
+  .adminUI .adminContent .adminMatchTable .matchAdminTime { grid-column: 2; grid-row: 3; }
+  .adminUI .adminContent .adminMatchTable .matchAdminStatus { grid-column: 1; grid-row: 4; }
+  .adminUI .adminContent .adminMatchTable .matchAdminVenueCell { grid-column: 1 / -1; grid-row: 5; }
+  .adminUI .adminContent .adminMatchTable .matchAdminActions { grid-column: 1 / -1; grid-row: 6; flex-direction:row; align-items:center; }
+  .adminUI .adminContent .adminMatchTable .matchAdminWarning { grid-row: 7; }
   .adminUI .adminContent .adminMatchTable .matchAdminVenueCell::before { display: block; }
 }

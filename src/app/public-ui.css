@@ -150,7 +150,7 @@
 .matchHeroVenue a:hover,.matchHeroTop a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
 /* Numerical alignment, not a change to statistical values or sorting. */
-:is(.homePage,.publicChamp,.teamPublic,.playerPublic,.matchPublic) :is(table,.leagueTable,.standingTable,.playerHistory,.playerStats,.matchHeroResult,.teamMatchCenter,.score,.statPoints) {
+:is(.homePage,.publicChamp,.teamPublic,.playerPublic,.matchPublic) :is(table,.leagueTable,.standingTable,.playerHistory,.playerStats,.matchHeroResult,.score,.statPoints) {
   font-variant-numeric: tabular-nums lining-nums;
 }
 .teamStatisticsTable,.leagueTableViewport,.playerHistoryBlock { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #7797b6 #eaf0f6; }
@@ -212,3 +212,21 @@
 .venuePageHero .shell > span { display: block; font-size: 13px; }
 .newsCard time,.publicNewsCardBody time,.newsArticleHeader time,.homeNewsCard time { font-size: 12px; color: #52677f; }
 .publicMedia:has(.publicNewsEmpty),.leagueCatalog:has(.publicNewsEmpty),.publicVenues:has(.publicNewsEmpty) { min-height: 0; }
+
+/* Keep statistics inside narrow phone screens. */
+@media (max-width: 600px) {
+  .matchPublic .matchStatViewport { min-width:0; touch-action:pan-y; scroll-behavior:auto; overscroll-behavior-x:contain; }
+  .matchPublic .matchPlayerStatsTable { min-width:470px; }
+  .matchPublic .matchPlayerStatsHead,
+  .matchPublic .matchPlayerStatRow { grid-template-columns:210px repeat(4,65px); }
+  .matchPublic .matchPlayerStatRow>span { min-width:0; gap:5px; }
+  .matchPublic .matchPlayerStatRow>span>strong { min-width:0; white-space:normal; overflow-wrap:anywhere; line-height:1.2; }
+  .matchPublic .matchGoalieStatsTable { min-width:590px; }
+  .matchPublic .matchGoalieStatsHead,
+  .matchPublic .matchGoalieStatRow { grid-template-columns:190px 80px repeat(4,80px); }
+  .matchPublic .matchGoalieStatRow>span>strong { min-width:0; overflow-wrap:anywhere; line-height:1.2; }
+  .matchPublic .matchStatMobileControls span { font-size:10px; }
+  .playerPublic .playerHistoryTeam>span { overflow-wrap:break-word; }
+  .playerPublic .playerHistory>a { min-height:96px; padding-top:12px; padding-bottom:12px; }
+  .playerPublic .playerHistoryTeam small { white-space:normal; line-height:1.4; }
+}

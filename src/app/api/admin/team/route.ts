@@ -24,7 +24,24 @@ async function handleGET(request: NextRequest) {
 async function handlePATCH(request: NextRequest) {
   const body = await request.json();
   const version=editVersion(body.expectedUpdatedAt);
-  const team = await prisma.team.update({ where: { id: body.id, updatedAt:version }, data: { updatedAt:nextEditVersion(version), name: body.name, shortName: body.shortName || body.name, city: body.city || null, shortDescription: body.shortDescription || null, description: body.description || null, achievements: body.achievements ? body.achievements.split(/\r?\n/).filter(Boolean) : [], logoUrl: body.logoUrl || null, teamPhotoUrl: body.teamPhotoUrl || null, vkUrl: body.vkUrl || null, telegramUrl: body.telegramUrl || null, websiteUrl: body.websiteUrl || null } });
+  const team = await prisma.team.update({
+    where: { id: body.id, updatedAt: version },
+    data: {
+      updatedAt: nextEditVersion(version),
+      name: body.name,
+      shortName: body.shortName || body.name,
+      city: body.city || null,
+      shortDescription: body.shortDescription || null,
+      description: body.description || null,
+      achievements: body.achievements ? body.achievements.split(/\r?\n/).filter(Boolean) : [],
+      logoUrl: body.logoUrl || null,
+      calendarAccent: body.calendarAccent === undefined ? undefined : body.calendarAccent?.toLowerCase() || null,
+      teamPhotoUrl: body.teamPhotoUrl || null,
+      vkUrl: body.vkUrl || null,
+      telegramUrl: body.telegramUrl || null,
+      websiteUrl: body.websiteUrl || null,
+    },
+  });
   return NextResponse.json(team);
 }
 

@@ -110,11 +110,11 @@ export default function MediaAdmin() {
   };
 
   return <section className="adminContent divisionPage mediaAdmin">
-    <a className="backButton" href="/admin">← К панели управления</a>
-    <div className="competitionHead"><div><span>КОНТЕНТ САЙТА</span><h2>Медиагалерея</h2><p>Фотоальбомы лиги — из VK или загруженные вручную.</p></div><button onClick={() => { setForm(blank); setOpen(true); }}>+ НОВЫЙ АЛЬБОМ</button></div>
+
+    <div className="competitionHead"><div><h1>Медиагалерея</h1></div><button onClick={() => { setForm(blank); setOpen(true); }}>+ Новый альбом</button></div>
 
     <section className="mediaVkImport">
-      <div><span>ИМПОРТ ИЗ ВКОНТАКТЕ</span><h3>Подключить фотоальбом</h3><p>Вставьте ссылку вида vk.ru/album-123_456. Снимки на сайте обновляются автоматически раз в час; если VK недоступен, остаётся сохранённая копия.</p>{vkConfigured === false ? <p className="mediaVkWarning">Подключение пока недоступно: на сервере не настроен токен VK. Сама ссылка подходит.</p> : null}</div>
+      <div><span>ИМПОРТ ИЗ ВКОНТАКТЕ</span><h3>Подключить фотоальбом</h3><p>Ссылка вида vk.ru/album-123_456. Фото обновляются раз в час. Если VK недоступен, сайт показывает сохранённую копию.</p>{vkConfigured === false ? <p className="mediaVkWarning">Подключение пока недоступно: на сервере не настроен токен VK. Сама ссылка подходит.</p> : null}</div>
       <form onSubmit={(event) => { event.preventDefault(); void importVk(albumUrl); }}>
         <input type="url" value={albumUrl} onChange={(event) => setAlbumUrl(event.target.value)} placeholder="https://vk.ru/album-123_456" aria-label="Ссылка на альбом ВКонтакте" required />
         <button disabled={busy || vkConfigured !== true || !albumUrl.trim()}>{busy ? "Загружаю…" : "ДОБАВИТЬ ИЗ ВК"}</button>
@@ -144,6 +144,6 @@ export default function MediaAdmin() {
         <h3>{item.title}</h3><small>{item.isPublished ? "Опубликован" : "Черновик"}</small>
         <footer><button onClick={() => edit(item)}>Изменить</button>{source ? <button disabled={busy} onClick={() => void importVk(source)}>Обновить из VK</button> : null}<button onClick={() => void toggle(item)}>{item.isPublished ? "Снять" : "Опубликовать"}</button></footer>
       </article>;
-    }) : <p className="registryEmpty">Альбомов пока нет. Подключите VK-альбом или создайте его вручную.</p>}</section>
+    }) : <p className="registryEmpty">Альбомов пока нет.</p>}</section>
   </section>;
 }

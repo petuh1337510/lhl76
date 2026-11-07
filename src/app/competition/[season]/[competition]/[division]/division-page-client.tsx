@@ -4,6 +4,8 @@ import { UiIcon } from "@/components/ui-icon";
 import { PlayoffBracket } from '@/components/playoff-bracket';
 import { StatisticsOverview } from "@/components/statistics-overview";
 import { statisticsCategories, isDefender } from "@/lib/statistics-categories";
+import { CalendarMatchCard } from "@/components/calendar-match-card";
+import calendarStyles from "@/components/calendar-match-card.module.css";
 
 import { PublicImage } from "@/components/public-image";
 
@@ -15,7 +17,7 @@ import { usePublicChoice, usePublicPage, usePublicLocation, handleTabKeys } from
 import { withPublicQuery, withReturn } from "@/lib/public-navigation";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LiveMatchRefresh } from "@/components/live-match-refresh";
-import type { DivisionMatchTeam, DivisionPageData } from "@/lib/division-page";
+import type { DivisionPageData } from "@/lib/division-page";
 
 type Tab = "table" | "calendar" | "statistics";
 type Stage = "regular" | "playoff";
@@ -41,41 +43,6 @@ function pluralTeams(value: number) {
   if ([2, 3, 4].includes(value % 10) && ![12, 13, 14].includes(value % 100))
     return "команды";
   return "команд";
-}
-
-function formatMatchDate(value: string | null) {
-  if (!value) return { date: "Дата уточняется", time: "—" };
-  const date = new Date(value);
-  return {
-    date: new Intl.DateTimeFormat("ru-RU", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      timeZone: "Europe/Moscow",
-    }).format(date),
-    time: new Intl.DateTimeFormat("ru-RU", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Europe/Moscow",
-    }).format(date),
-  };
-}
-
-function MatchTeam({ team, entryId }: { team: DivisionMatchTeam; entryId: string }) {
-  const location = usePublicLocation();
-  return (
-    <Link className="teamMatchSide" href={withReturn(`/team/${team.slug}?competition=${entryId}`, location)}>
-      <i className={team.logoUrl ? "tankiMark" : "opponentMark"}>
-        {team.logoUrl ? (
-          <PublicImage width={160} height={160} sizes="160px" src={team.logoUrl} alt="" />
-        ) : (
-          team.name.slice(0, 1)
-        )}
-      </i>
-      <strong>{team.name}</strong>
-      <small>{team.city || ""}</small>
-    </Link>
-  );
 }
 
 export function DivisionPageClient({ data }: { data: DivisionPageData }) {
@@ -301,69 +268,23 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
             </header>
             {matches.length ? (
               <>
-                <div className="teamSchedule">
-                  {matches.map((game, index) => {
-                    const when = formatMatchDate(game.startsAt);
-                    const isFinal = game.status === "FINAL",
-                      live = game.status === "LIVE";
-                    const technical =
-                      isFinal && game.resultType === "TECHNICAL";
-                    const score = technical
-                      ? game.technicalWinnerTeamEntryId === game.homeTeamEntryId
-                        ? "+ — −"
-                        : "− — +"
-                      : `${game.homeScore} — ${game.awayScore}`;
+                <div className={calendarStyles.grid}>
+                  {matches.map((game) => {
+                    const technicalWinner = game.technicalWinnerTeamEntryId === game.homeTeamEntryId
+                      ? "home"
+                      : game.technicalWinnerTeamEntryId === game.awayTeamEntryId
+                        ? "away"
+                        : null;
                     return (
-                      <article
-                        className={`teamMatchCard ${live ? "isLive" : ""} ${game.isPlayoff ? "playoffMatch" : ""}`}
+                      <CalendarMatchCard
                         key={game.id}
-                      >
-                        <MatchTeam team={game.home} entryId={game.homeTeamEntryId} />
-                        <Link
-                          className="teamMatchCenter"
-                              href={withReturn(`/match/${game.slug}`, location)}
-                        >
-                          <span>
-                            #{(calendarPage - 1) * calendarPageSize + index + 1}
-                          </span>
-                          <b
-                            className={
-                              isFinal || live ? "finishedScore" : "futureTime"
-                            }
-                          >
-                            {isFinal || live
-                              ? score
-                              : when.time}
-                          </b>
-                          <small>
-                            {live
-                              ? "Счёт обновляется онлайн"
-                              : isFinal
-                                ? technical
-                                  ? "Технический результат"
-                                  : game.periodScores || "Матч завершён"
-                                : "Начало матча"}
-                          </small>
-                          <time>
-                            {when.date} ·{" "}
-                            {isFinal || live
-                              ? when.time
-                              : game.venue || "Место уточняется"}
-                          </time>
-                          <em className={live ? "live" : ""}>
-                            {live
-                              ? "● ЛАЙВ"
-                              : isFinal
-                                ? game.isPlayoff
-                                  ? "Плей-офф · завершён"
-                                  : "Завершён"
-                                : game.isPlayoff
-                                  ? "Плей-офф"
-                                  : game.stageName}
-                          </em>
-                        </Link>
-                        <MatchTeam team={game.away} entryId={game.awayTeamEntryId} />
-                      </article>
+                        match={game}
+                        href={withReturn(`/match/${game.slug}`, location)}
+                        homeHref={withReturn(`/team/${game.home.slug}?competition=${game.homeTeamEntryId}`, location)}
+                        awayHref={withReturn(`/team/${game.away.slug}?competition=${game.awayTeamEntryId}`, location)}
+                        technicalWinner={technicalWinner}
+                        stageName={game.stageName}
+                      />
                     );
                   })}
                 </div>

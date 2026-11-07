@@ -14,8 +14,43 @@ export default function TeamCardAdmin() {
   if(!team)return <main className="adminShell"><section className="adminContent divisionPage">Загрузка карточки команды…</section></main>;
   const competitions=Array.from(new Map(choices.map(c=>[c.competitionId,{id:c.competitionId,label:`${c.season} · ${c.competition}`}])).values());
   const divisions=choices.filter(c=>c.competitionId===competitionId);
-  return <main className="adminShell adminTeam"><section className="adminContent divisionPage"><a href="/admin/teams" className="backButton">← Все команды</a>{message&&<p className="adminNotice">{message}</p>}<div className="teamAdminHero"><div className="teamAdminLogo">{team.logoUrl?<PublicImage sizes="(max-width: 700px) 90vw, 320px" src={team.logoUrl} alt=""/>:team.name.slice(0,2)}</div><div><span>КАРТОЧКА КОМАНДЫ</span><h1>{team.name}</h1><p>{team.city||"Город не указан"} · {team.entries.length} привязок</p></div><div className="teamAdminActions"><a href={`/team/${team.slug}`} target="_blank">Публичная страница</a><button onClick={()=>setEdit(!edit)}>ИЗМЕНИТЬ ДАННЫЕ</button></div></div>
-  {edit&&<AdminModal title="Данные команды" onClose={()=>setEdit(false)} wide><section className="adminForm teamCardForm"><h2>Данные публичной страницы</h2><div><label>Название<input value={form.name||""} onChange={e=>put("name",e.target.value)}/></label><label>Короткое название<input value={form.shortName||""} onChange={e=>put("shortName",e.target.value)}/></label></div><div><label>Город<input value={form.city||""} onChange={e=>put("city",e.target.value)}/></label><label>Короткое описание<input value={form.shortDescription||""} onChange={e=>put("shortDescription",e.target.value)}/></label></div><label>О команде<textarea rows={6} value={form.description||""} onChange={e=>put("description",e.target.value)}/></label><label>Достижения <small>Каждое достижение с новой строки</small><textarea rows={8} value={form.achievements||""} onChange={e=>put("achievements",e.target.value)}/></label><div><label>Ссылка ВКонтакте<input value={form.vkUrl||""} onChange={e=>put("vkUrl",e.target.value)}/></label><label>Ссылка Telegram<input value={form.telegramUrl||""} onChange={e=>put("telegramUrl",e.target.value)}/></label></div><label>Сайт команды<input value={form.websiteUrl||""} onChange={e=>put("websiteUrl",e.target.value)}/></label><div className="mediaUploadGrid"><MediaUpload label="Логотип команды" value={form.logoUrl} kind="teams" onChange={url=>put("logoUrl",url)}/><MediaUpload label="Командная фотография" value={form.teamPhotoUrl} kind="teams" onChange={url=>put("teamPhotoUrl",url)}/></div><footer><button onClick={()=>setEdit(false)}>Отмена</button><button onClick={save}>Сохранить карточку</button></footer></section></AdminModal>}
-  <div className="adminListHead"><p>Команда привязывается к конкретному сезону, соревнованию и дивизиону. Для каждой привязки формируется отдельная заявка.</p><button onClick={()=>setBinding(true)}>+ ПРИВЯЗАТЬ К СЕЗОНУ</button></div>{binding&&<AdminModal title="Новая привязка команды" onClose={()=>setBinding(false)}><section className="adminForm rosterBindingForm"><h2>Новая привязка команды</h2><label>1. Сезон и соревнование<select value={competitionId} onChange={e=>{setCompetitionId(e.target.value);setDivisionId("")}}><option value="">Выберите соревнование</option>{competitions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>2. Дивизион<select value={divisionId} disabled={!competitionId} onChange={e=>setDivisionId(e.target.value)}><option value="">{competitionId?"Выберите дивизион":"Сначала выберите соревнование"}</option>{divisions.map((d:any)=><option key={d.id} value={d.id}>{d.division}</option>)}</select></label><footer><button onClick={()=>setBinding(false)}>Отмена</button><button disabled={!divisionId} onClick={saveBinding}>Создать привязку</button></footer></section></AdminModal>}
-  <section className="assignmentTable"><h2>Сезоны и соревнования</h2>{team.entries.length?team.entries.map((entry:any)=><article key={entry.id}><div><b>{entry.season} · {entry.competition}</b><small>Дивизион: {entry.division}</small></div><strong>{entry.players} игроков</strong><a href={`/admin/team-roster?entry=${entry.id}`}>Управлять заявкой →</a></article>):<p className="registryEmpty">Команда пока не привязана ни к одному соревнованию.</p>}</section></section></main>;
+  return <main className="adminShell adminTeam"><section className="adminContent divisionPage"><a href="/admin/teams" className="backButton">← Все команды</a>{message&&<p className="adminNotice">{message}</p>}<div className="teamAdminHero"><div className="teamAdminLogo">{team.logoUrl?<PublicImage sizes="(max-width: 700px) 90vw, 320px" src={team.logoUrl} alt=""/>:team.name.slice(0,2)}</div><div><h1>{team.name}</h1><p>{team.city||"Город не указан"} · {team.entries.length} привязок</p></div><div className="teamAdminActions"><a href={`/team/${team.slug}`} target="_blank">Публичная страница</a><button onClick={()=>setEdit(!edit)}>ИЗМЕНИТЬ ДАННЫЕ</button></div></div>
+  {edit && <AdminModal title="Данные команды" onClose={() => setEdit(false)} wide>
+    <section className="adminForm teamCardForm">
+      <h2>Данные публичной страницы</h2>
+      <div>
+        <label>Название<input value={form.name || ""} onChange={e => put("name", e.target.value)} /></label>
+        <label>Короткое название<input value={form.shortName || ""} onChange={e => put("shortName", e.target.value)} /></label>
+      </div>
+      <div>
+        <label>Город<input value={form.city || ""} onChange={e => put("city", e.target.value)} /></label>
+        <label>Короткое описание<input value={form.shortDescription || ""} onChange={e => put("shortDescription", e.target.value)} /></label>
+      </div>
+      <label>О команде<textarea rows={6} value={form.description || ""} onChange={e => put("description", e.target.value)} /></label>
+      <label>Достижения <small>Каждое достижение с новой строки</small><textarea rows={8} value={form.achievements || ""} onChange={e => put("achievements", e.target.value)} /></label>
+      <div>
+        <label>Ссылка ВКонтакте<input value={form.vkUrl || ""} onChange={e => put("vkUrl", e.target.value)} /></label>
+        <label>Ссылка Telegram<input value={form.telegramUrl || ""} onChange={e => put("telegramUrl", e.target.value)} /></label>
+      </div>
+      <label>Сайт команды<input value={form.websiteUrl || ""} onChange={e => put("websiteUrl", e.target.value)} /></label>
+      <div className="mediaUploadGrid">
+        <MediaUpload label="Логотип команды" value={form.logoUrl} kind="teams" onChange={url => put("logoUrl", url)} />
+        <MediaUpload label="Командная фотография" value={form.teamPhotoUrl} kind="teams" onChange={url => put("teamPhotoUrl", url)} />
+      </div>
+      <fieldset className="teamCalendarAccent">
+        <legend>Цвет обводки в календаре</legend>
+        <input
+          type="color"
+          aria-label="Цвет обводки в календаре"
+          value={form.calendarAccent || "#73869a"}
+          onChange={event => put("calendarAccent", event.target.value)}
+        />
+        <span>{form.calendarAccent?.toUpperCase() || "Подбирается по логотипу"}</span>
+        <button type="button" disabled={!form.calendarAccent} onClick={() => put("calendarAccent", "")}>Сбросить к цвету логотипа</button>
+      </fieldset>
+      <footer><button onClick={() => setEdit(false)}>Отмена</button><button onClick={save}>Сохранить карточку</button></footer>
+    </section>
+  </AdminModal>}
+  <div className="adminListHead"><p>Для каждой привязки создаётся отдельная заявка.</p><button onClick={()=>setBinding(true)}>+ ПРИВЯЗАТЬ К СЕЗОНУ</button></div>{binding&&<AdminModal title="Новая привязка команды" onClose={()=>setBinding(false)}><section className="adminForm rosterBindingForm"><h2>Новая привязка команды</h2><label>1. Сезон и соревнование<select value={competitionId} onChange={e=>{setCompetitionId(e.target.value);setDivisionId("")}}><option value="">Выберите соревнование</option>{competitions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>2. Дивизион<select value={divisionId} disabled={!competitionId} onChange={e=>setDivisionId(e.target.value)}><option value="">{competitionId?"Выберите дивизион":"Сначала выберите соревнование"}</option>{divisions.map((d:any)=><option key={d.id} value={d.id}>{d.division}</option>)}</select></label><footer><button onClick={()=>setBinding(false)}>Отмена</button><button disabled={!divisionId} onClick={saveBinding}>Создать привязку</button></footer></section></AdminModal>}
+  <section className="assignmentTable adminSpacedRows"><h2>Сезоны и соревнования</h2>{team.entries.length?team.entries.map((entry:any)=><article key={entry.id}><div><b>{entry.season} · {entry.competition}</b><small>Дивизион: {entry.division}</small></div><strong>{entry.players} игроков</strong><a href={`/admin/team-roster?entry=${entry.id}`}>Управлять заявкой →</a></article>):<p className="registryEmpty">Команда пока не привязана ни к одному соревнованию.</p>}</section></section></main>;
 }

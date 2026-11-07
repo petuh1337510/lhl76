@@ -1,27 +1,81 @@
 "use client";
 import { PublicImage } from "@/components/public-image";
+import { UiIcon, type IconName } from "@/components/ui-icon";
 
 import { useEffect, useState, useRef } from "react";
 import MediaUpload from "../media-upload";
 import { AdminModal } from "../admin-modal";
 import PlayersList from "../players/page";
+import styles from "./player-profile.module.css";
+import formStyles from "./player-form.module.css";
 
 type Category = { id: string; name: string };
+type Assignment = {
+  id: string;
+  updatedAt: string;
+  teamEntryId: string;
+  season: string;
+  competition: string;
+  division: string;
+  team: string;
+  numberOverride: string;
+  leadership: "NONE" | "CAPTAIN" | "ASSISTANT";
+  status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+};
 const emptyPlayer = { firstName: "", lastName: "", patronymic: "", nativeName: "", birthDate: "", country: "Россия", birthPlace: "", position: "Нападающий", stickHand: "Левый", heightCm: "", weightKg: "", league: "ЛХЛ-76", baseNumber: "", ratingCategoryId: "", photoUrl: "", laureatePhotoUrl: "", assignments: [] };
 
+type PlayerField = { key: string; label: string; type?: "date" | "number"; options?: string[] };
+const personalFields: PlayerField[] = [
+  { key: "lastName", label: "Фамилия" },
+  { key: "firstName", label: "Имя" },
+  { key: "patronymic", label: "Отчество" },
+  { key: "nativeName", label: "Имя в родной стране" },
+  { key: "birthDate", label: "Дата рождения", type: "date" },
+  { key: "country", label: "Страна" },
+  { key: "birthPlace", label: "Место рождения" },
+];
+const playingFields: PlayerField[] = [
+  { key: "position", label: "Амплуа", options: ["Вратарь", "Защитник", "Нападающий"] },
+  { key: "stickHand", label: "Хват", options: ["Левый", "Правый"] },
+  { key: "heightCm", label: "Рост, см", type: "number" },
+  { key: "weightKg", label: "Вес, кг", type: "number" },
+  { key: "league", label: "Лига" },
+];
+
 function PlayerFields({ form, put, categories }: { form: any; put: (key: string, value: string) => void; categories: Category[] }) {
-  const fields = [["lastName", "Фамилия"], ["firstName", "Имя"], ["patronymic", "Отчество"], ["nativeName", "Имя в родной стране"], ["birthDate", "Дата рождения"], ["country", "Страна"], ["birthPlace", "Место рождения"], ["position", "Амплуа"], ["stickHand", "Хват"], ["heightCm", "Рост, см"], ["weightKg", "Вес, кг"], ["league", "Лига"]];
+  const renderField = ({ key, label, type, options }: PlayerField) => {
+    const change = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => put(key, event.target.value);
+    return <label key={key}>{label}{options ? (
+      <select value={form[key] || ""} onChange={change}>
+        {options.map(option => <option key={option}>{option}</option>)}
+      </select>
+    ) : <input type={type ?? "text"} value={form[key] || ""} onChange={change} />}</label>;
+  };
   return <>
-    <div>{fields.map(([key, label]) => <label key={key}>{label}{key === "position" ? <select value={form[key] || ""} onChange={(event) => put(key, event.target.value)}><option>Вратарь</option><option>Защитник</option><option>Нападающий</option></select> : key === "stickHand" ? <select value={form[key] || ""} onChange={(event) => put(key, event.target.value)}><option>Левый</option><option>Правый</option></select> : <input type={key === "birthDate" ? "date" : key === "heightCm" || key === "weightKg" ? "number" : "text"} value={form[key] || ""} onChange={(event) => put(key, event.target.value)} />}</label>)}
-      <label>Базовый номер<input value={form.baseNumber || ""} onChange={(event) => put("baseNumber", event.target.value)} inputMode="numeric" maxLength={3} placeholder="Например, 35" /></label>
-      <label>Рейтинг игрока<select value={form.ratingCategoryId || ""} onChange={(event) => put("ratingCategoryId", event.target.value)}><option value="">Не указан</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-    </div>
-    <p className="playerRatingHelp">Рейтинг закреплён за игроком и меняется сразу во всех командах. Базовый номер используется, если команда не установила свой.</p>
-    <div className="mediaUploadGrid"><MediaUpload label="Фотография игрока" value={form.photoUrl} kind="players" onChange={(url) => put("photoUrl", url)} /><MediaUpload label="Фотография лауреата" value={form.laureatePhotoUrl} kind="players" onChange={(url) => put("laureatePhotoUrl", url)} /></div>
+    <section className={formStyles.group}>
+      <h3>Личные данные</h3>
+      <div className={formStyles.fields}>{personalFields.map(renderField)}</div>
+    </section>
+    <section className={formStyles.group}>
+      <h3>Игровые данные</h3>
+      <div className={formStyles.fields}>
+        {playingFields.map(renderField)}
+        <label>Базовый номер<input value={form.baseNumber || ""} onChange={(event) => put("baseNumber", event.target.value)} inputMode="numeric" maxLength={3} placeholder="Например, 35" /></label>
+        <label>Рейтинг игрока<select value={form.ratingCategoryId || ""} onChange={(event) => put("ratingCategoryId", event.target.value)}><option value="">Не указан</option>{categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+      </div>
+      <p className={formStyles.hint}>Рейтинг общий для всех команд. Номер в заявке имеет приоритет над базовым.</p>
+    </section>
+    <section className={formStyles.group}>
+      <h3>Фотографии</h3>
+      <div className={formStyles.photos}>
+        <MediaUpload label="Фотография игрока" value={form.photoUrl} kind="players" onChange={url => put("photoUrl", url)} />
+        <MediaUpload label="Фотография лауреата" value={form.laureatePhotoUrl} kind="players" onChange={url => put("laureatePhotoUrl", url)} />
+      </div>
+    </section>
   </>;
 }
 
-function AssignmentEditor({ item, baseNumber, onSaved }: { item: any; baseNumber: string; onSaved: () => Promise<void> }) {
+function AssignmentEditor({ item, baseNumber, onSaved }: { item: Assignment; baseNumber: string; onSaved: () => Promise<void> }) {
   const [number, setNumber] = useState(item.numberOverride || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -34,13 +88,24 @@ function AssignmentEditor({ item, baseNumber, onSaved }: { item: any; baseNumber
       await onSaved();
     } catch { setError("Не удалось сохранить номер"); } finally { setBusy(false); }
   }
-  return <article className="playerAssignmentEditor">
-    <div className="playerAssignmentIdentity"><b>{item.team} {item.leadership !== "NONE" && <em>{item.leadership === "CAPTAIN" ? "К" : "А"}</em>}</b><small>{item.season} · {item.competition} · {item.division}</small></div>
-    <label>Номер этой команды<input value={number} onChange={(event) => setNumber(event.target.value)} inputMode="numeric" maxLength={3} placeholder={baseNumber || "Базовый не задан"} /><small>{item.numberOverride ? `Свой номер · базовый № ${baseNumber || "—"}` : `По умолчанию № ${baseNumber || "—"}`}</small></label>
-    <span>{item.status === "SUSPENDED" ? "Дисквалифицирован" : item.status === "INACTIVE" ? "Снят" : "Активен"}</span>
-    <button disabled={busy || number === (item.numberOverride || "")} onClick={save}>{busy ? "Сохраняю…" : "Сохранить номер"}</button>
-    <a href={`/admin/team-roster?entry=${encodeURIComponent(item.teamEntryId)}`}>Дисквалификация и состав →</a>
-    {error && <p className="playerAssignmentError" role="alert">{error}</p>}
+  return <article className={styles.card}>
+    <div className={styles.details}>
+      <div className={styles.cardHeading}>
+        <h4>{item.competition}</h4>
+        <span className={styles.status} data-status={item.status}>
+          {item.status === "SUSPENDED" ? "Дисквалифицирован" : item.status === "INACTIVE" ? "Снят" : "Активен"}
+        </span>
+      </div>
+      <p><strong>{item.team}</strong> · {item.division}{item.leadership !== "NONE" && <> · {item.leadership === "CAPTAIN" ? "Капитан" : "Ассистент"}</>}</p>
+      <a href={`/admin/team-roster?entry=${encodeURIComponent(item.teamEntryId)}`}>Дисквалификация и состав →</a>
+    </div>
+    <div className={styles.number}>
+      <label>Номер в команде<input value={number} onChange={(event) => setNumber(event.target.value)} inputMode="numeric" maxLength={3} placeholder={baseNumber || "—"} /></label>
+      <button className={styles.save} disabled={busy || number === (item.numberOverride || "")} onClick={save}>
+        <UiIcon name="save" />{busy ? "Сохраняю…" : "Сохранить номер"}
+      </button>
+    </div>
+    {error && <p className={styles.error} role="alert">{error}</p>}
   </article>;
 }
 
@@ -87,13 +152,55 @@ export default function PlayerAdmin() {
   const teams = choices.filter((choice) => choice.competitionId === competitionId && choice.divisionId === divisionId);
   if (!isNew && !player) return <main className="adminShell"><section className="adminContent divisionPage">Загрузка…</section></main>;
   if (isNew) return <><PlayersList /><div className="adminContent adminModalMount"><AdminModal title="Создание игрока" onClose={() => { window.location.href = "/admin/players"; }} wide><section className="adminForm playerCreateFull"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} /><footer><a href="/admin/players">Отмена</a><button disabled={!form.lastName.trim() || !form.firstName.trim()} onClick={save}>Создать игрока</button></footer></section></AdminModal></div></>;
-  return <main className="adminShell adminPlayer"><section className="adminContent divisionPage">
+  const assignmentsBySeason = new Map<string, Assignment[]>();
+  for (const item of player.assignments as Assignment[]) {
+    const season = assignmentsBySeason.get(item.season);
+    if (season) season.push(item);
+    else assignmentsBySeason.set(item.season, [item]);
+  }
+  const facts: { icon: IconName; label: string; value: string }[] = [
+    { icon: "calendar", label: "Дата рождения", value: player.birthDate || "—" },
+    { icon: "pin", label: "Страна / место рождения", value: [player.country, player.birthPlace].filter(Boolean).join(" · ") || "—" },
+    { icon: "shirt", label: "Хват", value: player.stickHand || "—" },
+    { icon: "ruler", label: "Рост / вес", value: `${player.heightCm || "—"} см · ${player.weightKg || "—"} кг` },
+    { icon: "hash", label: "Базовый номер", value: player.baseNumber ? `№ ${player.baseNumber}` : "—" },
+    { icon: "star", label: "Рейтинг", value: player.rating || "—" },
+  ];
+  return <main className="adminShell adminPlayer"><section className={`adminContent divisionPage ${styles.profile}`}>
     <a className="backButton" href="/admin/players">← Все игроки</a>{message && <p className="adminNotice">{message}</p>}
-    <div className="playerAdminHead"><div className="playerPhoto">{player.photoUrl ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={player.photoUrl} alt="" /> : "ИГ"}</div><div><span>КАРТОЧКА ИГРОКА</span><h1>{player.lastName} {player.firstName}</h1><p>{player.position || "Амплуа не указано"}</p></div><button onClick={() => setEdit(!edit)}>ИЗМЕНИТЬ ДАННЫЕ</button></div>
-    <div className="playerInfo"><article><small>Дата рождения</small><b>{player.birthDate || "—"}</b></article><article><small>Страна / место рождения</small><b>{player.country || "—"} · {player.birthPlace || "—"}</b></article><article><small>Хват</small><b>{player.stickHand || "—"}</b></article><article><small>Рост / вес</small><b>{player.heightCm || "—"} см · {player.weightKg || "—"} кг</b></article><article><small>Базовый номер</small><b>№ {player.baseNumber || "—"}</b></article><article><small>Рейтинг</small><b>{player.rating || "—"}</b></article></div>
+    <header className={styles.hero}>
+      <div className={styles.portrait} aria-hidden="true">
+        {player.photoUrl ? <PublicImage src={player.photoUrl} width={216} height={216} sizes="108px" alt="" /> : `${player.lastName?.[0] ?? ""}${player.firstName?.[0] ?? ""}`}
+      </div>
+      <div className={styles.identity}>
+        <h1>{player.lastName} {player.firstName}</h1>
+        <p>{player.position || "Амплуа не указано"}</p>
+      </div>
+      <button className={styles.edit} onClick={() => setEdit(true)}><UiIcon name="edit" />Изменить данные</button>
+    </header>
+    <dl className={styles.facts}>
+      {facts.map(({ icon, label, value }) => <div className={styles.fact} key={label}>
+        <dt><UiIcon name={icon} />{label}</dt>
+        <dd>{value}</dd>
+      </div>)}
+    </dl>
     {edit && <AdminModal title="Данные игрока" onClose={() => setEdit(false)} wide><section className="adminForm"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} /><footer><button onClick={() => setEdit(false)}>Отмена</button><button onClick={save}>Сохранить данные</button></footer></section></AdminModal>}
-    <div className="adminListHead"><p>Привязка создаётся по цепочке: соревнование → дивизион → команда.</p><button onClick={() => { setNumber(player.baseNumber || ""); setAssign(true); }}>+ ДОБАВИТЬ ПРИВЯЗКУ</button></div>
     {assign && <AdminModal title="Привязать игрока к заявке" onClose={() => setAssign(false)}><section className="adminForm rosterBindingForm"><h2>Привязать игрока к заявке</h2><label>1. Соревнование<select value={competitionId} onChange={(event) => { setCompetitionId(event.target.value); setDivisionId(""); setTeamEntryId(""); }}><option value="">Выберите соревнование</option>{competitions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label><label>2. Дивизион<select value={divisionId} disabled={!competitionId} onChange={(event) => { setDivisionId(event.target.value); setTeamEntryId(""); }}><option value="">{competitionId ? "Выберите дивизион" : "Сначала выберите соревнование"}</option>{divisions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label><label>3. Команда<select value={teamEntryId} disabled={!divisionId} onChange={(event) => setTeamEntryId(event.target.value)}><option value="">{divisionId ? "Выберите команду" : "Сначала выберите дивизион"}</option>{teams.map((choice) => <option key={choice.id} value={choice.id}>{choice.team}</option>)}</select></label><div><label>Номер только для этой команды<input value={number} onChange={(event) => setNumber(event.target.value)} inputMode="numeric" maxLength={3} placeholder={player.baseNumber || "Будет взят базовый"} /></label><label>Роль<select value={leadership} onChange={(event) => setLeadership(event.target.value)}><option value="NONE">Нет</option><option value="CAPTAIN">Капитан</option><option value="ASSISTANT">Ассистент</option></select></label></div>{error && <p className="formError">{error}</p>}<footer><button onClick={() => setAssign(false)}>Отмена</button><button disabled={!teamEntryId} onClick={saveRoster}>Сохранить привязку</button></footer></section></AdminModal>}
-    <section className="assignmentTable"><h2>Участие в соревнованиях</h2><p className="assignmentTableHint">Пустой номер команды означает базовый номер игрока. Существующие номера заявок сохранены как индивидуальные.</p>{player.assignments.map((item: any) => <AssignmentEditor key={item.id} item={item} baseNumber={player.baseNumber} onSaved={async () => { await load(); setMessage("Номер команды сохранён"); }} />)}</section>
+    <section className={styles.participation} aria-labelledby="player-participation">
+      <header className={styles.heading}>
+        <div>
+          <h2 id="player-participation">Участие в соревнованиях</h2>
+          {assignmentsBySeason.size > 0 && <p>Если поле номера пустое, используется базовый номер игрока.</p>}
+        </div>
+        <button className={styles.add} onClick={() => { setNumber(player.baseNumber || ""); setAssign(true); }}><UiIcon name="plus" />Добавить привязку</button>
+      </header>
+      {Array.from(assignmentsBySeason, ([season, items]) => <section className={styles.season} key={season}>
+        <h3 className={styles.seasonTitle}><UiIcon name="calendar" />Сезон {season}</h3>
+        <div className={styles.cards}>
+          {items.map(item => <AssignmentEditor key={item.id} item={item} baseNumber={player.baseNumber} onSaved={async () => { await load(); setMessage("Номер команды сохранён"); }} />)}
+        </div>
+      </section>)}
+      {assignmentsBySeason.size === 0 && <p className={styles.empty}>У игрока пока нет заявок.</p>}
+    </section>
   </section></main>;
 }
