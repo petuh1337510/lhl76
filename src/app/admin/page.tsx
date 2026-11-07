@@ -49,7 +49,7 @@ export default function Admin() {
         <article className="adminPanel dashboardMatches">
           <header><h2>Ближайшие матчи</h2><a href="/admin/matches">Все матчи</a></header>
           {data?.nextMatches.length ? <ul>{data.nextMatches.map(match => <li key={match.id}>
-            <a href={`/admin/match-protocol?match=${match.id}`}>
+            <a href={`/admin/match-protocol?match=${encodeURIComponent(match.slug)}`}>
               <b>{match.home} — {match.away}</b>
               <span>{match.status === "LIVE" ? "В эфире" : match.startsAt ? new Date(match.startsAt).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "Дата не назначена"} · {match.division}</span>
             </a>
@@ -58,7 +58,7 @@ export default function Admin() {
         {!secretary && <article className="adminPanel">
           <header><h2>Быстрый доступ</h2></header>
           <ul>
-            <li><a href="/admin/team-roster"><b>Заявки команд</b></a></li>
+            <li><a href="/admin/teams"><b>Заявки команд</b></a></li>
             <li><a href="/admin/news"><b>Редактор новостей</b></a></li>
           </ul>
         </article>}

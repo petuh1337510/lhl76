@@ -54,8 +54,20 @@ export default function TeamRosterAdmin() {
   const [number, setNumber] = useState(""), [leadership, setLeadership] = useState("NONE"), [categoryId, setCategoryId] = useState(""), [message, setMessage] = useState(""), [error, setError] = useState("");
   const [drafts, setDrafts] = useState<Record<string, RosterDraft>>({});
   const [saving, setSaving] = useState(false), [saveError, setSaveError] = useState("");
+  const [loading, setLoading] = useState(true), [loadError, setLoadError] = useState("");
   const load=useCallback(async(id:string) => { if (!id) return false; try { const response = await fetch(`/api/admin/roster?teamEntryId=${encodeURIComponent(id)}`); if (!response.ok) return false; setData(await response.json()); return true; } catch { return false; } },[]);
-  useEffect(() => { const id = new URLSearchParams(window.location.search).get("entry") || ""; setEntryId(id); load(id); }, [load]);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("entry")?.trim() || "";
+    setEntryId(id);
+    if (!id) { setLoading(false); return; }
+    let cancelled = false;
+    load(id).then((loaded) => {
+      if (cancelled) return;
+      if (!loaded) setLoadError("Не удалось загрузить заявку. Проверьте ссылку или повторите загрузку.");
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [load]);
   useEffect(() => { const timer = setTimeout(async () => { if (query.trim().length < 2) { setResults([]); return; } const response = await fetch(`/api/admin/players?search=${encodeURIComponent(query.trim())}&page=1`); if (response.ok) setResults((await response.json()).items); }, 250); return () => clearTimeout(timer); }, [query]);
   const changed = data?.roster.filter((item: any) => drafts[item.id] && isChanged(item, drafts[item.id])) || [];
   useEffect(() => {
@@ -94,7 +106,9 @@ export default function TeamRosterAdmin() {
     if (!response.ok) { setError((await response.json()).error || "Не удалось добавить игрока"); return; }
     setOpen(false); setSelected(null); setQuery(""); setNumber(""); setLeadership("NONE"); setCategoryId(""); setMessage("Игрок добавлен в заявку"); await load(entryId);
   }
-  if (!data) return <main className="adminShell"><section className="adminContent divisionPage">Загрузка заявки…</section></main>;
+  if (loading) return <main className="adminShell"><section className="adminContent divisionPage">Загрузка заявки…</section></main>;
+  if (!entryId) return <main className="adminShell"><section className="adminContent divisionPage"><h1>Заявки команд</h1><p>Выберите команду, затем откройте её заявку в нужном сезоне и соревновании.</p><a className="backButton" href="/admin/teams">Выбрать команду</a></section></main>;
+  if (!data) return <main className="adminShell"><section className="adminContent divisionPage"><h1>Заявка команды</h1><p role="alert">{loadError}</p><a className="backButton" href={`/admin/team-roster?entry=${encodeURIComponent(entryId)}`}>Повторить загрузку</a><a className="backButton" href="/admin/teams">Выбрать команду</a></section></main>;
   const active = data.roster.filter((item: any) => item.status !== "INACTIVE"), inactive = data.roster.filter((item: any) => item.status === "INACTIVE");
   return <main className="adminShell"><section className="adminContent divisionPage"><a className="backButton" href={`/admin/team?slug=${data.entry.team.slug}`}>← Карточка команды</a>{message && <p className="adminNotice">{message}</p>}<div className="competitionHead"><div><span>{data.entry.season} · {data.entry.competition}</span><h1>Заявка команды «{data.entry.team.name}»</h1><p>Дивизион «{data.entry.division}» · в составе {active.length} игроков</p></div><button onClick={() => setOpen(true)} disabled={saving}>+ ДОБАВИТЬ ИГРОКА</button></div>
     <div className="rosterBulkSaveBar"><span>{changed.length ? `Изменено игроков: ${changed.length}` : "Изменений нет"}</span><button onClick={saveRoster} disabled={!changed.length || saving}>{saving ? "СОХРАНЕНИЕ…" : "СОХРАНИТЬ СОСТАВ"}</button></div>{saveError && <p className="rosterBulkSaveError" role="alert">{saveError}</p>}
