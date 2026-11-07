@@ -25,4 +25,22 @@ describe("uploaded image processing", () => {
     const result = await prepareImage(original);
     expect(await sharp(result!.display).metadata()).toMatchObject({ width: 100, height: 60 });
   });
+  it.each(["gif", "webp"] as const)("converts animated %s without losing frames or timing", async (format) => {
+    const width = 600, height = 300;
+    const red = Buffer.alloc(width * height * 3);
+    const blue = Buffer.alloc(width * height * 3);
+    for (let index = 0; index < red.length; index += 3) { red[index] = 255; blue[index + 2] = 255; }
+    const input = sharp(Buffer.concat([red, blue]), { raw: { width, height: height * 2, channels: 3, pageHeight: height } });
+    const options = { delay: [100, 240], loop: 3 };
+    const original = await (format === "gif" ? input.gif(options) : input.webp(options)).toBuffer();
+    const copy = Buffer.from(original);
+    const result = await prepareImage(original);
+    expect(original.equals(copy)).toBe(true);
+    expect(await sharp(result.display, { animated: true }).metadata()).toMatchObject({ format: "webp", pages: 2, pageHeight: 300, width: 600, delay: [100, 240], loop: 3 });
+    expect(await sharp(result.thumbnail, { animated: true }).metadata()).toMatchObject({ format: "webp", pages: 2, pageHeight: 240, width: 480, delay: [100, 240], loop: 3 });
+    const first = await sharp(result.display, { page: 0 }).stats();
+    const second = await sharp(result.display, { page: 1 }).stats();
+    expect(first.channels[0].mean).toBeGreaterThan(first.channels[2].mean + 150);
+    expect(second.channels[2].mean).toBeGreaterThan(second.channels[0].mean + 150);
+  });
 });

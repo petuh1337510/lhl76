@@ -40,7 +40,7 @@ async function handlePOST(request: NextRequest) {
   const name = `${id}-original-${safeUploadStem(file.name)}${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   if(!buffer.length||(!file.type.startsWith('image/')&&(buffer.length<8||!validFileSignature(buffer,extension))))return NextResponse.json({error:'Содержимое файла не соответствует формату'},{status:400});
-  let prepared: Awaited<ReturnType<typeof prepareImage>> = null;
+  let prepared: Awaited<ReturnType<typeof prepareImage>> | null = null;
   if (file.type.startsWith("image/")) {
     try { prepared = await prepareImage(buffer); }
     catch { return NextResponse.json({ error: "Изображение повреждено или превышает допустимое разрешение (40 Мп)" }, { status: 400 }); }
