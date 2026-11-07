@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
     maximumResponseBody:25*1024*1024,
     maximumDiskCacheSize:128*1024*1024,
-    formats: ["image/webp"],
+    formats: ["image/avif", "image/webp"],
     qualities:[75,80,85],
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1600, 1920],
     imageSizes: [32, 48, 64, 96, 128, 160, 256],

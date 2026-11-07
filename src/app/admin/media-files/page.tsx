@@ -125,7 +125,7 @@ export default function MediaFilesPage() {
     <div className={styles.list}>
       {!loading && !filtered.length && <p className={styles.empty}>По выбранным фильтрам файлов нет.</p>}
       {filtered.slice(0, visibleCount).map((item) => <article className={styles.item} key={item.key}>
-        <div className={styles.preview}>{item.previewUrl ? <PublicImage src={item.previewUrl} alt="" width={80} height={80} sizes="80px" unoptimized={item.origin === "upload"} /> : <span aria-hidden="true">{item.type === "document" ? "▤" : "▶"}</span>}</div>
+        <div className={styles.preview}>{item.previewUrl ? <PublicImage src={item.previewUrl} alt="" width={80} height={80} sizes="80px" /> : <span aria-hidden="true">{item.type === "document" ? "▤" : "▶"}</span>}</div>
         <div className={styles.details}>
           <strong>{item.title}</strong>
           <small>{typeLabels[item.type]} · {kindLabels[item.kind] ?? item.kind} · {item.origin === "archive" ? "Архив · " : ""}{new Date(item.date).toLocaleDateString("ru-RU", item.datePrecision === "month" ? { month: "long", year: "numeric" } : undefined)} · {formatSize(item.size)}</small>

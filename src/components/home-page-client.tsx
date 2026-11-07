@@ -81,8 +81,6 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const desktop = getImageProps({ src: localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
   const mobile = getImageProps({ src: localMediaUrl(current.imageMobile || current.imageDesktop), alt: "", width: 768, height: 1080, sizes: "100vw", quality: 80, priority:active===0 }).props;
   const style = {
-    "--hero-desktop": `url(${current.imageDesktop})`,
-    "--hero-mobile": `url(${current.imageMobile || current.imageDesktop})`,
     "--hero-duration": `${current.duration}ms`,
   } as CSSProperties;
   return <section

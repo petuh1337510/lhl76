@@ -30,7 +30,7 @@ export function PlayerPhotoViewer({ photoUrl, name }: { photoUrl: string | null;
       onClick={(event) => { if (event.target === dialogRef.current) dialogRef.current?.close(); }}
     >
       <button className={styles.close} type="button" onClick={() => dialogRef.current?.close()} aria-label="Закрыть фотографию">×</button>
-      {open ? <PublicImage unoptimized className={styles.fullPhoto} width={1200} height={1600} sizes="100vw" src={photoUrl} alt={name} /> : null}
+      {open ? <PublicImage quality={85} className={styles.fullPhoto} width={1200} height={1600} sizes="100vw" src={photoUrl} alt={name} /> : null}
     </dialog> : null}
   </>;
 }

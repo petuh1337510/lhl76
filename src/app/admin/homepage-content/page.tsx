@@ -1,4 +1,6 @@
 "use client";
+import { getImageProps } from "next/image";
+import { localMediaUrl } from "@/lib/local-media";
 import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
@@ -88,7 +90,7 @@ export default function HomepageContent() {
       <footer><button onClick={() => setEditing(null)}>Отмена</button><button disabled={busy} onClick={save}>{busy ? "СОХРАНЯЮ…" : "Сохранить"}</button></footer>
     </section></AdminModal> : null}
     <section className="homeContentList"><header><span>МАТЕРИАЛЫ</span><small>{visible.length}</small></header>{visible.length ? visible.map((item, index) => <article key={item.id}>
-      <div className={`homeContentPreview ${item.type === "banner" ? "isBanner" : "isTile"} ${item.imageDesktop ? "hasImage" : ""}`} style={item.imageDesktop ? {backgroundImage:`url(${item.imageDesktop})`} : undefined}><span>№ {index + 1}</span>{!item.imageDesktop ? <strong>{item.title}</strong> : null}</div>
+      <div className={`homeContentPreview ${item.type === "banner" ? "isBanner" : "isTile"} ${item.imageDesktop ? "hasImage" : ""}`} style={item.imageDesktop ? {backgroundImage:`url(${getImageProps({ src: localMediaUrl(item.imageDesktop), alt: "", width: 240, height: 135 }).props.src})`} : undefined}><span>№ {index + 1}</span>{!item.imageDesktop ? <strong>{item.title}</strong> : null}</div>
       <div><h3>{item.title}</h3><p>{item.subtitle || "Без описания"} · {item.link || "ссылка не указана"}</p></div>
       <button disabled={busy} className={`homeContentVisibility ${item.active ? "published" : "draft"}`} onClick={() => toggleActive(item)}>{item.active ? "Показывается" : "Выключено"}</button>
       <div className="homeContentActions"><button disabled={busy || index === 0} onClick={() => reorder(index,-1)} aria-label={`Поднять ${item.title}`}>↑</button><button disabled={busy || index === visible.length - 1} onClick={() => reorder(index,1)} aria-label={`Опустить ${item.title}`}>↓</button><button onClick={() => setEditing(item)}>Редактировать</button><button onClick={() => remove(item)}>Удалить</button></div>
