@@ -1,6 +1,7 @@
 "use client";
 import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
+import { schedulePlayerSearch } from "@/lib/player-search";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -51,6 +52,7 @@ function RosterRow({ item, categories, draft, onChange, onSaved, saving }: { ite
 export default function TeamRosterAdmin() {
   const [data, setData] = useState<any>(null), [entryId, setEntryId] = useState(""), [open, setOpen] = useState(false);
   const [query, setQuery] = useState(""), [results, setResults] = useState<any[]>([]), [selected, setSelected] = useState<any>(null);
+  const [searchError, setSearchError] = useState("");
   const [number, setNumber] = useState(""), [leadership, setLeadership] = useState("NONE"), [categoryId, setCategoryId] = useState(""), [message, setMessage] = useState(""), [error, setError] = useState("");
   const [drafts, setDrafts] = useState<Record<string, RosterDraft>>({});
   const [saving, setSaving] = useState(false), [saveError, setSaveError] = useState("");
@@ -68,7 +70,12 @@ export default function TeamRosterAdmin() {
     });
     return () => { cancelled = true; };
   }, [load]);
-  useEffect(() => { const timer = setTimeout(async () => { if (query.trim().length < 2) { setResults([]); return; } const response = await fetch(`/api/admin/players?search=${encodeURIComponent(query.trim())}&page=1`); if (response.ok) setResults((await response.json()).items); }, 250); return () => clearTimeout(timer); }, [query]);
+  useEffect(() => {
+    setResults([]);
+    setSearchError("");
+    if (!open || selected) return;
+    return schedulePlayerSearch(query, setResults, () => setSearchError("Не удалось найти игроков. Измените запрос или попробуйте ещё раз."));
+  }, [query, open, selected]);
   const changed = data?.roster.filter((item: any) => drafts[item.id] && isChanged(item, drafts[item.id])) || [];
   useEffect(() => {
     if (!changed.length) return;
@@ -112,7 +119,7 @@ export default function TeamRosterAdmin() {
   const active = data.roster.filter((item: any) => item.status !== "INACTIVE"), inactive = data.roster.filter((item: any) => item.status === "INACTIVE");
   return <main className="adminShell"><section className="adminContent divisionPage"><a className="backButton" href={`/admin/team?slug=${data.entry.team.slug}`}>← Карточка команды</a>{message && <p className="adminNotice">{message}</p>}<div className="competitionHead"><div><span>{data.entry.season} · {data.entry.competition}</span><h1>Заявка команды «{data.entry.team.name}»</h1><p>Дивизион «{data.entry.division}» · в составе {active.length} игроков</p></div><button onClick={() => setOpen(true)} disabled={saving}>+ ДОБАВИТЬ ИГРОКА</button></div>
     <div className="rosterBulkSaveBar"><span>{changed.length ? `Изменено игроков: ${changed.length}` : "Изменений нет"}</span><button onClick={saveRoster} disabled={!changed.length || saving}>{saving ? "СОХРАНЕНИЕ…" : "СОХРАНИТЬ СОСТАВ"}</button></div>{saveError && <p className="rosterBulkSaveError" role="alert">{saveError}</p>}
-    {open && <AdminModal title="Добавить игрока в заявку" onClose={() => setOpen(false)}><section className="adminForm addRosterPlayer"><h2>Добавить игрока</h2><label>Поиск игрока<input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); }} placeholder="Введите минимум две буквы фамилии" /></label>{results.length > 0 && !selected && <div className="playerSearchResults">{results.map((player) => <button key={player.id} onClick={() => { setSelected(player); setQuery(`${player.lastName} ${player.firstName}`); setNumber(player.baseNumber || ""); setCategoryId(player.ratingCategoryId || ""); }}>{player.photoUrl ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={player.photoUrl} alt="" /> : <b>{player.lastName[0]}</b>}<span><strong>{player.lastName} {player.firstName}</strong><small>{player.patronymic || ""} · {player.position || "Амплуа не указано"}</small></span></button>)}</div>}<div><label>Номер только для этой команды<input value={number} onChange={(event) => setNumber(event.target.value)} inputMode="numeric" maxLength={3} placeholder={selected?.baseNumber || "Будет взят базовый"} /></label><label>Рейтинг игрока<select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">Не указан</option>{data.categories.map((category: Category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Роль<select value={leadership} onChange={(event) => setLeadership(event.target.value)}><option value="NONE">Нет</option><option value="CAPTAIN">Капитан</option><option value="ASSISTANT">Ассистент</option></select></label></div>{error && <p className="formError">{error}</p>}<footer><button onClick={() => setOpen(false)}>Отмена</button><button disabled={!selected} onClick={addPlayer}>Добавить в заявку</button></footer></section></AdminModal>}
+    {open && <AdminModal title="Добавить игрока в заявку" onClose={() => setOpen(false)}><section className="adminForm addRosterPlayer"><h2>Добавить игрока</h2><label>Поиск игрока<input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); }} placeholder="Введите минимум две буквы фамилии" /></label>{searchError && <p className="formError" role="alert">{searchError}</p>}{results.length > 0 && !selected && <div className="playerSearchResults">{results.map((player) => <button key={player.id} onClick={() => { setSelected(player); setQuery(`${player.lastName} ${player.firstName}`); setNumber(player.baseNumber || ""); setCategoryId(player.ratingCategoryId || ""); }}>{player.photoUrl ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={player.photoUrl} alt="" /> : <b>{player.lastName[0]}</b>}<span><strong>{player.lastName} {player.firstName}</strong><small>{player.patronymic || ""} · {player.position || "Амплуа не указано"}</small></span></button>)}</div>}<div><label>Номер только для этой команды<input value={number} onChange={(event) => setNumber(event.target.value)} inputMode="numeric" maxLength={3} placeholder={selected?.baseNumber || "Будет взят базовый"} /></label><label>Рейтинг игрока<select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">Не указан</option>{data.categories.map((category: Category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Роль<select value={leadership} onChange={(event) => setLeadership(event.target.value)}><option value="NONE">Нет</option><option value="CAPTAIN">Капитан</option><option value="ASSISTANT">Ассистент</option></select></label></div>{error && <p className="formError">{error}</p>}<footer><button onClick={() => setOpen(false)}>Отмена</button><button disabled={!selected} onClick={addPlayer}>Добавить в заявку</button></footer></section></AdminModal>}
     <section className="rosterAdmin adminSpacedRows"><header><h3>Действующий состав</h3><span>{active.length}</span></header>{active.map((item: any) => <RosterRow key={item.id} item={item} categories={data.categories} draft={drafts[item.id] || draftFrom(item)} onChange={(patch) => changeDraft(item, patch)} onSaved={() => load(entryId)} saving={saving} />)}</section>{inactive.length > 0 && <details className="rosterInactive adminSpacedRows"><summary>Снятые с заявки · {inactive.length}</summary>{inactive.map((item: any) => <RosterRow key={item.id} item={item} categories={data.categories} draft={drafts[item.id] || draftFrom(item)} onChange={(patch) => changeDraft(item, patch)} onSaved={() => load(entryId)} saving={saving} />)}</details>}
   </section></main>;
 }
