@@ -31,4 +31,7 @@ async function authorize(request:NextRequest,next:()=>NextResponse){
  if(!allowedAdminPath(session.role,path)){securityEvent('ACCESS_DENIED','administration',session.userId);return path.startsWith('/api/')?NextResponse.json({error:'Недостаточно прав'},{status:403}):NextResponse.redirect(new URL('/admin',request.url));}
  return next();
 }
-export const config={matcher:['/((?!_next/|images/|uploads/|legacy-media/|documents/legacy/|favicon.ico|icon.png|apple-icon.png|robots.txt|sitemap.xml).*)'],runtime:'nodejs'};
+// Uploads are independently protected by withAdmin (session, role, origin,
+// bounded body, concurrency and audit). Avoid Next 15's Node middleware body
+// cloning: it races the route handler and also truncates multipart bodies at 10 MB.
+export const config={matcher:['/((?!api/admin/upload/?$|_next/|images/|uploads/|legacy-media/|documents/legacy/|favicon.ico|icon.png|apple-icon.png|robots.txt|sitemap.xml).*)'],runtime:'nodejs'};
