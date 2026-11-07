@@ -3,6 +3,7 @@ import {usePathname} from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { UiIcon } from "@/components/ui-icon";
 import AdminNav from "./admin-nav";
+import { AdminSessionProvider } from "./admin-session";
 
 type AdminTheme = "dark" | "light";
 
@@ -28,7 +29,7 @@ export default function AdminShell({children, initialTheme}:{children:React.Reac
     <button type="button" aria-pressed={theme === "light"} onClick={() => selectTheme("light")}>Светлая</button>
   </div>;
   if(path==="/admin/login"||path==="/admin/setup") return <div className="adminUI adminAuthShell" data-theme={theme}><div className="adminAuthTheme">{themeSwitch}</div>{children}</div>;
-  return <div className={`adminUI adminShell adminShellGlobal${menuOpen ? " adminMenuOpen" : ""}`} data-theme={theme}>
+  return <AdminSessionProvider><div className={`adminUI adminShell adminShellGlobal${menuOpen ? " adminMenuOpen" : ""}`} data-theme={theme}>
     <a className="adminSkip" href="#admin-content">Перейти к содержимому</a>
     <div className="adminToolbar">
       <button ref={menuButton} className="adminMenuButton" type="button" aria-expanded={menuOpen} aria-controls="admin-navigation" onClick={() => setMenuOpen(!menuOpen)}>
@@ -39,5 +40,5 @@ export default function AdminShell({children, initialTheme}:{children:React.Reac
     </div>
     <AdminNav />
     <div className="adminPageHost" id="admin-content" tabIndex={-1}>{children}</div>
-  </div>;
+  </div></AdminSessionProvider>;
 }

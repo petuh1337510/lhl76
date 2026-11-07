@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useAdminUser } from "./admin-session";
 
 const groups = [
   { title: "СОРЕВНОВАНИЯ", links: [["Обзор", "/admin"], ["Сезоны", "/admin/seasons"], ["Соревнования", "/admin/competitions"], ["Матчи и календарь", "/admin/matches"]] },
@@ -12,8 +12,7 @@ const groups = [
 
 export default function AdminNav() {
   const pathname = usePathname();
-  const [role,setRole]=useState("");
-  useEffect(()=>{fetch("/api/admin/auth/me").then(response=>response.json()).then(data=>setRole(data.user?.role??""))},[]);
+  const role = useAdminUser()?.role ?? "";
   const visible=(title:string)=>role==="SUPER_ADMIN"||(role==="ADMIN"&&title!=="СИСТЕМА")||(role==="SECRETARY"&&title==="СОРЕВНОВАНИЯ");
   const isCurrent = (href: string) => pathname === href
     || (href === "/admin/competitions" && ["/admin/standings","/admin/playoff"].includes(pathname))

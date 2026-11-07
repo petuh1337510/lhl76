@@ -54,23 +54,30 @@ export default function MatchesPage() {
     try{const response=await fetch('/api/admin/matches',{method:remove?'DELETE':'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:remove?'delete-empty':'mark-playoff',matchId:match.id,expectedUpdatedAt:match.updatedAt})});const result=await response.json();if(!response.ok)throw Error(result.error||'Не удалось сохранить');await load()}catch(e){setError(e instanceof Error?e.message:'Ошибка запроса')}finally{setSaving(false)}
   }
   const load = useCallback(async () => {
-    const [list, options] = await Promise.all([
-      fetch(
+    const list = await fetch(
         `/api/admin/matches?${new URLSearchParams({
           page: String(page),
           ...Object.fromEntries(
             Object.entries(filters).filter(([, value]) => Boolean(value)),
           ),
         })}`,
-      ),
-      fetch("/api/admin/matches?choices=1"),
-    ]);
+      );
     if (list.ok) setData(await list.json());
-    if (options.ok) setChoices(await options.json());
   }, [page, filters]);
   useEffect(() => {
     load();
   }, [load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/admin/matches?choices=1", { cache: "no-store", signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("Не удалось загрузить справочники матчей. Обновите страницу.");
+        return response.json();
+      })
+      .then((options) => { if (!controller.signal.aborted) setChoices(options); })
+      .catch(() => { if (!controller.signal.aborted) setError("Не удалось загрузить справочники матчей. Обновите страницу."); });
+    return () => controller.abort();
+  }, []);
   const seasons = Array.from(
       new Map(
         choices.divisions.map((d: any) => [
@@ -132,8 +139,8 @@ export default function MatchesPage() {
       if (response.ok) {
         setOpen(false);
         setForm(empty);
-        setPage(1);
-        await load();
+        if (page === 1) await load();
+        else setPage(1);
       } else setError(result.error || "Не удалось создать матч");
     } catch {
       setError("Не удалось связаться с сервером");
@@ -195,6 +202,7 @@ export default function MatchesPage() {
           </div>
           <button onClick={() => setOpen(true)}>+ Создать матч</button>
         </div>
+        {error && !open && !editing && <p className="formError" role="alert">{error}</p>}
         {open && (
           <AdminModal title="Новый матч" onClose={() => setOpen(false)} wide>
           <section className="adminForm matchCreateForm">

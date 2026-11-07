@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAdminUser } from "./admin-session";
 
 type DashboardData = {
   activeSeason: { id: string; name: string } | null;
@@ -10,10 +11,9 @@ type DashboardData = {
 
 export default function Admin() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const user = useAdminUser();
   useEffect(() => {
     fetch("/api/admin/dashboard", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(setData);
-    fetch("/api/admin/auth/me", { cache: "no-store" }).then(r => r.json()).then(d => setUser(d.user ?? null));
   }, []);
 
   const secretary = user?.role === "SECRETARY";
