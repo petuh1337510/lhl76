@@ -1,3 +1,4 @@
+import { WebVitals } from "@/components/web-vitals";
 import type { Metadata } from "next";
 import {headers} from 'next/headers';
 import { Inter, Roboto_Condensed } from "next/font/google";
@@ -17,5 +18,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Nonce CSP requires request-time HTML; data caches remain independently scoped.
   await headers();
   const context = await getPublicSiteContext();
-  return <html lang="ru" className={`${inter.variable} ${condensed.variable}`}><body><PublicSiteProvider context={context}>{children}<div className="globalPublicFooter"><PublicSiteFooter global /></div></PublicSiteProvider></body></html>;
+  return <html lang="ru" className={`${inter.variable} ${condensed.variable}`}><body>{process.env.TELEMETRY_ENABLED !== "0" && <WebVitals />}<PublicSiteProvider context={context}>{children}<div className="globalPublicFooter"><PublicSiteFooter global /></div></PublicSiteProvider></body></html>;
 }

@@ -1,7 +1,15 @@
 import { PrismaClient } from "@prisma/client";
+import { trace, SpanStatusCode } from "@opentelemetry/api";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function createClient() {
+  return new PrismaClient().$extends({query: {$allModels: {async $allOperations({model, operation, args, query}) {
+    return trace.getTracer("lhl76-db").startActiveSpan(`db.${model}.${operation}`, async span => {
+      try { return await query(args); }
+      catch (error) { span.setStatus({code: SpanStatusCode.ERROR}); throw error; }
+      finally { span.end(); }
+    });
+  }}}}) as unknown as PrismaClient; // Query-only tracing preserves the generated client/transaction contract.
+}
+const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createClient> };
+export const prisma = globalForPrisma.prisma ?? createClient();
+globalForPrisma.prisma = prisma;

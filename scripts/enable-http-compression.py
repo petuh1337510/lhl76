@@ -13,6 +13,7 @@ try:
         if 'proxy_pass http://127.0.0.1:3000;' not in source:
             raise RuntimeError('Unexpected upstream: ' + str(path))
         source = source.replace('listen 443 ssl;', 'listen 443 ssl http2;').replace('listen 8443 ssl;', 'listen 8443 ssl http2;')
+        source = source.replace('listen 443 ssl default_server;', 'listen 443 ssl http2 default_server;').replace('listen 8443 ssl default_server;', 'listen 8443 ssl http2 default_server;')
         if '# LHL text compression' not in source:
             source = source.replace('    client_max_body_size 160m;', '''    # LHL text compression; compressed images, video and archives are excluded.
     gzip on;
