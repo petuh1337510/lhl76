@@ -2,9 +2,10 @@
 import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 import { useEffect, useState } from "react";
-import MediaUpload from "../media-upload";
+import MediaUpload, { usePendingMediaUploads } from "../media-upload";
 
 export default function TeamCardAdmin() {
+  const { uploadsPending, trackUpload } = usePendingMediaUploads();
   const [team,setTeam]=useState<any>(null),[form,setForm]=useState<any>({}),[choices,setChoices]=useState<any[]>([]),[edit,setEdit]=useState(false),[binding,setBinding]=useState(false),[competitionId,setCompetitionId]=useState(""),[divisionId,setDivisionId]=useState(""),[message,setMessage]=useState("");
   async function load(){const slug=new URLSearchParams(window.location.search).get("slug")||"hctanki76";const [a,b]=await Promise.all([fetch(`/api/admin/team?slug=${encodeURIComponent(slug)}`),fetch("/api/admin/team?choices=1")]);if(a.ok){const x=await a.json();setTeam(x);setForm(x)}if(b.ok)setChoices(await b.json())}
   useEffect(()=>{load()},[]);
@@ -34,8 +35,8 @@ export default function TeamCardAdmin() {
       </div>
       <label>Сайт команды<input value={form.websiteUrl || ""} onChange={e => put("websiteUrl", e.target.value)} /></label>
       <div className="mediaUploadGrid">
-        <MediaUpload label="Логотип команды" value={form.logoUrl} kind="teams" onChange={url => put("logoUrl", url)} />
-        <MediaUpload label="Командная фотография" value={form.teamPhotoUrl} kind="teams" onChange={url => put("teamPhotoUrl", url)} />
+        <MediaUpload label="Логотип команды" value={form.logoUrl} kind="teams" onChange={url => put("logoUrl", url)} onUploadingChange={trackUpload} />
+        <MediaUpload label="Командная фотография" value={form.teamPhotoUrl} kind="teams" onChange={url => put("teamPhotoUrl", url)} onUploadingChange={trackUpload} />
       </div>
       <fieldset className="teamCalendarAccent">
         <legend>Цвет обводки в календаре</legend>
@@ -48,7 +49,7 @@ export default function TeamCardAdmin() {
         <span>{form.calendarAccent?.toUpperCase() || "Подбирается по логотипу"}</span>
         <button type="button" disabled={!form.calendarAccent} onClick={() => put("calendarAccent", "")}>Сбросить к цвету логотипа</button>
       </fieldset>
-      <footer><button onClick={() => setEdit(false)}>Отмена</button><button onClick={save}>Сохранить карточку</button></footer>
+      <footer><button onClick={() => setEdit(false)}>Отмена</button><button disabled={uploadsPending} onClick={save}>Сохранить карточку</button></footer>
     </section>
   </AdminModal>}
   <div className="adminListHead"><p>Для каждой привязки создаётся отдельная заявка.</p><button onClick={()=>setBinding(true)}>+ ПРИВЯЗАТЬ К СЕЗОНУ</button></div>{binding&&<AdminModal title="Новая привязка команды" onClose={()=>setBinding(false)}><section className="adminForm rosterBindingForm"><h2>Новая привязка команды</h2><label>1. Сезон и соревнование<select value={competitionId} onChange={e=>{setCompetitionId(e.target.value);setDivisionId("")}}><option value="">Выберите соревнование</option>{competitions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>2. Дивизион<select value={divisionId} disabled={!competitionId} onChange={e=>setDivisionId(e.target.value)}><option value="">{competitionId?"Выберите дивизион":"Сначала выберите соревнование"}</option>{divisions.map((d:any)=><option key={d.id} value={d.id}>{d.division}</option>)}</select></label><footer><button onClick={()=>setBinding(false)}>Отмена</button><button disabled={!divisionId} onClick={saveBinding}>Создать привязку</button></footer></section></AdminModal>}

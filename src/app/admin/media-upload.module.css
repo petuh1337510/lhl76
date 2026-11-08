@@ -1,0 +1,113 @@
+.field:global(.mediaUpload) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  align-self: start;
+  align-content: start;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+
+.field:global(.mediaUpload) > span {
+  grid-column: 1;
+  font-weight: 650;
+}
+
+.field > :is(.actions, .library, small) {
+  grid-column: 1 / -1;
+}
+
+.field:global(.mediaUpload) > .preview {
+  grid-column: 2;
+  grid-row: 1;
+  width: 56px;
+  height: 56px;
+}
+
+.field:global(.mediaUpload) > .widePreview {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  width: 100%;
+  height: 126px;
+}
+
+.field > :is(.preview, .widePreview) img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.actions, .pagination, .feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.field .actions button, .library button {
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+}
+
+.field .actions button[aria-expanded="true"], .field .actions button:hover:not(:disabled), .library button:hover:not(:disabled) {
+  background: var(--admin-surface-soft);
+  color: var(--admin-link);
+}
+
+.library {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background: var(--admin-surface-raised);
+}
+
+.library input {
+  width: 100%;
+}
+
+.library p {
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr));
+  gap: 8px;
+  max-height: 280px;
+  padding: 4px;
+  overflow: auto;
+}
+
+.library .thumbnail {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.library .thumbnail img {
+  display: block;
+  width: 100%;
+  height: 74px;
+  object-fit: contain;
+}
+
+.thumbnail span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pagination {
+  justify-content: space-between;
+  color: var(--admin-muted);
+  font-size: 12px;
+}

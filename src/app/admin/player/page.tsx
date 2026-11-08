@@ -3,7 +3,7 @@ import { PublicImage } from "@/components/public-image";
 import { UiIcon, type IconName } from "@/components/ui-icon";
 
 import { useEffect, useState, useRef } from "react";
-import MediaUpload from "../media-upload";
+import MediaUpload, { usePendingMediaUploads } from "../media-upload";
 import { AdminModal } from "../admin-modal";
 import PlayersList from "../players/page";
 import styles from "./player-profile.module.css";
@@ -42,7 +42,7 @@ const playingFields: PlayerField[] = [
   { key: "league", label: "Лига" },
 ];
 
-function PlayerFields({ form, put, categories }: { form: any; put: (key: string, value: string) => void; categories: Category[] }) {
+function PlayerFields({ form, put, categories, trackUpload }: { form: any; put: (key: string, value: string) => void; categories: Category[]; trackUpload: (uploading: boolean) => void }) {
   const renderField = ({ key, label, type, options }: PlayerField) => {
     const change = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => put(key, event.target.value);
     return <label key={key}>{label}{options ? (
@@ -68,8 +68,8 @@ function PlayerFields({ form, put, categories }: { form: any; put: (key: string,
     <section className={formStyles.group}>
       <h3>Фотографии</h3>
       <div className={formStyles.photos}>
-        <MediaUpload label="Фотография игрока" value={form.photoUrl} kind="players" onChange={url => put("photoUrl", url)} />
-        <MediaUpload label="Фотография лауреата" value={form.laureatePhotoUrl} kind="players" onChange={url => put("laureatePhotoUrl", url)} />
+        <MediaUpload label="Фотография игрока" value={form.photoUrl} kind="players" onChange={url => put("photoUrl", url)} onUploadingChange={trackUpload} />
+        <MediaUpload label="Фотография лауреата" value={form.laureatePhotoUrl} kind="players" onChange={url => put("laureatePhotoUrl", url)} onUploadingChange={trackUpload} />
       </div>
     </section>
   </>;
@@ -110,6 +110,7 @@ function AssignmentEditor({ item, baseNumber, onSaved }: { item: Assignment; bas
 }
 
 export default function PlayerAdmin() {
+  const { uploadsPending, trackUpload } = usePendingMediaUploads();
   const createKey=useRef<string|null>(null);
   const [player, setPlayer] = useState<any>(null), [form, setForm] = useState<any>(emptyPlayer);
   const [categories, setCategories] = useState<Category[]>([]), [choices, setChoices] = useState<any[]>([]);
@@ -151,7 +152,7 @@ export default function PlayerAdmin() {
   const divisions = Array.from(new Map(choices.filter((choice) => choice.competitionId === competitionId).map((choice) => [choice.divisionId, { id: choice.divisionId, label: choice.division }])).values());
   const teams = choices.filter((choice) => choice.competitionId === competitionId && choice.divisionId === divisionId);
   if (!isNew && !player) return <main className="adminShell"><section className="adminContent divisionPage">Загрузка…</section></main>;
-  if (isNew) return <><PlayersList /><div className="adminContent adminModalMount"><AdminModal title="Создание игрока" onClose={() => { window.location.href = "/admin/players"; }} wide><section className="adminForm playerCreateFull"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} /><footer><a href="/admin/players">Отмена</a><button disabled={!form.lastName.trim() || !form.firstName.trim()} onClick={save}>Создать игрока</button></footer></section></AdminModal></div></>;
+  if (isNew) return <><PlayersList /><div className="adminContent adminModalMount"><AdminModal title="Создание игрока" onClose={() => { window.location.href = "/admin/players"; }} wide><section className="adminForm playerCreateFull"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} trackUpload={trackUpload} /><footer><a href="/admin/players">Отмена</a><button disabled={uploadsPending || !form.lastName.trim() || !form.firstName.trim()} onClick={save}>Создать игрока</button></footer></section></AdminModal></div></>;
   const assignmentsBySeason = new Map<string, Assignment[]>();
   for (const item of player.assignments as Assignment[]) {
     const season = assignmentsBySeason.get(item.season);
@@ -184,7 +185,7 @@ export default function PlayerAdmin() {
         <dd>{value}</dd>
       </div>)}
     </dl>
-    {edit && <AdminModal title="Данные игрока" onClose={() => setEdit(false)} wide><section className="adminForm"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} /><footer><button onClick={() => setEdit(false)}>Отмена</button><button onClick={save}>Сохранить данные</button></footer></section></AdminModal>}
+    {edit && <AdminModal title="Данные игрока" onClose={() => setEdit(false)} wide><section className="adminForm"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} trackUpload={trackUpload} /><footer><button onClick={() => setEdit(false)}>Отмена</button><button disabled={uploadsPending} onClick={save}>Сохранить данные</button></footer></section></AdminModal>}
     {assign && <AdminModal title="Привязать игрока к заявке" onClose={() => setAssign(false)}><section className="adminForm rosterBindingForm"><h2>Привязать игрока к заявке</h2><label>1. Соревнование<select value={competitionId} onChange={(event) => { setCompetitionId(event.target.value); setDivisionId(""); setTeamEntryId(""); }}><option value="">Выберите соревнование</option>{competitions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label><label>2. Дивизион<select value={divisionId} disabled={!competitionId} onChange={(event) => { setDivisionId(event.target.value); setTeamEntryId(""); }}><option value="">{competitionId ? "Выберите дивизион" : "Сначала выберите соревнование"}</option>{divisions.map((choice) => <option key={choice.id} value={choice.id}>{choice.label}</option>)}</select></label><label>3. Команда<select value={teamEntryId} disabled={!divisionId} onChange={(event) => setTeamEntryId(event.target.value)}><option value="">{divisionId ? "Выберите команду" : "Сначала выберите дивизион"}</option>{teams.map((choice) => <option key={choice.id} value={choice.id}>{choice.team}</option>)}</select></label><div><label>Номер только для этой команды<input value={number} onChange={(event) => setNumber(event.target.value)} inputMode="numeric" maxLength={3} placeholder={player.baseNumber || "Будет взят базовый"} /></label><label>Роль<select value={leadership} onChange={(event) => setLeadership(event.target.value)}><option value="NONE">Нет</option><option value="CAPTAIN">Капитан</option><option value="ASSISTANT">Ассистент</option></select></label></div>{error && <p className="formError">{error}</p>}<footer><button onClick={() => setAssign(false)}>Отмена</button><button disabled={!teamEntryId} onClick={saveRoster}>Сохранить привязку</button></footer></section></AdminModal>}
     <section className={styles.participation} aria-labelledby="player-participation">
       <header className={styles.heading}>

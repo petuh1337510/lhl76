@@ -2,9 +2,9 @@
 import { getImageProps } from "next/image";
 import { localMediaUrl } from "@/lib/local-media";
 import { AdminModal } from "../admin-modal";
-import { PublicImage } from "@/components/public-image";
+import MediaUpload, { usePendingMediaUploads } from "../media-upload";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type BannerVariant = "league"|"partner"|"match"|"broadcast"|"photo";
 type Item = { id:string; title:string; subtitle:string; link:string; type:"banner"|"tile"; active:boolean; imageDesktop:string; imageMobile:string; style:string; sortOrder:number; variant:BannerVariant; eyebrow:string; buttonLabel:string; logoUrl:string; duration:number };
@@ -24,17 +24,13 @@ export default function HomepageContent() {
   const [items, setItems] = useState<Item[]>([]);
   const [editing, setEditing] = useState<Item | null>(null);
   const [busy, setBusy] = useState(false);
+  const { uploadsPending, trackUpload } = usePendingMediaUploads();
   const [error, setError] = useState("");
   const refresh = () => fetch("/api/admin/homepage-content", { cache:"no-store" }).then((response) => response.json()).then((data) => setItems((data.items ?? []).map(withBannerSettings)));
   useEffect(() => { refresh(); }, []);
 
-  const upload = async (event: ChangeEvent<HTMLInputElement>, field: "imageDesktop"|"imageMobile"|"logoUrl") => {
-    const file = event.target.files?.[0]; if (!file || !editing) return;
-    setBusy(true); const body = new FormData(); body.set("file", file); body.set("kind", "media");
-    const response = await fetch("/api/admin/upload", { method:"POST", body }); const data = await response.json();
-    if (response.ok) setEditing((current) => current ? { ...current, [field]:data.url } : current); else setError(data.error ?? "Не удалось загрузить изображение");
-    setBusy(false);
-  };
+  const setImage = (field: "imageDesktop" | "imageMobile" | "logoUrl", url: string) =>
+    setEditing(current => current ? { ...current, [field]: url } : current);
   const save = async () => {
     if (!editing) return; setBusy(true); setError("");
     const payload = editing.type === "banner" ? { ...editing, style:JSON.stringify({ variant:editing.variant, eyebrow:editing.eyebrow, buttonLabel:editing.buttonLabel, logoUrl:editing.logoUrl, duration:editing.duration }) } : editing;
@@ -78,16 +74,19 @@ export default function HomepageContent() {
           {editing.variant !== "photo" ? <label>Текст кнопки<input value={editing.buttonLabel} onChange={(event) => setEditing({...editing,buttonLabel:event.target.value})} placeholder="ПОДРОБНЕЕ"/></label> : null}
           <label>Время показа<select value={editing.duration} onChange={(event) => setEditing({...editing,duration:Number(event.target.value)})}><option value={5000}>5 секунд</option><option value={6500}>6,5 секунды</option><option value={8000}>8 секунд</option><option value={10000}>10 секунд</option></select></label>
         </div>
-        {editing.variant === "photo" ? <p className="homepagePhotoHint"><b>Чистый фотобаннер</b><span>На сайте будет показано только загруженное изображение — без текста и затемнения. Ссылка при клике необязательна. На телефоне широкое фото обрезается по краям, поэтому для точной композиции загрузите отдельный мобильный коллаж.</span></p> : <label className="homepageLogoUpload">Логотип партнёра или события<input type="file" accept="image/*" onChange={(event) => upload(event,"logoUrl")}/>{editing.logoUrl ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={editing.logoUrl} alt=""/> : <small>Необязательно. Лучше использовать PNG или SVG на прозрачном фоне.</small>}</label>}
+        {editing.variant === "photo" ? <p className="homepagePhotoHint"><b>Чистый фотобаннер</b><span>На сайте будет показано только загруженное изображение — без текста и затемнения. Ссылка при клике необязательна. На телефоне широкое фото обрезается по краям, поэтому для точной композиции загрузите отдельный мобильный коллаж.</span></p>
+          : <MediaUpload label="Логотип партнёра или события" kind="media" value={editing.logoUrl} onChange={url => setImage("logoUrl", url)} onUploadingChange={trackUpload} hint="Необязательно. Подойдёт PNG на прозрачном фоне." />}
       </> : <label>Цвет плитки<select value={editing.style} onChange={(event) => setEditing({...editing,style:event.target.value})}><option value="navy">Синий</option><option value="red">Красный</option><option value="photo">С фотографией</option></select></label>}
       <label>Порядок<input type="number" value={editing.sortOrder} onChange={(event) => setEditing({...editing,sortOrder:Number(event.target.value)})}/></label>
       <div className="homepageImages">
-        <label>Изображение для компьютера<input type="file" accept="image/*" onChange={(event) => upload(event,"imageDesktop")}/>{editing.imageDesktop ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={editing.imageDesktop} alt=""/> : null}{editing.type === "banner" && editing.variant === "photo" ? <small>Рекомендуемый размер: 1920 × 600 px. Файл сохраняется без сжатия.</small> : null}</label>
-        <label>Изображение для телефона<input type="file" accept="image/*" onChange={(event) => upload(event,"imageMobile")}/>{editing.imageMobile ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={editing.imageMobile} alt=""/> : null}<small>{editing.type === "banner" && editing.variant === "photo" ? "Загрузите отдельный вертикальный коллаж, например 1080 × 1350 px. Без него на телефоне будет показан увеличенный фрагмент изображения для компьютера." : "Если не выбрать, используется изображение для компьютера."}</small></label>
+        <MediaUpload label="Изображение для компьютера" kind="media" value={editing.imageDesktop} widePreview onChange={url => setImage("imageDesktop", url)} onUploadingChange={trackUpload}
+          hint={editing.type === "banner" && editing.variant === "photo" ? "Рекомендуемый размер: 1920 × 600 px." : undefined} />
+        <MediaUpload label="Изображение для телефона" kind="media" value={editing.imageMobile} widePreview onChange={url => setImage("imageMobile", url)} onUploadingChange={trackUpload}
+          hint={editing.type === "banner" && editing.variant === "photo" ? "Подойдёт вертикальный коллаж 1080 × 1350 px. Без него на телефоне будет показан увеличенный фрагмент изображения для компьютера." : "Если не выбрать, используется изображение для компьютера."} />
       </div>
       <label className="documentPublish"><input type="checkbox" checked={editing.active} onChange={(event) => setEditing({...editing,active:event.target.checked})}/><span><b>Показывать на главной</b><small>{editing.type === "banner" ? "Можно включить несколько слайдов — они будут сменять друг друга." : "Плитку можно временно скрыть."}</small></span></label>
       {error ? <p className="documentError">{error}</p> : null}
-      <footer><button onClick={() => setEditing(null)}>Отмена</button><button disabled={busy} onClick={save}>{busy ? "СОХРАНЯЮ…" : "Сохранить"}</button></footer>
+      <footer><button onClick={() => setEditing(null)}>Отмена</button><button disabled={busy || uploadsPending} onClick={save}>{busy ? "СОХРАНЯЮ…" : "Сохранить"}</button></footer>
     </section></AdminModal> : null}
     <section className="homeContentList"><header><span>МАТЕРИАЛЫ</span><small>{visible.length}</small></header>{visible.length ? visible.map((item, index) => <article key={item.id}>
       <div className={`homeContentPreview ${item.type === "banner" ? "isBanner" : "isTile"} ${item.imageDesktop ? "hasImage" : ""}`} style={item.imageDesktop ? {backgroundImage:`url(${getImageProps({ src: localMediaUrl(item.imageDesktop), alt: "", width: 240, height: 135 }).props.src})`} : undefined}><span>№ {index + 1}</span>{!item.imageDesktop ? <strong>{item.title}</strong> : null}</div>
