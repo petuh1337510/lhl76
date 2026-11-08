@@ -11,23 +11,36 @@ type LibraryImage = {
   title: string;
   url: string;
   previewUrl: string | null;
+  date: string;
+  datePrecision: "day" | "month";
+  size: number;
 };
 
-function MediaLibrary({ id, onSelect }: { id: string; onSelect: (url: string) => void }) {
+type LibraryPage = { items: LibraryImage[]; total: number; pageSize: number; hasMore: boolean };
+
+function MediaLibrary({ id, label, onClose, onSelect }: { id: string; label: string; onClose: () => void; onSelect: (url: string) => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [order, setOrder] = useState("newest");
   const [page, setPage] = useState(1);
-  const [result, setResult] = useState<{ items: LibraryImage[]; hasMore: boolean } | null>(null);
+  const [result, setResult] = useState<LibraryPage | null>(null);
+  const [selected, setSelected] = useState<LibraryImage | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
 
-  useEffect(() => { search.current?.focus(); }, []);
+  useEffect(() => {
+    const panel = dialog.current;
+    if (!panel) return;
+    panel.showModal();
+    search.current?.focus();
+    return () => panel.close();
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
-    setResult(null);
-    setError("");
     const timer = setTimeout(async () => {
-      const params = new URLSearchParams({ type: "image", name: query, page: String(page) });
+      const params = new URLSearchParams({ type: "image", name: query, order, page: String(page) });
       try {
         const response = await fetch(`/api/admin/media-files?${params}`, { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("Не удалось загрузить медиафайлы");
@@ -41,27 +54,95 @@ function MediaLibrary({ id, onSelect }: { id: string; onSelect: (url: string) =>
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, page, retry]);
+  }, [query, order, page, retry]);
+
+  function resetResults(nextPage: number) {
+    setPage(nextPage);
+    setSelected(null);
+    setResult(null);
+    setError("");
+  }
+
+  function close() {
+    dialog.current?.close();
+    onClose();
+  }
+
+  const totalPages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : null;
+  const dateLabel = selected && new Date(selected.date).toLocaleDateString("ru-RU", {
+    timeZone: "Europe/Moscow",
+    ...(selected.datePrecision === "month" ? { month: "long", year: "numeric" } : { dateStyle: "medium" }),
+  });
+  const sizeLabel = selected && (selected.size < 1024 * 1024
+    ? `${Math.max(1, Math.round(selected.size / 1024))} КБ`
+    : `${(selected.size / (1024 * 1024)).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} МБ`);
 
   return (
-    <section id={id} className={styles.library} aria-label="Выбор изображения из медиафайлов">
-      <input ref={search} type="search" aria-label="Поиск изображения" placeholder="Название или имя файла" value={query}
-        onChange={event => { setQuery(event.target.value); setPage(1); }} />
-      {error ? <div className={styles.feedback}><p role="alert">{error}</p><button type="button" onClick={() => setRetry(value => value + 1)}>Повторить</button></div>
-        : !result ? <p role="status">Загрузка изображений…</p>
-        : result.items.length === 0 ? <p role="status">Изображения не найдены.</p>
-        : <div className={styles.grid}>
-          {result.items.map(item => <button className={styles.thumbnail} key={item.key} type="button" title={item.title} onClick={() => onSelect(item.url)}>
-            <PublicImage src={item.previewUrl || item.url} width={144} height={96} sizes="144px" alt="" unoptimized />
-            <span>{item.title}</span>
-          </button>)}
-        </div>}
-      {(page > 1 || result?.hasMore) && <div className={styles.pagination}>
-        <button type="button" disabled={page <= 1 || !result} onClick={() => setPage(page - 1)}>Назад</button>
-        <span>Стр. {page}</span>
-        <button type="button" disabled={!result?.hasMore} onClick={() => setPage(page + 1)}>Дальше</button>
-      </div>}
-    </section>
+    <dialog ref={dialog} id={id} className={styles.library} aria-labelledby={`${id}-title`}
+      onCancel={event => { event.preventDefault(); close(); }}
+      onClick={event => { if (event.target === event.currentTarget) close(); }}>
+      <div className={styles.libraryPanel}>
+        <div className={styles.libraryHead}>
+          <div><h2 id={`${id}-title`}>Медиафайлы</h2><p>{label}</p></div>
+          <button className={styles.close} type="button" aria-label="Закрыть медиафайлы" onClick={close}>×</button>
+        </div>
+        <div className={styles.filters}>
+          <label>Поиск
+            <input ref={search} type="search" placeholder="Название или имя файла" value={query}
+              onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }}
+              onChange={event => { setQuery(event.target.value); resetResults(1); }} />
+          </label>
+          <label>Сортировка
+            <select value={order} onChange={event => { setOrder(event.target.value); resetResults(1); }}>
+              <option value="newest">По дате: новые сначала</option>
+              <option value="oldest">По дате: старые сначала</option>
+              <option value="name">По названию: А–Я</option>
+              <option value="size-desc">По размеру: от больших</option>
+              <option value="size-asc">По размеру: от маленьких</option>
+            </select>
+          </label>
+        </div>
+        <div className={styles.browser}>
+          <div className={styles.results} aria-busy={!result && !error}>
+            {error ? <div className={styles.feedback}><p role="alert">{error}</p><button type="button" onClick={() => { resetResults(page); setRetry(value => value + 1); }}>Повторить</button></div>
+              : !result ? <p className={styles.feedback} role="status">Загрузка изображений…</p>
+              : !result.items.length ? <p className={styles.feedback} role="status">Изображения не найдены.</p>
+              : <div className={styles.grid}>
+                {result.items.map(item => (
+                  <button className={styles.thumbnail} key={item.key} type="button" title={item.title}
+                    aria-pressed={selected?.key === item.key} onClick={() => setSelected(item)}>
+                    <span className={styles.thumbFrame}>
+                      <PublicImage src={item.previewUrl || item.url} width={160} height={120} sizes="(max-width: 520px) 42vw, 160px" alt=""
+                        unoptimized={Boolean(item.previewUrl && item.previewUrl !== item.url)} />
+                    </span>
+                    <span className={styles.thumbTitle}>{item.title}</span>
+                  </button>
+                ))}
+              </div>}
+          </div>
+          <div className={styles.inspector} data-selected={Boolean(selected)}>
+            {selected ? <>
+              <div className={styles.largePreview}>
+                <PublicImage key={selected.key} src={selected.url} width={640} height={480} sizes="(max-width: 680px) 45vw, 320px" alt={selected.title} loading="eager" />
+              </div>
+              <div className={styles.details} aria-live="polite">
+                <strong>{selected.title}</strong>
+                <span>{dateLabel} · {sizeLabel}</span>
+              </div>
+            </> : <p>Нажмите на миниатюру, чтобы рассмотреть изображение.</p>}
+          </div>
+        </div>
+        <div className={styles.libraryFoot}>
+          <nav className={styles.pagination} aria-label="Страницы изображений">
+            <button type="button" aria-label="Предыдущая страница" disabled={page <= 1 || (!result && !error)} onClick={() => resetResults(page - 1)}>‹</button>
+            <span>Стр. {page}{totalPages !== null ? ` из ${totalPages}` : ""}</span>
+            <button type="button" aria-label="Следующая страница" disabled={!result?.hasMore} onClick={() => resetResults(page + 1)}>›</button>
+          </nav>
+          <button className={styles.confirm} type="button" disabled={!selected}
+            onClick={() => { if (selected) { onSelect(selected.url); close(); } }}>Выбрать изображение</button>
+        </div>
+      </div>
+    </dialog>
   );
 }
 
@@ -86,7 +167,6 @@ export function usePendingMediaUploads() {
 export default function MediaUpload({ label, value, kind, hint, widePreview, onChange, onUploadingChange }: MediaUploadProps) {
   const libraryId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
-  const libraryButton = useRef<HTMLButtonElement>(null);
   const uploadRequest = useRef<AbortController | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -123,8 +203,6 @@ export default function MediaUpload({ label, value, kind, hint, widePreview, onC
   function select(url: string) {
     onChange(url);
     setError("");
-    setLibraryOpen(false);
-    libraryButton.current?.focus();
   }
 
   return (
@@ -137,10 +215,10 @@ export default function MediaUpload({ label, value, kind, hint, widePreview, onC
         <input ref={fileInput} hidden type="file" aria-label={label} disabled={loading} accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={event => { void upload(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
         <button type="button" disabled={loading} onClick={() => fileInput.current?.click()}>С устройства</button>
-        <button ref={libraryButton} type="button" disabled={loading} aria-expanded={libraryOpen} aria-controls={libraryOpen ? libraryId : undefined}
-          onClick={() => setLibraryOpen(!libraryOpen)}>Из медиафайлов</button>
+        <button type="button" disabled={loading} aria-haspopup="dialog" aria-controls={libraryOpen ? libraryId : undefined}
+          onClick={() => setLibraryOpen(true)}>Из медиафайлов</button>
       </div>
-      {libraryOpen && <MediaLibrary id={libraryId} onSelect={select} />}
+      {libraryOpen && <MediaLibrary id={libraryId} label={label} onClose={() => setLibraryOpen(false)} onSelect={select} />}
       <small role={error ? "alert" : "status"}>{loading ? "Загрузка…" : error || "JPG, PNG, WEBP или GIF · до 12 МБ"}</small>
       {hint && <small>{hint}</small>}
     </div>

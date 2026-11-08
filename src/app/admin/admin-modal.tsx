@@ -30,6 +30,7 @@ export function AdminModal({ title, onClose, children, wide = false }: AdminModa
     document.addEventListener("focusin", onFocusIn);
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (panel.current?.querySelector("dialog:modal")) return;
       if (event.key === "Escape") {
         event.preventDefault();
         close.current();
