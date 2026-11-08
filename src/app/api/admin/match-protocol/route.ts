@@ -8,6 +8,7 @@ import {
 import { rebuildDivisionStatistics } from "@/lib/rebuild-division-statistics";
 import { getPlayerSuspensionStates } from "@/lib/player-suspensions";
 import { syncPlayoff, PlayoffConflict } from '@/lib/playoff-service';
+import { matchClockResolver, matchClockVersion } from "@/lib/domain/match-clock";
 
 async function handleGET(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get("slug");
@@ -42,7 +43,11 @@ async function handleGET(request: NextRequest) {
           },
         },
       },
-      rosters: true,
+      rosters: { include: { rosterEntry: { include: { player: true } } } },
+      legacyEvents: {
+        where: { eventType: { in: ["Гол", "Штраф"] } },
+        select: { teamEntryId: true, playerId: true, eventType: true, minute: true },
+      },
       goals: {
         include: {
           scorer: true,
@@ -68,7 +73,15 @@ async function handleGET(request: NextRequest) {
     ...entry,
     suspensions: (suspensionsByPlayer.get(entry.playerId) || []).map((suspension) => ({ ...suspension, endsAt: null })),
   }));
-  return NextResponse.json({ ...match, homeTeamEntry: { ...match.homeTeamEntry, roster: withSuspensions(match.homeTeamEntry.roster) }, awayTeamEntry: { ...match.awayTeamEntry, roster: withSuspensions(match.awayTeamEntry.roster) } });
+  const { legacyEvents, ...data } = match;
+  const matchSeconds = matchClockResolver(match.protocolData, legacyEvents);
+  return NextResponse.json({
+    ...data,
+    goals: match.goals.map(goal => ({ ...goal, clockSeconds: matchSeconds(goal.clockSeconds, goal.teamEntryId, goal.scorerId, "Гол") })),
+    penalties: match.penalties.map(penalty => ({ ...penalty, clockSeconds: matchSeconds(penalty.clockSeconds, penalty.teamEntryId, penalty.playerId, "Штраф") })),
+    homeTeamEntry: { ...match.homeTeamEntry, roster: withSuspensions(match.homeTeamEntry.roster) },
+    awayTeamEntry: { ...match.awayTeamEntry, roster: withSuspensions(match.awayTeamEntry.roster) },
+  });
 }
 
 async function handlePUT(request: NextRequest) {
@@ -266,7 +279,7 @@ async function handlePUT(request: NextRequest) {
   const previousContributions = Array.isArray(previousProtocol.statContributions)
     ? (previousProtocol.statContributions as ProtocolContribution[])
     : [];
-  await prisma.$transaction(async (tx) => {
+  const updatedAt = await prisma.$transaction(async (tx) => {
     // Serialize recalculation within the division, then atomically claim the
     // exact version the editor loaded. A stale submission changes nothing.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${match.divisionId}))`;
@@ -298,7 +311,7 @@ async function handlePUT(request: NextRequest) {
             phase: "IN_GAME",
             attemptOrder: Number(goal.attemptOrder) || 1,
             period: Number(goal.period) || null,
-            clockSeconds: Number.isFinite(Number(goal.clockSeconds))
+            clockSeconds: goal.clockSeconds != null && Number.isFinite(Number(goal.clockSeconds))
               ? Number(goal.clockSeconds)
               : null,
             scored: false,
@@ -312,7 +325,7 @@ async function handlePUT(request: NextRequest) {
           teamEntryId: goal.teamEntryId,
           scorerId: goal.scorerId,
           period: Number(goal.period) || null,
-          clockSeconds: Number.isFinite(Number(goal.clockSeconds))
+          clockSeconds: goal.clockSeconds != null && Number.isFinite(Number(goal.clockSeconds))
             ? Number(goal.clockSeconds)
             : null,
           situation: goal.situation || "5X5",
@@ -351,7 +364,7 @@ async function handlePUT(request: NextRequest) {
           teamEntryId: penalty.teamEntryId,
           playerId: penalty.playerId || null,
           period: Number(penalty.period) || null,
-          clockSeconds: Number.isFinite(Number(penalty.clockSeconds))
+          clockSeconds: penalty.clockSeconds != null && Number.isFinite(Number(penalty.clockSeconds))
             ? Number(penalty.clockSeconds)
             : null,
           minutes: Number(penalty.minutes) || 2,
@@ -414,8 +427,9 @@ async function handlePUT(request: NextRequest) {
         await tx.playerStatistic.create({ data: next });
       }
     }
-    await tx.match.update({
+    const savedMatch = await tx.match.update({
       where: { id: body.matchId },
+      select: { updatedAt: true },
       data: {
         status: body.status || "SCHEDULED",
         resultType,
@@ -424,6 +438,7 @@ async function handlePUT(request: NextRequest) {
         periodScores: finalPeriodScores,
         protocolData: {
           ...(body.protocolData || {}),
+          eventClockVersion: matchClockVersion,
           statContributions: newContributions,
         },
         resultNote: body.resultNote || null,
@@ -436,9 +451,11 @@ async function handlePUT(request: NextRequest) {
       const series = await tx.playoffSeries.findUniqueOrThrow({where:{id:match.playoffSeriesId},include:{round:true}});
       await syncPlayoff(tx, series.round.playoffId);
     }
+    return savedMatch.updatedAt;
   });
   return NextResponse.json({
     ok: true,
+    updatedAt: updatedAt.toISOString(),
     score: { home: finalHomeScore, away: finalAwayScore },
     recalculated: {
       playerStatistics: true,

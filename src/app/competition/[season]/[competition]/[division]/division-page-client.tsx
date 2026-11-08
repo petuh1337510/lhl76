@@ -32,6 +32,7 @@ type StatSort =
   | "goalieMinutes"
   | "shotsAgainst"
   | "goalieGoalsAgainst"
+  | "shutouts"
   | "saves"
   | "savePercentage"
   | "goalsAgainstAverage";
@@ -52,11 +53,11 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
   const [categoryId, setCategoryId] = usePublicChoice("category", "all", ["all", ...statisticsCategories.map(item => item.id)]);
   const category = statisticsCategories.find(item => item.id === categoryId);
   const legacyList = /[?&](sort|view)=/.test(location);
-  const [statsScreen, setStatsScreen] = usePublicChoice("stats", legacyList ? "list" : "overview", ["list", "overview"]);
+  const [statsScreen, setStatsScreen] = usePublicChoice("stats", legacyList || category ? "list" : "overview", ["list", "overview"]);
   const [stage, setStage] = usePublicChoice<Stage>("stage", "regular", ["regular", "playoff"]);
-  const [statView, setStatView] = usePublicChoice<StatView>("view", "skaters", ["skaters", "goalkeepers"]);
-  const [statSort, setStatSort] = usePublicChoice<StatSort>("sort", statView === "goalkeepers" ? "savePercentage" : "points", statView === "goalkeepers"
-    ? ["goalieGames", "goalieMinutes", "shotsAgainst", "goalieGoalsAgainst", "saves", "savePercentage", "goalsAgainstAverage"]
+  const [statView, setStatView] = usePublicChoice<StatView>("view", category?.group === "goalkeepers" ? "goalkeepers" : "skaters", ["skaters", "goalkeepers"]);
+  const [statSort, setStatSort] = usePublicChoice<StatSort>("sort", category?.metric === "shutouts" ? "shutouts" : statView === "goalkeepers" ? "savePercentage" : "points", statView === "goalkeepers"
+    ? ["goalieGames", "goalieMinutes", "shotsAgainst", "goalieGoalsAgainst", "saves", "savePercentage", "goalsAgainstAverage", "shutouts"]
     : ["games", "goals", "assists", "penalty", "points"]);
   const statsViewport = useRef<HTMLDivElement>(null);
   const sameSeason = data.choices.filter(
@@ -93,7 +94,9 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
   );
   const sortedStatistics = useMemo(() => {
     const statistics = data.statistics.filter((player) =>
-      category?.metric === "shutouts" ? false : statView === "goalkeepers" ? player.isGoalkeeper : !player.isGoalkeeper && (category?.group !== "defenders" || isDefender(player.position)),
+      statView === "goalkeepers"
+        ? player.isGoalkeeper && (category?.metric !== "shutouts" || (player.shutouts ?? 0) > 0)
+        : !player.isGoalkeeper && (category?.group !== "defenders" || isDefender(player.position)),
     );
     const value = (player: (typeof statistics)[number]) =>
       Number(player[statSort] ?? -1);
@@ -337,6 +340,7 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
                 <h2>
                   {category?.title || data.division.name} · сезон {data.season.name}
                 </h2>
+                {category?.metric === "shutouts" && <p>55 минут или больше в одном матче без пропущенных шайб.</p>}
               </div>
               <div className="statisticsMode">
                 <button
@@ -393,6 +397,7 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
                         ["saves", "Сэйвы"],
                         ["savePercentage", "%ОБ"],
                         ["goalsAgainstAverage", "КН"],
+                        ["shutouts", "Сухие матчи"],
                       ] as Array<[StatSort, string]>).map(([key, label]) => (
                       <th key={key} aria-sort={statSort === key ? (key === "goalsAgainstAverage" ? "ascending" : "descending") : "none"}>
                         <button
@@ -410,7 +415,7 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {!visibleStatistics.length && <tr><td colSpan={statView === "skaters" ? 8 : 10}>{category?.metric === "shutouts" ? "Данные о сухих матчах пока не ведутся." : "Статистика пока не заполнена."}</td></tr>}
+                  {!visibleStatistics.length && <tr><td colSpan={statView === "skaters" ? 8 : 11}>{category?.metric === "shutouts" ? "Пока нет подтверждённых сухих матчей." : "Статистика пока не заполнена."}</td></tr>}
                   {visibleStatistics.map((player, index) => (
                     <tr key={player.key}>
                       <td>{(statPage - 1) * statPageSize + index + 1}</td>
@@ -440,13 +445,14 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
                       </> : <>
                         <td>{player.goalieGames || "—"}</td>
                         <td>{player.goalieGames ? player.goalieMinutes : "—"}</td>
-                        <td>{player.goalieGames ? player.shotsAgainst : "—"}</td>
+                        <td>{player.goalieGames ? player.shotsAgainst ?? "—" : "—"}</td>
                         <td>{player.goalieGames ? player.goalieGoalsAgainst : "—"}</td>
-                        <td>{player.goalieGames ? player.saves : "—"}</td>
+                        <td>{player.goalieGames ? player.saves ?? "—" : "—"}</td>
                         <td className="statPoints">
                           {player.savePercentage === null ? "—" : `${player.savePercentage.toFixed(1)}%`}
                         </td>
                         <td>{player.goalsAgainstAverage === null ? "—" : player.goalsAgainstAverage.toFixed(2)}</td>
+                        <td>{player.shutouts ?? "—"}</td>
                       </>}
                     </tr>
                   ))}

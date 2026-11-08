@@ -1,6 +1,8 @@
 import "server-only";
 
 import { competitionPublicPath, publicSlug } from "@/lib/division-page";
+import { matchClockResolver } from "@/lib/domain/match-clock";
+import { calculateMatchGoalies } from "@/lib/domain/match-goalies";
 import { prisma } from "@/lib/prisma";
 
 export type PublicMatchEvent = {
@@ -91,7 +93,7 @@ export type PublicMatchPlayerStat = PublicMatchRosterPlayer & {
 
 export type PublicMatchGoalieStat = PublicMatchRosterPlayer & {
   timePlayed: string;
-  goalsAgainst: number;
+  goalsAgainst: number | null;
   shotsAgainst: number | null;
   saves: number | null;
   savePercentage: string;
@@ -223,28 +225,13 @@ export async function getPublicMatch(
     seconds === null
       ? null
       : `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  const matchSeconds = matchClockResolver(protocol, match.legacyEvents);
   const eventClock = (
     seconds: number | null,
     teamEntryId: string,
     playerId: string | null,
     legacyType: "Гол" | "Штраф",
-  ) => {
-    if (!editedProtocol || seconds === null) return clock(seconds);
-    // Older imports stored an absolute clock plus the period offset. Recover
-    // the original clock only for that exact offset; fresh edits keep their time.
-    const imported = match.legacyEvents.find((event) => {
-      if (
-        event.eventType !== legacyType ||
-        event.teamEntryId !== teamEntryId ||
-        event.playerId !== playerId ||
-        !/^\d+:\d{2}$/.test(event.minute || "")
-      ) return false;
-      const [minutes, remainder] = event.minute!.split(":").map(Number);
-      const difference = seconds - (minutes * 60 + remainder);
-      return difference > 0 && difference % 1200 === 0;
-    });
-    return imported?.minute || clock(seconds);
-  };
+  ) => clock(matchSeconds(seconds, teamEntryId, playerId, legacyType));
   const eventSort = (value: string | null) => {
     if (!value) return 0;
     const [minutes, seconds] = value.split(":").map(Number);
@@ -514,55 +501,30 @@ export async function getPublicMatch(
             : Math.max(0, Number(row.shotsAgainst) || 0),
       }))
     : [];
-  const timeSeconds = (value: string) => {
-    const [minutes, seconds] = value.split(":").map(Number);
-    return Math.max(0, (minutes || 0) * 60 + (seconds || 0));
-  };
+  const matchGoalies = calculateMatchGoalies({
+    ...match,
+    goals: match.goals.map(goal => ({ ...goal, clockSeconds: matchSeconds(goal.clockSeconds, goal.teamEntryId, goal.scorerId, "Гол") })),
+    shootoutGoals: match.penaltyShots.filter(shot => shot.phase === "SHOOTOUT" && shot.scored),
+  });
   const goalieStatsFor = (
     teamEntryId: string,
-    teamName: string,
-    fallbackShotsAgainst: number,
+    fallbackShotsAgainst: number | null,
   ): PublicMatchGoalieStat[] => {
-    const stints = goalieStints.filter((row) => row.teamName === teamName);
-    const uniqueGoalies = new Set(stints.map((row) => row.playerName));
-    return [...uniqueGoalies].map((goalieName) => {
-      const playerStints = stints.filter((row) => row.playerName === goalieName);
-      const player = rosterFor(teamEntryId).find((row) => row.name === goalieName);
-      const timePlayedSeconds = playerStints.reduce(
-        (total, stint) =>
-          total + Math.max(0, timeSeconds(stint.to) - timeSeconds(stint.from)),
-        0,
-      );
-      const goalsAgainst = playerStints.reduce((total, stint) => {
-        const from = timeSeconds(stint.from);
-        const to = timeSeconds(stint.to);
-        return (
-          total +
-          match.goals.filter(
-            (goal) =>
-              goal.teamEntryId !== teamEntryId &&
-              goal.clockSeconds !== null &&
-              goal.clockSeconds >= from &&
-              goal.clockSeconds < to,
-          ).length
-        );
-      }, 0);
-      const enteredShots = playerStints.map((row) => row.shotsAgainst);
-      const shotsAgainst = enteredShots.every((value) => value !== null)
-        ? enteredShots.reduce<number>((total, value) => total + (value || 0), 0)
-        : uniqueGoalies.size === 1
-          ? fallbackShotsAgainst
-          : null;
-      const saves = shotsAgainst === null ? null : Math.max(0, shotsAgainst - goalsAgainst);
+    const roster = new Map(rosterFor(teamEntryId).map(player => [player.id, player]));
+    return matchGoalies.filter(goalie => goalie.teamEntryId === teamEntryId).map(goalie => {
+      const player = roster.get(goalie.playerId);
+      const shotsAgainst = goalie.shotsAgainst ?? (goalie.playedFullGame ? fallbackShotsAgainst : null);
+      const goalsAgainst = goalie.goalsAgainst;
+      const saves = shotsAgainst === null || goalsAgainst === null ? null : Math.max(0, shotsAgainst - goalsAgainst);
       return {
-        id: player?.id || `goalie-${teamEntryId}-${goalieName}`,
+        id: goalie.playerId,
         slug: player?.slug || "",
-        name: goalieName,
+        name: player?.name || "Игрок не указан",
         number: player?.number || "—",
         position: player?.position || "Вратарь",
         qualification: player?.qualification || "—",
         photoUrl: player?.photoUrl || null,
-        timePlayed: `${Math.floor(timePlayedSeconds / 60)}:${String(timePlayedSeconds % 60).padStart(2, "0")}`,
+        timePlayed: `${Math.floor(goalie.seconds / 60)}:${String(goalie.seconds % 60).padStart(2, "0")}`,
         goalsAgainst,
         shotsAgainst,
         saves,
@@ -616,13 +578,11 @@ export async function getPublicMatch(
     goalieStats: {
       home: technical ? [] : goalieStatsFor(
         match.homeTeamEntryId,
-        match.homeTeamEntry.team.name,
-        shotTotals.away,
+        shots.length ? shotTotals.away : null,
       ),
       away: technical ? [] : goalieStatsFor(
         match.awayTeamEntryId,
-        match.awayTeamEntry.team.name,
-        shotTotals.home,
+        shots.length ? shotTotals.home : null,
       ),
     },
     shots: technical ? [] : shots,

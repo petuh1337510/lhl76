@@ -20,7 +20,7 @@ export function StatisticsOverview({ players }: { players: DivisionPlayerStatist
     return <section key={category.id} className={styles.card}>
       <h3><Link href={`${path}?${params}`} >{category.title}<UiIcon name="arrow-right" /></Link></h3>
       {rows.length ? <ol>{rows.map((player, index) => {
-        const value = category.metric === "shutouts" ? null : player[category.metric];
+        const value = player[category.metric];
         return <li key={player.key} className={index === 0 ? styles.first : undefined}>
           <span className={styles.rank}>{index + 1}</span>
           <Link className={styles.player} href={withReturn(`/player/${player.slug}`, location)}>
@@ -29,7 +29,7 @@ export function StatisticsOverview({ players }: { players: DivisionPlayerStatist
           </Link>
           <span className={styles.value}><b>{value === null ? "—" : category.metric === "goalsAgainstAverage" ? value.toFixed(2) : category.metric === "savePercentage" ? value.toFixed(1) : value}</b>{index === 0 && <small>{category.unit}</small>}</span>
         </li>;
-      })}</ol> : <p className={styles.empty}>{category.metric === "shutouts" ? "Данные о сухих матчах пока не ведутся." : "Статистика пока не заполнена."}</p>}
+      })}</ol> : <p className={styles.empty}>{category.metric === "shutouts" ? "Пока нет подтверждённых сухих матчей." : "Статистика пока не заполнена."}</p>}
     </section>;
   })}</div>;
 }

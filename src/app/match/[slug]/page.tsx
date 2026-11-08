@@ -219,7 +219,7 @@ function MatchGoalieStatistics({
                 </span>
                 <b>{player.timePlayed}</b>
                 <b>{player.shotsAgainst ?? "—"}</b>
-                <b>{player.goalsAgainst}</b>
+                <b>{player.goalsAgainst ?? "—"}</b>
                 <b>{player.saves ?? "—"}</b>
                 <b>{player.savePercentage}</b>
               </>

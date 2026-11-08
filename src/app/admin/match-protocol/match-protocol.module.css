@@ -1,0 +1,159 @@
+.tabs {
+  display: flex;
+  gap: 3px;
+  margin-top: 16px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--admin-line);
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-line) transparent;
+}
+
+:global(.adminUI .adminContent) .tabs button {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 11px 13px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: var(--admin-muted);
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+:global(.adminUI .adminContent) .tabs button:hover,
+:global(.adminUI .adminContent) .tabs button[aria-selected="true"] {
+  background: var(--admin-surface-soft);
+  color: var(--admin-link);
+}
+
+:global(.adminUI .adminContent) .tabs button[aria-selected="true"] {
+  border-bottom-color: var(--admin-accent);
+  font-weight: 700;
+}
+
+:global(.adminUI .adminContent) .tabs button:focus-visible { outline-offset: -3px; }
+.panel { margin-top: 16px; }
+.panel > section + section { margin-top: 16px; }
+.panel > section:first-child { margin-top: 0; }
+
+.noteCard, .rosterCard {
+  min-width: 0;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+}
+
+.noteCard { padding: 18px; }
+.noteCard h2 { margin: 0; font-size: 19px; }
+.rosterHead h2, .rosterEditor h2 { margin: 0; font-size: 23px; }
+.noteCard label { display: grid; gap: 7px; margin-top: 12px; color: var(--admin-muted); font-size: 13px; }
+.noteCard textarea { box-sizing: border-box; width: 100%; min-height: 116px; resize: vertical; }
+
+.rosters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 408px), 1fr));
+  align-items: start;
+  gap: 14px;
+}
+
+.rosterHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 14px 0;
+}
+
+.rosterHead p, .rosterEditor header p { margin: 5px 0 0; color: var(--admin-muted); font-size: 14px; }
+
+:global(.adminUI .adminContent) .rosterHead button,
+:global(.adminUI .adminContent) .editorActions button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-link);
+  font-size: 15px;
+}
+
+.rosterHead button svg { width: 18px; height: 18px; }
+:global(.adminUI .adminContent) .rosterHead button:hover,
+:global(.adminUI .adminContent) .editorActions button:hover:not(:disabled) { border-color: var(--admin-accent); }
+
+.rosterSearch { position: relative; display: block; margin: 12px 14px; color: var(--admin-muted); }
+.rosterSearch svg { position: absolute; left: 12px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); pointer-events: none; }
+:global(.adminUI .adminContent) :is(.rosterCard, .rosterEditor) .rosterSearch input[type="search"] { box-sizing: border-box; width: 100%; min-height: 50px; padding-inline-start: 41px; font-size: 15px; }
+
+.rosterTableWrap { overflow-x: auto; scrollbar-width: thin; }
+.rosterTable { width: 100%; min-width: 370px; border-collapse: collapse; font-size: 15.5px; }
+.rosterTable :is(th, td) { padding: 8px 9px; border-top: 1px solid var(--admin-line-soft); text-align: center; vertical-align: middle; }
+.rosterTable :is(th, td):nth-child(2) { width: 100%; text-align: left; }
+.rosterTable th { background: var(--admin-surface-raised); color: var(--admin-muted); font-size: 13px; font-weight: 650; }
+.rosterTable th:not(:nth-child(2)) { white-space: nowrap; }
+.rosterTable td:first-child { min-width: 24px; font-variant-numeric: tabular-nums; }
+.rosterTable td:nth-last-child(1) { padding-inline: 10px; }
+.rosterTable tbody tr:hover { background: var(--admin-surface-raised); }
+.rosterTable abbr { text-decoration: none; font-weight: 750; color: var(--admin-link); }
+
+.rosterPerson { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--admin-ink); }
+.rosterPerson img { display: block; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; background: var(--admin-surface-soft); object-fit: cover; }
+.rosterPerson strong { display: block; font-size: 14.5px; line-height: 1.35; font-weight: 650; overflow-wrap: anywhere; }
+.rosterPerson small { display: block; margin-top: 2px; color: var(--admin-muted); font-size: 13px; line-height: 1.3; }
+.positionBadge { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 50%; background: var(--admin-surface-soft); color: var(--admin-link); font-size: 13px; font-weight: 750; }
+.participation { display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1px solid var(--admin-control-line); border-radius: 4px; }
+.participation[data-checked="true"] { border-color: var(--admin-accent); background: var(--admin-accent); color: var(--admin-accent-ink); }
+.rosterEmpty { margin: 0; padding: 16px; color: var(--admin-muted); font-size: 15px; }
+
+.rosterEditor { padding: 21px; }
+.rosterEditor header { padding-right: 42px; }
+.rosterEditor .rosterSearch { margin-inline: 0; }
+.editorList { max-height: min(56dvh, 560px); overflow: auto; border: 1px solid var(--admin-line); border-radius: 8px; scrollbar-color: var(--admin-line) var(--admin-surface); }
+.editorTable thead { position: sticky; top: 0; z-index: 1; }
+.editorTable th { border-top: 0; border-bottom: 1px solid var(--admin-line); }
+.editorTable tr[data-selected="true"] { background: var(--admin-surface-soft); }
+.editorTable td:first-child { min-width: 53px; }
+.editorTable td:nth-last-child(-n+2) { min-width: 48px; }
+.editorPlayer { display: flex; align-items: center; gap: 12px; min-height: 41px; }
+.editorPlayer input { flex: 0 0 19px; width: 19px; height: 19px; margin: 0; accent-color: var(--admin-accent); }
+.rowNote { display: block; margin: 4px 0 1px 31px; color: var(--admin-muted); font-size: 13px; }
+:global(.adminUI .adminContent) .editorTable input.jerseyInput[type="text"] { box-sizing: border-box; width: 51px; min-height: 38px; padding: 4px; text-align: center; font-size: 15px; }
+.editorActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+:global(.adminUI .adminContent) .editorActions button:last-child { border-color: var(--admin-accent); background: var(--admin-accent); color: var(--admin-accent-ink); }
+
+:global(.adminUI .adminContent) .saveBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-color: var(--admin-line);
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  box-shadow: var(--admin-shadow);
+}
+
+:global(.adminUI .adminContent) .saveBar button { margin: 0; }
+
+@media (max-width: 560px) {
+  .tabs { margin-top: 10px; }
+  .rosterHead { padding-inline: 10px; }
+  .rosterSearch { margin-inline: 10px; }
+  .rosterEditor { padding: 15px 12px; }
+  .rosterTable { min-width: 330px; }
+  .rosterTable :is(th, td) { padding-inline: 6px; }
+  .rosterPerson { gap: 7px; }
+  .rosterPerson img { width: 34px; height: 34px; flex-basis: 34px; }
+  .editorTable td:nth-last-child(-n+2) { min-width: 32px; }
+  .saveBar > span { font-size: 13px; }
+  .saveBar > button { width: 100%; }
+}

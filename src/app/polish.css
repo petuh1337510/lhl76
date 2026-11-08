@@ -593,9 +593,10 @@ html,body{max-width:100%;overflow-x:clip}
 .playerCareerStats .playerStats b{font-size:21px;line-height:1}
 .playerCareerStats .playerStats small{margin-top:4px;font-size:8px}
 .playerCareerStats .playerStats.goalkeeper{width:106px}
+.playerCareerStats .playerStats.goalkeeperDetailed{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
 .playerHistory.goalkeeper>div,.playerHistory.goalkeeper>a{grid-template-columns:1.1fr 2fr 90px}
 .playerHistory.goalkeeper>div>span:last-child,.playerHistory.goalkeeper>a>span:last-child{text-align:center}
-.playerHistory.goalkeeperDetailed>div,.playerHistory.goalkeeperDetailed>a{grid-template-columns:1.25fr 1.7fr repeat(6,62px)}
+.playerHistory.goalkeeperDetailed>div,.playerHistory.goalkeeperDetailed>a{grid-template-columns:1.25fr 1.7fr repeat(7,62px)}
 .playerPublic .playerContent{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px;background:transparent;border:0!important;border-radius:0;box-shadow:none;overflow:visible}
 .playerPublic .playerContent .tableScrollHint{padding:0}
 .playerPublic .playerHistoryBlock{background:#fff;border:1px solid var(--public-border);border-radius:15px;box-shadow:0 9px 26px #08244a0b;overflow-x:auto}

@@ -2,6 +2,8 @@ import "server-only";
 
 import { competitionPublicPath, publicSlug } from "@/lib/division-page";
 import { calculateGoalieMetrics } from "@/lib/domain/goalie-statistics";
+import { goalieStatisticKey } from "@/lib/domain/match-goalies";
+import { getGoalieProtocolStatistics, goalieStatisticsFor } from "@/lib/goalie-protocol-statistics";
 import { prisma } from "@/lib/prisma";
 import { getPlayerSuspensionStates } from "@/lib/player-suspensions";
 
@@ -24,9 +26,10 @@ export type PlayerHistoryRow = {
   points: number;
   goalieGames: number;
   goalieSeconds: number;
-  shotsAgainst: number;
+  shotsAgainst: number | null;
   goalieGoalsAgainst: number;
-  saves: number;
+  saves: number | null;
+  shutouts: number | null;
   savePercentage: string;
   goalsAgainstAverage: string;
 };
@@ -35,7 +38,7 @@ export type PlayerPageData = {
   player: { slug: string; name: string; firstName: string; lastName: string; patronymic: string | null; birthDate: string | null; country: string | null; birthPlace: string | null; position: string; stickHand: string | null; heightCm: number | null; weightKg: number | null; photoUrl: string | null; rating: string };
   current: PlayerHistoryRow | null;
   history: PlayerHistoryRow[];
-  totals: { games: number; goals: number; assists: number; points: number; penalty: number; goalieGames: number; goalieSeconds: number; shotsAgainst: number; goalieGoalsAgainst: number; saves: number; savePercentage: string; goalsAgainstAverage: string };
+  totals: Pick<PlayerHistoryRow, "games" | "goals" | "assists" | "points" | "penalty" | "goalieGames" | "goalieSeconds" | "shotsAgainst" | "goalieGoalsAgainst" | "saves" | "shutouts" | "savePercentage" | "goalsAgainstAverage">;
   suspensions: Array<{ id: string; reason: string; note: string | null; sourceTeam: string; sourceDivision: string; remaining: number | null; matchesCount: number | null }>;
 };
 
@@ -48,13 +51,18 @@ export async function getPlayerPage(slug: string): Promise<PlayerPageData | null
     },
   });
   if (!player) return null;
-  const activeSuspensions = await getPlayerSuspensionStates([player.id], new Date());
+  const teamEntries = player.statistics.map(stat => stat.teamEntryId);
+  const [activeSuspensions, goalieProtocols] = await Promise.all([
+    getPlayerSuspensionStates([player.id], new Date()),
+    getGoalieProtocolStatistics({ OR: [{ homeTeamEntryId: { in: teamEntries } }, { awayTeamEntryId: { in: teamEntries } }] }, player.id),
+  ]);
 
   const history = player.statistics.map((stat): PlayerHistoryRow => {
     const division = stat.teamEntry.division;
     const competition = division.competition;
     const season = competition.season;
-    const goalie = calculateGoalieMetrics(stat.goalieSeconds, stat.shotsAgainst, stat.goalieGoalsAgainst);
+    const totals = goalieStatisticsFor(stat, goalieProtocols.get(goalieStatisticKey(stat.teamEntryId, player.id)));
+    const goalie = calculateGoalieMetrics(totals.goalieSeconds, totals.shotsAgainst ?? 0, totals.goalieGoalsAgainst);
     return {
       key: stat.id,
       seasonName: season.name,
@@ -72,18 +80,15 @@ export async function getPlayerPage(slug: string): Promise<PlayerPageData | null
       assists: stat.assists,
       penalty: stat.penaltyMinutes,
       points: stat.goals + stat.assists,
-      goalieGames: stat.goalieGames,
-      goalieSeconds: stat.goalieSeconds,
-      shotsAgainst: stat.shotsAgainst,
-      goalieGoalsAgainst: stat.goalieGoalsAgainst,
-      saves: goalie.saves,
+      ...totals,
+      saves: totals.shotsAgainst === null ? null : goalie.saves,
       savePercentage: goalie.savePercentage === null ? "—" : `${goalie.savePercentage.toFixed(1)}%`,
       goalsAgainstAverage: goalie.goalsAgainstAverage === null ? "—" : goalie.goalsAgainstAverage.toFixed(2),
     };
   }).sort((a, b) => b.seasonName.localeCompare(a.seasonName, "ru") || Number(b.competitionType === "CHAMPIONSHIP") - Number(a.competitionType === "CHAMPIONSHIP") || a.teamName.localeCompare(b.teamName, "ru"));
 
   const current = history[0] ?? null;
-  const totals = history.reduce(
+  const totals = history.reduce<PlayerPageData["totals"]>(
     (sum, row) => ({
       games: sum.games + row.games,
       goals: sum.goals + row.goals,
@@ -92,15 +97,16 @@ export async function getPlayerPage(slug: string): Promise<PlayerPageData | null
       penalty: sum.penalty + row.penalty,
       goalieGames: sum.goalieGames + row.goalieGames,
       goalieSeconds: sum.goalieSeconds + row.goalieSeconds,
-      shotsAgainst: sum.shotsAgainst + row.shotsAgainst,
+      shotsAgainst: sum.shotsAgainst === null || row.shotsAgainst === null ? null : sum.shotsAgainst + row.shotsAgainst,
       goalieGoalsAgainst: sum.goalieGoalsAgainst + row.goalieGoalsAgainst,
-      saves: sum.saves + row.saves,
+      saves: sum.saves === null || row.saves === null ? null : sum.saves + row.saves,
+      shutouts: row.shutouts === null ? sum.shutouts : (sum.shutouts ?? 0) + row.shutouts,
       savePercentage: "—",
       goalsAgainstAverage: "—",
     }),
-    { games: 0, goals: 0, assists: 0, points: 0, penalty: 0, goalieGames: 0, goalieSeconds: 0, shotsAgainst: 0, goalieGoalsAgainst: 0, saves: 0, savePercentage: "—", goalsAgainstAverage: "—" },
+    { games: 0, goals: 0, assists: 0, points: 0, penalty: 0, goalieGames: 0, goalieSeconds: 0, shotsAgainst: 0, goalieGoalsAgainst: 0, saves: 0, shutouts: null, savePercentage: "—", goalsAgainstAverage: "—" },
   );
-  const totalGoalie = calculateGoalieMetrics(totals.goalieSeconds, totals.shotsAgainst, totals.goalieGoalsAgainst);
+  const totalGoalie = calculateGoalieMetrics(totals.goalieSeconds, totals.shotsAgainst ?? 0, totals.goalieGoalsAgainst);
   totals.savePercentage = totalGoalie.savePercentage === null ? "—" : `${totalGoalie.savePercentage.toFixed(1)}%`;
   totals.goalsAgainstAverage = totalGoalie.goalsAgainstAverage === null ? "—" : totalGoalie.goalsAgainstAverage.toFixed(2);
   return {

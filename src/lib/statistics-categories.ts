@@ -16,9 +16,9 @@ export function isDefender(position: string) {
   return position.trim().toLocaleLowerCase("ru") === "защитник";
 }
 export function categoryPlayers(players: DivisionPlayerStatistic[], category: StatisticsCategory) {
-  if (category.metric === "shutouts") return [];
   const metric = category.metric;
   return players.filter(player => {
+    if (metric === "shutouts") return player.isGoalkeeper && (player.shutouts ?? 0) > 0;
     if (category.group === "goalkeepers") return player.isGoalkeeper && player[metric] !== null;
     return !player.isGoalkeeper && (category.group !== "defenders" || isDefender(player.position));
   }).sort((a, b) => (metric === "goalsAgainstAverage" ? Number(a[metric]) - Number(b[metric]) : Number(b[metric]) - Number(a[metric])) || a.name.localeCompare(b.name, "ru"));

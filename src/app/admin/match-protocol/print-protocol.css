@@ -1,0 +1,11 @@
+@media print {
+  body:has(> [data-match-protocol-print]) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  body:has(> [data-match-protocol-print]) > :not([data-match-protocol-print]) {
+    display: none !important;
+  }
+}

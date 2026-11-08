@@ -115,47 +115,36 @@ export function deriveMatchProtocol(input: {
     for (const player of input.roster || [])
       add(player.playerId, player.teamEntryId, "games", 1);
 
-  if (input.status === "FINAL") {
-    const goalieAppearances = new Set<string>();
-    const secondsAt = (value?: string) => {
-      const [minutes, seconds] = (value || "").split(":").map(Number);
-      return Number.isFinite(minutes) && Number.isFinite(seconds)
-        ? Math.max(0, minutes * 60 + seconds)
-        : 0;
-    };
-    for (const stint of input.goalieStints || []) {
-      if (
-        stint.shotsAgainst === "" ||
-        stint.shotsAgainst === null ||
-        stint.shotsAgainst === undefined
-      )
-        continue;
-      const shots = Number(stint.shotsAgainst);
-      if (!stint.playerId || !Number.isFinite(shots) || shots < 0) continue;
-      const key = `${stint.playerId}:${stint.teamEntryId}`;
-      const from = secondsAt(stint.from);
-      const to = Math.max(from, secondsAt(stint.to));
-      const goalsAgainst = goals.filter((goal) => {
-        const clock = Number(goal.clockSeconds);
-        return (
-          goal.teamEntryId !== stint.teamEntryId &&
-          Number.isFinite(clock) &&
-          clock >= from &&
-          clock < to
-        );
-      }).length;
-      if (!goalieAppearances.has(key)) {
-        add(stint.playerId, stint.teamEntryId, "goalieGames", 1);
-        goalieAppearances.add(key);
-      }
-      add(stint.playerId, stint.teamEntryId, "goalieSeconds", to - from);
-      add(stint.playerId, stint.teamEntryId, "shotsAgainst", shots);
-      add(stint.playerId, stint.teamEntryId, "goalieGoalsAgainst", goalsAgainst);
-    }
-  }
-
   const scoreFor = (teamEntryId: string) =>
     goals.filter((goal) => goal.teamEntryId === teamEntryId).length;
+  const homeScore = scoreFor(input.homeTeamEntryId);
+  const awayScore = scoreFor(input.awayTeamEntryId);
+
+  if (input.status === "FINAL") {
+    const goalies = calculateMatchGoalies({
+      status: input.status,
+      resultType: "NORMAL",
+      isPlayoff: false,
+      homeTeamEntryId: input.homeTeamEntryId,
+      awayTeamEntryId: input.awayTeamEntryId,
+      homeScore,
+      awayScore,
+      protocolData: { goalieStints: input.goalieStints },
+      goals: goals.map(goal => ({
+        teamEntryId: goal.teamEntryId,
+        situation: goal.situation ?? "",
+        clockSeconds: goal.clockSeconds == null || goal.clockSeconds === "" ? null : Number(goal.clockSeconds),
+      })),
+      shootoutGoals: [],
+    });
+    for (const goalie of goalies) {
+      if (goalie.shotsAgainst === null || goalie.goalsAgainst === null) continue;
+      add(goalie.playerId, goalie.teamEntryId, "goalieGames", 1);
+      add(goalie.playerId, goalie.teamEntryId, "goalieSeconds", goalie.seconds);
+      add(goalie.playerId, goalie.teamEntryId, "shotsAgainst", goalie.shotsAgainst);
+      add(goalie.playerId, goalie.teamEntryId, "goalieGoalsAgainst", goalie.goalsAgainst);
+    }
+  }
   const periods = [1, 2, 3].map((period) => ({
     home: goals.filter(
       (goal) => goal.teamEntryId === input.homeTeamEntryId && eventPeriod(goal) === period,
@@ -166,10 +155,12 @@ export function deriveMatchProtocol(input: {
   }));
 
   return {
-    homeScore: scoreFor(input.homeTeamEntryId),
-    awayScore: scoreFor(input.awayTeamEntryId),
+    homeScore,
+    awayScore,
     periodScores: periods,
     contributions: [...contributions.values()],
   };
 }
+
+import { calculateMatchGoalies } from "./match-goalies";
 

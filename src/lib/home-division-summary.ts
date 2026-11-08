@@ -3,6 +3,8 @@ import { compactHomeLeaders } from "./home-leaders";
 
 import { calculateStandings } from "@/lib/domain/standings";
 import { calculateGoalieMetrics } from "@/lib/domain/goalie-statistics";
+import { goalieStatisticKey } from "@/lib/domain/match-goalies";
+import { getGoalieProtocolStatistics, goalieStatisticsFor } from "@/lib/goalie-protocol-statistics";
 import { prisma } from "@/lib/prisma";
 import type { DivisionPlayerStatistic, DivisionTeam } from "@/lib/division-page";
 
@@ -11,7 +13,7 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
   teams: DivisionTeam[];
   leaders: DivisionPlayerStatistic[];
 }> {
-  const division = await prisma.division.findUnique({
+  const [division, goalieProtocols] = await Promise.all([prisma.division.findUnique({
     where: { id: divisionId },
     select: {
       teamEntries: {
@@ -37,7 +39,7 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
         },
       },
     },
-  });
+  }), getGoalieProtocolStatistics({ divisionId })]);
   if (!division) return { teams: [], leaders: [] };
 
   const results = division.matches.map((match) => {
@@ -94,7 +96,8 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
   });
   const leaders: DivisionPlayerStatistic[] = division.teamEntries.flatMap((entry) =>
     entry.playerStats.map((stat) => {
-      const goalie = calculateGoalieMetrics(stat.goalieSeconds, stat.shotsAgainst, stat.goalieGoalsAgainst);
+      const totals = goalieStatisticsFor(stat, goalieProtocols.get(goalieStatisticKey(entry.id, stat.playerId)));
+      const goalie = calculateGoalieMetrics(totals.goalieSeconds, totals.shotsAgainst ?? 0, totals.goalieGoalsAgainst);
       return {
         key: `${entry.id}-${stat.playerId}`,
         slug: stat.player.slug,
@@ -108,12 +111,13 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
         assists: stat.assists,
         penalty: stat.penaltyMinutes,
         points: stat.goals + stat.assists,
-        isGoalkeeper: (stat.player.position || "").toLocaleLowerCase("ru").includes("вратар") || stat.goalieGames > 0,
-        goalieGames: stat.goalieGames,
-        goalieMinutes: Math.floor(stat.goalieSeconds / 60),
-        shotsAgainst: stat.shotsAgainst,
-        goalieGoalsAgainst: stat.goalieGoalsAgainst,
-        saves: goalie.saves,
+        isGoalkeeper: (stat.player.position || "").toLocaleLowerCase("ru").includes("вратар") || totals.goalieGames > 0,
+        goalieGames: totals.goalieGames,
+        goalieMinutes: Math.floor(totals.goalieSeconds / 60),
+        shotsAgainst: totals.shotsAgainst,
+        goalieGoalsAgainst: totals.goalieGoalsAgainst,
+        shutouts: totals.shutouts,
+        saves: totals.shotsAgainst === null ? null : goalie.saves,
         savePercentage: goalie.savePercentage,
         goalsAgainstAverage: goalie.goalsAgainstAverage,
       };

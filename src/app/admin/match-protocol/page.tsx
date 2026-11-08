@@ -1,6 +1,31 @@
 "use client";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { AdminModal } from "../admin-modal";
+import { MatchRosterCard, MatchRosterEditor } from "./match-roster";
+import { PrintProtocol, readPrintDetails } from "./print-protocol";
+import { useProtocolAutosave } from "./use-protocol-autosave";
+import { EventFilters, EventTeamIdentity, isScoringGoal, MatchEventTables, type EventFilter } from "./match-events";
+import styles from "./match-protocol.module.css";
+import eventStyles from "./match-events.module.css";
+
+const matchTabs = [
+  ["info", "Информация о матче"],
+  ["players", "Игроки матча"],
+  ["events", "События матча"],
+  ["staff", "Сотрудники матча"],
+  ["referees", "Судьи матча"],
+  ["remarks", "Замечания"],
+  ["protocol", "Протокол"],
+] as const;
+type MatchTab = typeof matchTabs[number][0];
+const matchStatusLabels: Record<string, string> = {
+  SCHEDULED: "Запланирован", LIVE: "Матч идёт", FINAL: "Матч завершён", POSTPONED: "Матч перенесён", CANCELLED: "Матч отменён",
+};
+
+function MatchPanel({ tab, active, children }: { tab: MatchTab; active: MatchTab; children: ReactNode }) {
+  return <div className={styles.panel} id={`match-panel-${tab}`} role="tabpanel"
+    aria-labelledby={`match-tab-${tab}`} tabIndex={0} hidden={active !== tab}>{children}</div>;
+}
 
 const situations = [
   ["5X5", "5×5 — равные составы"],
@@ -76,7 +101,7 @@ const formatMatchTime = (value: string) => {
   return `${digits.slice(0, minuteLength)}:${digits.slice(minuteLength)}`;
 };
 const validMatchTime = (value: string) => {
-  const match = value.match(/^\d{1,3}:(\d{2})$/);
+  const match = typeof value === "string" && value.match(/^\d{1,3}:(\d{2})$/);
   return Boolean(match && Number(match[1]) < 60);
 };
 const toClock = (v: number | null) =>
@@ -129,6 +154,11 @@ export default function MatchProtocolPage() {
     [playoff, setPlayoff] = useState({ winnerTeamEntryId: "" }),
     [shootouts, setShootouts] = useState<any[]>([]),
     [note, setNote] = useState(""),
+    [staff, setStaff] = useState(""),
+    [referees, setReferees] = useState(""),
+    [printDetails, setPrintDetails] = useState(() => readPrintDetails(null)),
+    [activeTab, setActiveTab] = useState<MatchTab>("info"),
+    [eventFilter, setEventFilter] = useState<EventFilter>("all"),
     [goalOpen, setGoalOpen] = useState(false),
     [goalMode, setGoalMode] = useState<"names" | "numbers">("names"),
     [goalFormError, setGoalFormError] = useState(""),
@@ -141,7 +171,7 @@ export default function MatchProtocolPage() {
     [editGoal, setEditGoal] = useState<number | null>(null),
     [editPenalty, setEditPenalty] = useState<number | null>(null),
     [editingRosterTeamId, setEditingRosterTeamId] = useState<string | null>(null),
-    [saving, setSaving] = useState(false),
+    [hasSavedShootouts, setHasSavedShootouts] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
   async function load() {
@@ -159,11 +189,7 @@ export default function MatchProtocolPage() {
     }
     const v = await r.json(),
       p = v.protocolData || {},
-      absolute = !!p.eventTimesAbsolute,
-      eventSeconds = (x: any) =>
-        absolute
-          ? x.clockSeconds || 0
-          : Math.max(0, ((x.period || 1) - 1) * 1200 + (x.clockSeconds || 0));
+      eventTime = (x: { clockSeconds?: number | null }) => x.clockSeconds == null ? "" : toClock(x.clockSeconds);
     setMatch(v);
     setSelected(v.rosters.map((x: any) => x.rosterEntryId));
     setNumbers(
@@ -195,6 +221,7 @@ export default function MatchProtocolPage() {
     setGoalieStints(p.goalieStints || []);
     setTimeouts(p.timeouts || []);
     setPlayoff({ winnerTeamEntryId: p.playoff?.winnerTeamEntryId || "" });
+    setHasSavedShootouts(v.penaltyShots.some((shot: { phase: string }) => shot.phase === "SHOOTOUT"));
     setShootouts(
       v.penaltyShots
         .filter((x: any) => x.phase === "SHOOTOUT")
@@ -207,6 +234,9 @@ export default function MatchProtocolPage() {
         })),
     );
     setNote(v.resultNote || "");
+    setStaff(typeof p.staffNote === "string" ? p.staffNote : "");
+    setReferees(typeof p.refereeNote === "string" ? p.refereeNote : "");
+    setPrintDetails(readPrintDetails(p.printDetails));
     const scored = v.goals.map((x: any) => ({
         id: x.id,
         teamEntryId: x.teamEntryId,
@@ -215,7 +245,8 @@ export default function MatchProtocolPage() {
         assist2Id: x.assists[1]?.playerId || "",
         situation: x.situation || "5X5",
         penaltyShotOutcome: x.situation === "PENALTY_SHOT" ? "goal" : "",
-        time: toClock(eventSeconds(x)),
+        period: x.period,
+        time: eventTime(x),
       })),
       missed = v.penaltyShots
         .filter((x: any) => x.phase === "IN_GAME")
@@ -227,7 +258,8 @@ export default function MatchProtocolPage() {
           assist2Id: "",
           situation: "PENALTY_SHOT",
           penaltyShotOutcome: "miss",
-          time: toClock(eventSeconds(x)),
+          period: x.period,
+          time: eventTime(x),
         }));
     setGoals(
       [...scored, ...missed].sort(
@@ -235,12 +267,61 @@ export default function MatchProtocolPage() {
       ),
     );
     setPenalties(
-      v.penalties.map((x: any) => ({ ...x, time: toClock(eventSeconds(x)) })),
+      v.penalties.map((x: any) => ({ ...x, time: eventTime(x) })),
     );
   }
   useEffect(() => {
+    const tab = new URLSearchParams(location.search).get("tab");
+    if (matchTabs.some(([id]) => id === tab)) setActiveTab(tab as MatchTab);
     load();
   }, []);
+  const technicalResult = resultType === "TECHNICAL";
+  const eventPayload = (event: { time: string; period?: number | null }) => {
+    const seconds = validMatchTime(event.time) ? toSeconds(event.time) : null;
+    return { ...event, period: seconds === null ? event.period ?? null : getPeriod(seconds), clockSeconds: seconds };
+  };
+  const draft = match ? JSON.stringify({
+    matchId: match.id,
+    rosterEntryIds: selected,
+    numberOverrides: numbers,
+    status,
+    resultType,
+    protocolData: {
+      eventTimesAbsolute: true,
+      shots: shots.map(({ home, away }) => ({ home: home === "" ? null : Number(home), away: away === "" ? null : Number(away) })),
+      goalieStints,
+      timeouts,
+      playoff,
+      staffNote: staff.trim(),
+      refereeNote: referees.trim(),
+      printDetails,
+      technicalWinnerTeamEntryId: technicalResult ? technicalWinnerTeamEntryId : null,
+    },
+    shootouts: technicalResult ? [] : shootouts,
+    resultNote: note,
+    goals: technicalResult ? [] : goals.map(eventPayload),
+    penalties: technicalResult ? [] : penalties.map(eventPayload),
+  }) : null;
+  const incompleteStint = goalieStints.some(stint => !stint.playerId || !validMatchTime(stint.from || "") ||
+    !validMatchTime(stint.to || "") || toSeconds(stint.to) <= toSeconds(stint.from));
+  let blockedReason = "";
+  if (technicalResult && !technicalWinnerTeamEntryId) blockedReason = "Выберите победителя для технического результата.";
+  else if (!technicalResult && incompleteStint) blockedReason = "Заполните вратаря и время каждого отрезка.";
+  else if (!technicalResult && timeouts.some(timeout => !validMatchTime(timeout.time || ""))) blockedReason = "Заполните время тайм-аута.";
+  else if (!technicalResult && shootouts.some(shot => !shot.playerId)) blockedReason = "Выберите исполнителя буллита.";
+
+  const { saveNow, saving, dirty, saveError, conflict } = useProtocolAutosave(match, draft, blockedReason, ({ response, latest, hasShootouts }) => {
+    setHasSavedShootouts(hasShootouts);
+    if (!latest) return;
+    setHomeScore(String(response.score.home));
+    setAwayScore(String(response.score.away));
+    if (technicalResult) {
+      setGoals([]);
+      setPenalties([]);
+      setShootouts([]);
+    }
+  });
+
   if (error && !match)
     return (
       <main className="adminShell">
@@ -268,11 +349,12 @@ export default function MatchProtocolPage() {
       id === match.homeTeamEntryId
         ? match.homeTeamEntry.team.name
         : match.awayTeamEntry.team.name,
-    playerName = (tid: string, pid: string) => {
+    eventPlayer = (tid: string, pid: string) => {
       const x = rosterFor(tid).find((r: any) => r.playerId === pid);
-      return x
-        ? `${x.player.lastName} ${x.player.firstName}`
-        : "Игрок не указан";
+      return x ? {
+        name: `${x.player.lastName} ${x.player.firstName}`,
+        number: String(numbers[x.id] || x.number || x.player.baseNumber || ""),
+      } : { name: "Игрок не указан", number: "" };
     };
   const numberedPlayersFor = (teamEntryId: string) => selectedFor(teamEntryId)
     .map((row: any) => ({ row, number: String(numbers[row.id] ?? row.number ?? "").trim() }))
@@ -324,13 +406,7 @@ export default function MatchProtocolPage() {
     setPenaltyOpen(true);
   };
   const syncScoreFromGoals = (nextGoals: any[]) => {
-    const counted = nextGoals.filter(
-      (x) =>
-        !(
-          x.situation === "PENALTY_SHOT" &&
-          x.penaltyShotOutcome === "miss"
-        ),
-    );
+    const counted = nextGoals.filter(isScoringGoal);
     const nextPeriods = [1, 2, 3].map((period) => ({
       home: String(
         counted.filter(
@@ -400,76 +476,27 @@ export default function MatchProtocolPage() {
             ]
           : a.filter((x) => x.teamEntryId !== tid),
       );
-  async function save(rosterDraft?: { rosterEntryIds: string[]; numberOverrides: Record<string, string> }) {
-    if (saving) return false;
-    setError("");
-    setMessage("");
-    if (resultType === "TECHNICAL" && !technicalWinnerTeamEntryId) {
-      setError("Выберите команду, которой присуждена техническая победа.");
-      return false;
-    }
-    setSaving(true);
-    const event = (x: any) => {
-      const seconds = toSeconds(x.time);
-      return { ...x, period: getPeriod(seconds), clockSeconds: seconds };
-    };
-    try {
-      const r = await fetch("/api/admin/match-protocol", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        matchId: match.id,
-        expectedUpdatedAt: match.updatedAt,
-        rosterEntryIds: rosterDraft?.rosterEntryIds ?? selected,
-        numberOverrides: rosterDraft?.numberOverrides ?? numbers,
-        status,
-        resultType,
-        homeScore,
-        awayScore,
-        periodScores: periods.map((x) => ({
-          home: Number(x.home) || 0,
-          away: Number(x.away) || 0,
-        })),
-        protocolData: {
-          eventTimesAbsolute: true,
-          shots: shots.map((x) => ({
-            home: Number(x.home) || 0,
-            away: Number(x.away) || 0,
-          })),
-          goalieStints,
-          timeouts,
-          playoff,
-          technicalWinnerTeamEntryId:
-            resultType === "TECHNICAL" ? technicalWinnerTeamEntryId : null,
-        },
-        shootouts: resultType === "TECHNICAL" ? [] : shootouts,
-        resultNote: note,
-        goals: resultType === "TECHNICAL" ? [] : goals.map(event),
-        penalties: resultType === "TECHNICAL" ? [] : penalties.map(event),
-        }),
-      });
-      if (r.ok) {
-        setMessage(
-          status === "LIVE"
-            ? "Протокол обновлён — счёт и события доступны в лайве"
-            : status === "FINAL"
-              ? "Матч завершён — таблица и статистика пересчитаны"
-              : "Протокол сохранён",
-        );
-        await load();
-        return true;
-      } else {
-        setError((await r.json()).error || "Не удалось сохранить протокол");
-        return false;
-      }
-    } catch {
-      setError("Нет связи с сервером. Проверьте запуск сайта и повторите сохранение.");
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }
   const teams = [match.homeTeamEntry, match.awayTeamEntry];
+  const scoringGoals = goals.filter(isScoringGoal);
+  const eventCounts = {
+    all: goals.length + penalties.length + goalieStints.length + timeouts.length + shootouts.length,
+    goals: scoringGoals.length,
+    penalties: penalties.length,
+    goalies: goalieStints.length + timeouts.length,
+    shootouts: shootouts.length,
+  };
+  const regulationTie = scoringGoals.filter(goal => goal.teamEntryId === match.homeTeamEntryId).length ===
+    scoringGoals.filter(goal => goal.teamEntryId === match.awayTeamEntryId).length;
+  const canEditShootouts = match.isPlayoff && (Number(homeScore) === Number(awayScore) || (regulationTie && hasSavedShootouts));
+  const scoreFor = (teamId: string, score: string) => technicalResult
+    ? !technicalWinnerTeamEntryId ? "—" : technicalWinnerTeamEntryId === teamId ? "+" : "−"
+    : score;
+  const lockedPlayersFor = (teamEntryId: string) => new Set<string>(resultType === "TECHNICAL" ? [] : [
+    ...goals.filter(goal => goal.teamEntryId === teamEntryId).flatMap(goal => [goal.scorerId, goal.assist1Id, goal.assist2Id]),
+    ...penalties.filter(penalty => penalty.teamEntryId === teamEntryId).map(penalty => penalty.playerId),
+    ...goalieStints.filter(stint => stint.teamEntryId === teamEntryId).map(stint => stint.playerId),
+    ...shootouts.map(shot => shot.teamEntryId === teamEntryId ? shot.playerId : shot.goalieId),
+  ].filter(Boolean));
   const activeSuspension = (row: any) =>
     row.suspensions?.find((suspension: any) => {
       if (suspension.status !== "ACTIVE") return false;
@@ -483,11 +510,12 @@ export default function MatchProtocolPage() {
     const numberOverrides = { ...numbers };
     for (const id of teamIds) delete numberOverrides[id];
     Object.assign(numberOverrides, teamNumbers);
-    const saved = await save({ rosterEntryIds, numberOverrides });
-    if (saved) {
+    await saveNow({ rosterEntryIds, numberOverrides }, () => {
+      setSelected(rosterEntryIds);
+      setNumbers(numberOverrides);
       setEditingRosterTeamId(null);
       setMessage(`Состав команды «${entry.team.name}» сохранён`);
-    }
+    });
   }
   return (
     <main className="adminShell adminProtocol">
@@ -498,36 +526,38 @@ export default function MatchProtocolPage() {
         </nav>
         {message && <p className="adminNotice">{message}</p>}
         {error && <p className="formError">{error}</p>}
-        <div className="protocolScore">
-          <div className="protocolScoreInner">
-            <span>
-              {match.division.competition.season.name} ·{" "}
-              {match.division.competition.name} · {match.division.name}
+        <header className={eventStyles.summary} aria-label="Табло матча">
+          <h1 className={eventStyles.scoreboard}>
+            <span className={eventStyles.home}><EventTeamIdentity team={match.homeTeamEntry.team} /></span>
+            <span className={eventStyles.result}>
+              <strong>{scoreFor(match.homeTeamEntryId, homeScore)} <span>:</span> {scoreFor(match.awayTeamEntryId, awayScore)}</strong>
+              <small className={eventStyles.status} data-live={status === "LIVE"} aria-live="polite">{matchStatusLabels[status] || status}</small>
             </span>
-            <h1 className="protocolScoreBoard">
-              <b>{match.homeTeamEntry.team.name}</b>
-              <strong>
-                {resultType === "TECHNICAL"
-                  ? !technicalWinnerTeamEntryId ? "—" : technicalWinnerTeamEntryId === match.homeTeamEntryId ? "+" : "−"
-                  : homeScore}
-                <i>:</i>
-                {resultType === "TECHNICAL"
-                  ? !technicalWinnerTeamEntryId ? "—" : technicalWinnerTeamEntryId === match.awayTeamEntryId ? "+" : "−"
-                  : awayScore}
-              </strong>
-              <b>{match.awayTeamEntry.team.name}</b>
-            </h1>
-            <p>
-              {match.startsAt
-                ? new Date(match.startsAt).toLocaleString("ru-RU")
-                : "Дата не указана"}{" "}
-              · {match.venue?.name || "Арена не указана"}
-            </p>
-          </div>
-          <em className={status === "LIVE" ? "live" : ""}>
-            {status === "LIVE" ? "● ЛАЙВ" : "ПРОТОКОЛ"}
-          </em>
+            <EventTeamIdentity team={match.awayTeamEntry.team} />
+          </h1>
+          <p className={eventStyles.matchDetails}>
+            <span>{match.division.competition.season.name} · {match.division.competition.name} · {match.division.name}</span>
+            <span>{match.startsAt ? new Date(match.startsAt).toLocaleString("ru-RU") : "Дата не указана"} · {match.venue?.name || "Арена не указана"}</span>
+          </p>
+          {status === "LIVE" && !technicalResult && <button type="button" className={eventStyles.finish} disabled={saving || conflict || Boolean(blockedReason)}
+            onClick={() => void saveNow({ status: "FINAL" }, () => setStatus("FINAL"))}>Завершить матч</button>}
+        </header>
+        <div className={styles.tabs} role="tablist" aria-label="Разделы матча" onKeyDown={event => {
+          const current = matchTabs.findIndex(([id]) => id === activeTab);
+          const last = matchTabs.length - 1;
+          const next = event.key === "Home" ? 0 : event.key === "End" ? last
+            : event.key === "ArrowLeft" ? (current + last) % matchTabs.length
+            : event.key === "ArrowRight" ? (current + 1) % matchTabs.length : -1;
+          if (next < 0) return;
+          event.preventDefault();
+          setActiveTab(matchTabs[next][0]);
+          event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+        }}>
+          {matchTabs.map(([id, label]) => <button key={id} type="button" id={`match-tab-${id}`} role="tab"
+            aria-controls={`match-panel-${id}`} aria-selected={activeTab === id} tabIndex={activeTab === id ? 0 : -1}
+            onClick={() => setActiveTab(id)}>{label}</button>)}
         </div>
+        <MatchPanel tab="info" active={activeTab}>
         <section className="protocolResult">
           <h3>Результат матча</h3>
           <div>
@@ -552,7 +582,6 @@ export default function MatchProtocolPage() {
                 onChange={(e) => {
                   setResultType(e.target.value);
                   if (e.target.value === "TECHNICAL") {
-                    setStatus("FINAL");
                     setTechnicalWinnerTeamEntryId("");
                   }
                 }}
@@ -565,7 +594,10 @@ export default function MatchProtocolPage() {
               Техническая победа
               <select
                 value={technicalWinnerTeamEntryId}
-                onChange={(e) => setTechnicalWinnerTeamEntryId(e.target.value)}
+                onChange={(e) => {
+                  setTechnicalWinnerTeamEntryId(e.target.value);
+                  if (e.target.value) setStatus("FINAL");
+                }}
               >
                 <option value="">Выберите победителя</option>
                 <option value={match.homeTeamEntryId}>{teamName(match.homeTeamEntryId)}</option>
@@ -596,8 +628,8 @@ export default function MatchProtocolPage() {
             </label>
           </div>
           {resultType === "TECHNICAL" ? <p className="technicalResultNotice">
-            Матч попадёт в таблицу как победа и поражение, но шайбы и личная
-            статистика игроков учитываться не будут.
+            После выбора победителя технический результат сохранится автоматически.
+            Голы, штрафы и буллиты будут удалены из протокола.
           </p> : <div className="periodScoreInputs">
             {periods.map((p, i) => (
               <div key={i}>
@@ -619,56 +651,51 @@ export default function MatchProtocolPage() {
             ))}
           </div>}
         </section>
-        <section className="matchRosterSelect matchRosterPicker">
-          <header>
-            <div>
-              <h2>Участники игры</h2>
-              <p>{selected.length} игроков выбрано · выберите команду для редактирования состава</p>
-            </div>
-          </header>
-          <div className="matchRosterTeamCards">
-            {teams.map((entry: any) => {
-              const count = selectedFor(entry.id).length;
-              return <button className="matchRosterTeamCard" type="button" key={entry.id} onClick={() => { setError(""); setEditingRosterTeamId(entry.id); }}>
-                <span className="matchRosterTeamName">{entry.team.name}</span>
-                <span className="matchRosterTeamCount">{count} из {entry.roster.length} в составе</span>
-                <strong>{count ? "Изменить состав" : "Выбрать состав"} <span aria-hidden="true">→</span></strong>
-              </button>;
-            })}
+        </MatchPanel>
+        <MatchPanel tab="players" active={activeTab}>
+          <div className={styles.rosters}>
+            {teams.map((entry: any) => <MatchRosterCard key={entry.id} entry={entry} selected={selected} numbers={numbers}
+              onEdit={() => { setError(""); setEditingRosterTeamId(entry.id); }} />)}
           </div>
-        </section>
-        {teams.map((entry: any) => editingRosterTeamId === entry.id && <MatchRosterEditor
+        </MatchPanel>
+        {teams.map((entry: any) => activeTab === "players" && editingRosterTeamId === entry.id && <MatchRosterEditor
           key={entry.id}
           entry={entry}
           selected={selected.filter((id) => entry.roster.some((row: any) => row.id === id))}
           numbers={numbers}
           activeSuspension={activeSuspension}
+          lockedPlayers={lockedPlayersFor(entry.id)}
           saving={saving}
-          error={error}
+          error={saveError || blockedReason || error}
           onClose={() => setEditingRosterTeamId(null)}
           onSave={(teamSelected, teamNumbers) => saveTeamRoster(entry, teamSelected, teamNumbers)}
         />)}
-        <section className="protocolEvents">
-          <header>
-            <div>
-              <h2>Голы и удаления</h2>
-              <p>
-                Время указывается от начала матча — период определяется
-                автоматически.
-              </p>
-            </div>
-          </header>
-          {resultType === "TECHNICAL" && (
-            <p className="technicalResultNotice">
-              Для технического результата события матча не сохраняются. После
-              сохранения голы, удаления и буллиты этого протокола будут очищены.
-            </p>
-          )}
+        <MatchPanel tab="staff" active={activeTab}>
+          <section className={styles.noteCard}>
+            <h2>Сотрудники матча</h2>
+            <label>Имя и обязанности<textarea value={staff} onChange={event => setStaff(event.target.value)} rows={5}
+              maxLength={2000} placeholder="Например: Иванов Иван — секретарь матча" /></label>
+          </section>
+        </MatchPanel>
+        <MatchPanel tab="referees" active={activeTab}>
+          <section className={styles.noteCard}>
+            <h2>Судьи матча</h2>
+            <label>Имя и роль<textarea value={referees} onChange={event => setReferees(event.target.value)} rows={5}
+              maxLength={2000} placeholder="Например: Иванов Иван — главный судья" /></label>
+          </section>
+        </MatchPanel>
+        <MatchPanel tab="events" active={activeTab}>
+          <div className={eventStyles.layout}>
+            <h2 className={eventStyles.title}>События матча</h2>
+            <EventFilters current={eventFilter} counts={eventCounts} onChange={setEventFilter} />
+            {technicalResult && <p className="technicalResultNotice">
+              Для технического результата голы, штрафы и буллиты не сохраняются.
+            </p>}
           {goalOpen && (
             <AdminModal title={`${editGoal === null ? "Добавить гол" : "Изменить гол"} · ${teamName(goal.teamEntryId)}`} onClose={() => setGoalOpen(false)} wide>
               <section className="adminForm goalProtocolForm">
                 <h2>{editGoal === null ? "Добавить гол" : "Изменить гол"} · {teamName(goal.teamEntryId)}</h2>
-                {!selectedFor(goal.teamEntryId).length && <p className="goalRosterHint">Сначала выберите и сохраните участников этой команды в разделе «Участники игры».</p>}
+                {!selectedFor(goal.teamEntryId).length && <p className="goalRosterHint">Сначала выберите и сохраните участников этой команды в разделе «Игроки матча».</p>}
                 <div className="goalEntryTabs" role="tablist" aria-label="Способ выбора игроков">
                   <button type="button" role="tab" aria-selected={goalMode === "names"} onClick={() => setGoalMode("names")}>По фамилиям</button>
                   <button type="button" role="tab" aria-selected={goalMode === "numbers"} onClick={() => setGoalMode("numbers")}>По номерам</button>
@@ -690,7 +717,7 @@ export default function MatchProtocolPage() {
                     const role = goal.scorerId === row.playerId ? "scorer" : goal.assist1Id === row.playerId || goal.assist2Id === row.playerId ? "assist" : "";
                     const full = Boolean(goal.scorerId && (goal.situation === "PENALTY_SHOT" || (goal.assist1Id && goal.assist2Id)));
                     return <button type="button" key={row.id} className={`goalNumberTile${role ? ` is-${role}` : ""}`} aria-pressed={Boolean(role)} aria-label={`№ ${number}, ${row.player.lastName} ${row.player.firstName}${role === "scorer" ? ", автор гола" : role === "assist" ? ", ассистент" : ""}`} disabled={!role && full} onClick={() => chooseGoalNumber(row.playerId)}><b>{number}</b><small>{row.player.lastName}</small></button>;
-                  })}</div> : <p className="goalNumberEmpty">В составе этой команды нет игроков с номерами. Укажите номера в «Участниках игры» или выберите игроков по фамилиям.</p>}
+                  })}</div> : <p className="goalNumberEmpty">В составе этой команды нет игроков с номерами. Укажите номера во вкладке «Игроки матча» или выберите игроков по фамилиям.</p>}
                 </div>}
                 <div className="goalCommonFields">
                   <label>Время матча<input inputMode="numeric" value={goal.time} onFocus={(event) => event.currentTarget.select()} onChange={(event) => setGoal({ ...goal, time: formatMatchTime(event.target.value) })} placeholder="34:25" /></label>
@@ -717,7 +744,7 @@ export default function MatchProtocolPage() {
                 {penaltyTarget === "team" ? (
                   <p className="penaltyTeamHint">Штраф появится в хронологии матча у команды. Штрафные минуты не будут начислены ни одному игроку.</p>
                 ) : <>
-                  {!selectedFor(penalty.teamEntryId).length && <p className="goalRosterHint">Сначала выберите и сохраните участников этой команды в разделе «Участники игры».</p>}
+                  {!selectedFor(penalty.teamEntryId).length && <p className="goalRosterHint">Сначала выберите и сохраните участников этой команды в разделе «Игроки матча».</p>}
                   <div className="goalEntryTabs" role="tablist" aria-label="Способ выбора игрока для удаления">
                     <button type="button" role="tab" aria-selected={penaltyMode === "names"} onClick={() => setPenaltyMode("names")}>По фамилиям</button>
                     <button type="button" role="tab" aria-selected={penaltyMode === "numbers"} onClick={() => setPenaltyMode("numbers")}>По номерам</button>
@@ -726,7 +753,7 @@ export default function MatchProtocolPage() {
                     <label>Игрок<select value={penalty.playerId || ""} onChange={(event) => { setPenalty({ ...penalty, playerId: event.target.value }); setPenaltyFormError(""); }}><option value="">Выберите игрока</option>{selectedFor(penalty.teamEntryId).map((row: any) => <option key={row.playerId} value={row.playerId}>{row.player.lastName} {row.player.firstName}</option>)}</select></label>
                   </div> : <div className="goalNumberMode penaltyNumberMode" role="tabpanel">
                     <p>Выберите номер удалённого игрока. Повторное нажатие снимает выбор.</p>
-                    {penaltyNumberPlayers.length ? <div className="goalNumberGrid">{penaltyNumberPlayers.map(({ row, number }: any) => <button type="button" key={row.id} className={`goalNumberTile${penalty.playerId === row.playerId ? " is-penalty" : ""}`} aria-pressed={penalty.playerId === row.playerId} aria-label={`№ ${number}, ${row.player.lastName} ${row.player.firstName}`} onClick={() => { setPenalty({ ...penalty, playerId: penalty.playerId === row.playerId ? "" : row.playerId }); setPenaltyFormError(""); }}><b>{number}</b><small>{row.player.lastName}</small></button>)}</div> : <p className="goalNumberEmpty">В составе этой команды нет игроков с номерами. Укажите номера в «Участниках игры» или выберите игрока по фамилии.</p>}
+                    {penaltyNumberPlayers.length ? <div className="goalNumberGrid">{penaltyNumberPlayers.map(({ row, number }: any) => <button type="button" key={row.id} className={`goalNumberTile${penalty.playerId === row.playerId ? " is-penalty" : ""}`} aria-pressed={penalty.playerId === row.playerId} aria-label={`№ ${number}, ${row.player.lastName} ${row.player.firstName}`} onClick={() => { setPenalty({ ...penalty, playerId: penalty.playerId === row.playerId ? "" : row.playerId }); setPenaltyFormError(""); }}><b>{number}</b><small>{row.player.lastName}</small></button>)}</div> : <p className="goalNumberEmpty">В составе этой команды нет игроков с номерами. Укажите номера во вкладке «Игроки матча» или выберите игрока по фамилии.</p>}
                   </div>}
                 </>}
                 <div className="penaltyCommonFields">
@@ -741,123 +768,19 @@ export default function MatchProtocolPage() {
               </section>
             </AdminModal>
           )}
-          <div className="teamEventColumns">
-            {teams.map((entry: any) => (
-              <section className="teamEventPanel" key={entry.id}>
-                <header>
-                  <h3>{entry.team.name}</h3>
-                  <div>
-                    <button disabled={resultType === "TECHNICAL"} onClick={() => openGoal(entry.id)}>+ ГОЛ</button>
-                    <button
-                      className="secondary"
-                      disabled={resultType === "TECHNICAL"}
-                      onClick={() => openPenalty(entry.id)}
-                    >
-                      + УДАЛЕНИЕ
-                    </button>
-                  </div>
-                </header>
-                <div className="teamEventGroup">
-                  <h4>Голы и штрафные броски</h4>
-                  {goals
-                    .filter((x) => x.teamEntryId === entry.id)
-                    .map((x) => {
-                      const i = goals.indexOf(x);
-                      return (
-                        <article key={x.id}>
-                          <time>
-                            {getPeriod(x.time)} ПЕР · {x.time}
-                          </time>
-                          <p>
-                            <b>
-                              {playerName(x.teamEntryId, x.scorerId)} ·{" "}
-                              {x.situation === "PENALTY_SHOT"
-                                ? `ШБ · ${x.penaltyShotOutcome === "miss" ? "не реализован" : "реализован"}`
-                                : x.situation || "5X5"}
-                            </b>
-                            {(x.assist1Id || x.assist2Id) && (
-                              <small>
-                                Ассисты:{" "}
-                                {[x.assist1Id, x.assist2Id]
-                                  .filter(Boolean)
-                                  .map((id: string) =>
-                                    playerName(x.teamEntryId, id),
-                                  )
-                                  .join(", ")}
-                              </small>
-                            )}
-                          </p>
-                          <div>
-                            <button onClick={() => openGoal(entry.id, i)}>
-                              Изменить
-                            </button>
-                            <button
-                              onClick={() => {
-                                const nextGoals = goals.filter(
-                                  (_, n) => n !== i,
-                                );
-                                setGoals(nextGoals);
-                                syncScoreFromGoals(nextGoals);
-                              }}
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  {!goals.some((x) => x.teamEntryId === entry.id) && (
-                    <p className="emptyEvents">Событий пока нет</p>
-                  )}
-                </div>
-                <div className="teamEventGroup">
-                  <h4>Удаления</h4>
-                  {penalties
-                    .filter((x) => x.teamEntryId === entry.id)
-                    .map((x) => {
-                      const i = penalties.indexOf(x);
-                      return (
-                        <article key={x.id}>
-                          <time>
-                            {getPeriod(x.time)} ПЕР · {x.time}
-                          </time>
-                          <p>
-                            <b>
-                              {x.playerId
-                                ? playerName(x.teamEntryId, x.playerId)
-                                : "Командный штраф"}
-                            </b>
-                            <small>
-                              {x.minutes} мин ·{" "}
-                              {x.reason || "Причина не указана"}
-                            </small>
-                          </p>
-                          <div>
-                            <button onClick={() => openPenalty(entry.id, i)}>
-                              Изменить
-                            </button>
-                            <button
-                              onClick={() =>
-                                setPenalties(
-                                  penalties.filter((_, n) => n !== i),
-                                )
-                              }
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  {!penalties.some((x) => x.teamEntryId === entry.id) && (
-                    <p className="emptyEvents">Удалений пока нет</p>
-                  )}
-                </div>
-              </section>
-            ))}
-          </div>
-        </section>
-        <div className="protocolExtraGrid">
+            {(eventFilter === "all" || eventFilter === "goals" || eventFilter === "penalties") && (
+              <MatchEventTables teams={teams} filter={eventFilter} goals={goals} penalties={penalties}
+                disabled={technicalResult} player={eventPlayer} onGoal={openGoal} onPenalty={openPenalty}
+                onDeleteGoal={index => {
+                  const next = goals.filter((_, position) => position !== index);
+                  setGoals(next);
+                  syncScoreFromGoals(next);
+                }}
+                onDeletePenalty={index => setPenalties(current => current.filter((_, position) => position !== index))}
+              />
+            )}
+            {(eventFilter === "goalies" || (eventFilter === "all" && eventCounts.goalies > 0)) && (
+              <div className={eventStyles.supportGrid}>
           <section className="protocolExtra">
             <h3>Время игры вратарей</h3>
             {teams.map((entry: any) => (
@@ -964,41 +887,6 @@ export default function MatchProtocolPage() {
                   })}
               </div>
             ))}
-            <h3 className="shotsTitle">Броски в створ</h3>
-            <div className="shotsGrid">
-              <span>Период</span>
-              <b>{teamName(match.homeTeamEntryId)}</b>
-              <b>{teamName(match.awayTeamEntryId)}</b>
-              {shots.map((x, i) => (
-                <Fragment key={i}>
-                  <span>{i + 1} период</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={x.home}
-                    onChange={(e) =>
-                      setShots(
-                        shots.map((v, n) =>
-                          n === i ? { ...v, home: e.target.value } : v,
-                        ),
-                      )
-                    }
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={x.away}
-                    onChange={(e) =>
-                      setShots(
-                        shots.map((v, n) =>
-                          n === i ? { ...v, away: e.target.value } : v,
-                        ),
-                      )
-                    }
-                  />
-                </Fragment>
-              ))}
-            </div>
           </section>
           <section className="protocolExtra">
             <h3>Тайм-ауты</h3>
@@ -1029,21 +917,50 @@ export default function MatchProtocolPage() {
                 </div>
               );
             })}
-            <h3 className="shotsTitle">Примечание</h3>
-            <label>
-              Текстовый блок
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Технический результат, перенос, особые обстоятельства…"
-              />
-            </label>
-            {match.isPlayoff && (
-              <p className="playoffProtocolMark">Матч плей-офф</p>
-            )}
           </section>
-        </div>
-        {match.isPlayoff && Number(homeScore) === Number(awayScore) && (
+                {eventFilter === "goalies" && (
+                <section className={`protocolExtra ${eventStyles.matchShots}`}>
+                  <h3>Броски в створ</h3>
+                  <div className="shotsGrid">
+                    <span>Период</span>
+                    <b>{teamName(match.homeTeamEntryId)}</b>
+                    <b>{teamName(match.awayTeamEntryId)}</b>
+                    {shots.map((x, i) => (
+                      <Fragment key={i}>
+                        <span>{i + 1} период</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={x.home}
+                          onChange={(e) =>
+                            setShots(
+                              shots.map((v, n) =>
+                                n === i ? { ...v, home: e.target.value } : v,
+                              ),
+                            )
+                          }
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          value={x.away}
+                          onChange={(e) =>
+                            setShots(
+                              shots.map((v, n) =>
+                                n === i ? { ...v, away: e.target.value } : v,
+                              ),
+                            )
+                          }
+                        />
+                      </Fragment>
+                    ))}
+                  </div>
+                </section>
+                )}
+              </div>
+            )}
+            {(eventFilter === "shootouts" || (eventFilter === "all" && shootouts.length > 0)) &&
+              (canEditShootouts && !technicalResult ? (
           <section className="shootoutProtocol">
             <header>
               <div>
@@ -1181,80 +1098,42 @@ export default function MatchProtocolPage() {
               </select>
             </label>
           </section>
-        )}
-        <aside className="situationHelp">
-          <b>Памятка по игровым ситуациям</b>
-          <p>
-            <strong>5×5</strong> — равные составы; <strong>5×4 / 5×3</strong> —
-            большинство; <strong>4×5 / 3×5</strong> — меньшинство;{" "}
-            <strong>ПВ</strong> — пустые ворота; <strong>ШБ</strong> — штрафной
-            бросок. Послематчевые буллиты заносятся отдельно.
-          </p>
-        </aside>
-        <div className="protocolSave">
-          <span>
-            {status === "LIVE"
-              ? "После сохранения изменения сразу появятся на публичных страницах."
-              : "Все данные протокола сохраняются одной операцией."}
+              ) : <p className={eventStyles.unavailable}>Послематчевые броски доступны при ничейном счёте в плей-офф.</p>)}
+          </div>
+        </MatchPanel>
+        <MatchPanel tab="remarks" active={activeTab}>
+          <section className={styles.noteCard}>
+            <h2>Замечания</h2>
+            <label>
+              Примечание к матчу
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Технический результат, перенос, особые обстоятельства…"
+              />
+            </label>
+            {match.isPlayoff && (
+              <p className="playoffProtocolMark">Матч плей-офф</p>
+            )}
+          </section>
+        </MatchPanel>
+        <MatchPanel tab="protocol" active={activeTab}>
+          {activeTab === "protocol" && <PrintProtocol match={match} selected={selected} numbers={numbers}
+            score={{ home: scoreFor(match.homeTeamEntryId, homeScore), away: scoreFor(match.awayTeamEntryId, awayScore) }}
+            statusLabel={matchStatusLabels[status] || status} technicalResult={technicalResult}
+            periods={periods} shots={shots} goals={goals} penalties={penalties} goalieStints={goalieStints}
+            timeouts={timeouts} shootouts={shootouts} note={note} staff={staff} referees={referees}
+            details={printDetails} onDetailsChange={setPrintDetails} />}
+        </MatchPanel>
+        <div className={`protocolSave ${styles.saveBar}`}>
+          <span role={saveError ? "alert" : "status"}>
+            {saveError || (saving ? "Сохраняем протокол…" : dirty && blockedReason ? blockedReason
+              : dirty ? "Сохраняем изменения…" : "Автосохранение включено · все изменения сохранены")}
           </span>
-          <button onClick={() => void save()} disabled={saving}>
-            {saving
-              ? "СОХРАНЯЕМ…"
-              : status === "LIVE"
-                ? "ОБНОВИТЬ ЛАЙВ"
-                : "СОХРАНИТЬ ПРОТОКОЛ"}
-          </button>
+          {saveError && !conflict && <button type="button" disabled={saving || Boolean(blockedReason)}
+            onClick={() => void saveNow()}>Повторить сохранение</button>}
         </div>
       </section>
     </main>
   );
-}
-
-function MatchRosterEditor({ entry, selected, numbers, activeSuspension, saving, error, onClose, onSave }: {
-  entry: any;
-  selected: string[];
-  numbers: Record<string, string>;
-  activeSuspension: (row: any) => any;
-  saving: boolean;
-  error: string;
-  onClose: () => void;
-  onSave: (selected: string[], numbers: Record<string, string>) => void;
-}) {
-  const [chosen, setChosen] = useState(selected);
-  const [draftNumbers, setDraftNumbers] = useState<Record<string, string>>(() =>
-    Object.fromEntries(entry.roster.filter((row: any) => numbers[row.id] !== undefined).map((row: any) => [row.id, numbers[row.id]])),
-  );
-  const [query, setQuery] = useState("");
-  const rows = [...entry.roster].sort((a: any, b: any) =>
-    `${a.player.lastName} ${a.player.firstName}`.localeCompare(`${b.player.lastName} ${b.player.firstName}`, "ru"),
-  );
-  const visible = rows.filter((row: any) =>
-    `${row.player.lastName} ${row.player.firstName} ${row.number || ""}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")),
-  );
-  function submit() {
-    const overrides = Object.fromEntries(chosen
-      .filter((id) => draftNumbers[id] !== undefined)
-      .map((id) => [id, draftNumbers[id]]));
-    onSave(chosen, overrides);
-  }
-  return <AdminModal title={`Состав на матч — ${entry.team.name}`} onClose={() => { if (!saving) onClose(); }} wide>
-    <section className="matchRosterModal">
-      <header><span>СОСТАВ НА МАТЧ</span><h2>{entry.team.name}</h2><p>Отметьте участников и укажите их номера для этого матча. Состав можно открыть и изменить позже.</p></header>
-      <div className="matchRosterModalTools"><label>Поиск игрока<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Фамилия, имя или номер" /></label><b>{chosen.length} выбрано из {rows.length}</b></div>
-      {error && <p className="formError" role="alert">{error}</p>}
-      <div className="matchRosterModalList">
-        {visible.map((row: any) => {
-          const suspension = activeSuspension(row);
-          const checked = chosen.includes(row.id);
-          return <div key={row.id} className={`matchRosterModalRow${suspension ? " suspendedMatchPlayer" : ""}`}>
-            <label className="matchRosterModalPlayer"><input type="checkbox" checked={checked} disabled={saving || (Boolean(suspension) && !checked)} onChange={() => setChosen((current) => checked ? current.filter((id) => id !== row.id) : [...current, row.id])} /><span><strong>{row.player.lastName} {row.player.firstName}</strong><small>{suspension ? `Дисквалификация: ${suspension.reason}` : row.player.position || "Амплуа не указано"}</small></span></label>
-            <label className="matchRosterModalNumber">№ на матч<input type="text" inputMode="numeric" maxLength={3} aria-label={`Номер игрока ${row.player.lastName} ${row.player.firstName}`} disabled={!checked || saving} value={draftNumbers[row.id] ?? row.number ?? ""} onChange={(event) => setDraftNumbers((current) => ({ ...current, [row.id]: event.target.value.replace(/\D/g, "").slice(0, 3) }))} /></label>
-          </div>;
-        })}
-        {!rows.length && <p className="matchRosterModalEmpty">В заявке команды пока нет игроков. Добавьте их в разделе «Команды».</p>}
-        {rows.length > 0 && !visible.length && <p className="matchRosterModalEmpty">По запросу игроки не найдены.</p>}
-      </div>
-      <footer><button type="button" onClick={onClose} disabled={saving}>Отмена</button><button type="button" onClick={submit} disabled={saving}>{saving ? "Сохраняем…" : "Сохранить состав"}</button></footer>
-    </section>
-  </AdminModal>;
 }

@@ -16,5 +16,14 @@ describe("statistics overview", () => {
     const result = categoryPlayers([player("A", { isGoalkeeper: true, goalsAgainstAverage: null }), player("B", { isGoalkeeper: true, goalsAgainstAverage: 2 }), player("C", { isGoalkeeper: true, goalsAgainstAverage: 1 })], statisticsCategories[3]);
     expect(result.map(p => p.name)).toEqual(["C", "B"]);
   });
-  it("does not invent shutouts", () => expect(categoryPlayers([player("A", { isGoalkeeper: true })], statisticsCategories[5])).toEqual([]));
+  it("ranks only goalkeepers with a confirmed shutout", () => {
+    const rows = categoryPlayers([
+      player("A", { isGoalkeeper: true, shutouts: null }),
+      player("B", { isGoalkeeper: true, shutouts: 1 }),
+      player("C", { isGoalkeeper: true, shutouts: 0 }),
+      player("D", { isGoalkeeper: true, shutouts: 2 }),
+      player("E", { shutouts: 3 }),
+    ], statisticsCategories[5]);
+    expect(rows.map(row => row.name)).toEqual(["D", "B"]);
+  });
 });

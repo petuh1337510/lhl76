@@ -48,7 +48,7 @@ function PlayerHistorySection({
           <div>
             <span>СЕЗОН</span><span>КОМАНДА · СОРЕВНОВАНИЕ</span>
             <span>И</span>
-            {hasGoalkeeperStats && <><span>МИН</span><span>БР</span><span>ПШ</span><span>%ОБ</span><span>КН</span></>}
+            {hasGoalkeeperStats && <><span>МИН</span><span>БР</span><span>ПШ</span><span>%ОБ</span><span>КН</span><span title="Сухие матчи">СМ</span></>}
             {!isGoalkeeper && <><span>Г</span><span>А</span><span>ШТР</span><span>О</span></>}
           </div>
           {rows.map((row) => (
@@ -73,10 +73,11 @@ function PlayerHistorySection({
               <span>{row.games}</span>
               {hasGoalkeeperStats && <>
                 <span>{row.goalieGames ? Math.floor(row.goalieSeconds / 60) : "—"}</span>
-                <span>{row.goalieGames ? row.shotsAgainst : "—"}</span>
+                <span>{row.goalieGames ? row.shotsAgainst ?? "—" : "—"}</span>
                 <span>{row.goalieGames ? row.goalieGoalsAgainst : "—"}</span>
                 <em>{row.goalieGames ? row.savePercentage : "—"}</em>
                 <span>{row.goalieGames ? row.goalsAgainstAverage : "—"}</span>
+                <span>{row.shutouts ?? "—"}</span>
               </>}
               {!isGoalkeeper && <>
                 <span>{row.goals}</span><span>{row.assists}</span>
@@ -101,7 +102,7 @@ export default async function PlayerPage({
   const data = await getPlayerPage(slug);
   if (!data) notFound();
   const { player, current, history, totals, suspensions } = data;
-  const isGoalkeeper = player.position.toLocaleLowerCase("ru").includes("вратар");
+  const isGoalkeeper = totals.goalieGames > 0 || player.position.toLocaleLowerCase("ru").includes("вратар");
   const hasGoalkeeperStats = isGoalkeeper && totals.goalieGames > 0;
   const championships = history.filter((row) => row.competitionType === "CHAMPIONSHIP");
   const tournaments = history.filter((row) => row.competitionType === "TOURNAMENT");
@@ -148,15 +149,16 @@ export default async function PlayerPage({
 
         <div className="playerCareerStats">
           <span>{hasGoalkeeperStats ? "СТАТИСТИКА ВРАТАРЯ В ЛХЛ-76" : isGoalkeeper ? "УЧАСТИЕ В МАТЧАХ ЛХЛ-76" : "ОБЩАЯ СТАТИСТИКА В ЛХЛ-76"}</span>
-          <div className={`playerStats${isGoalkeeper && !hasGoalkeeperStats ? " goalkeeper" : ""}`}>
+          <div className={`playerStats${hasGoalkeeperStats ? " goalkeeperDetailed" : isGoalkeeper ? " goalkeeper" : ""}`}>
             <article><b>{totals.games}</b><small>игр</small></article>
             {hasGoalkeeperStats && <>
               <article><b>{Math.floor(totals.goalieSeconds / 60)}</b><small>минут</small></article>
-              <article><b>{totals.shotsAgainst}</b><small>бросков</small></article>
+              <article><b>{totals.shotsAgainst ?? "—"}</b><small>бросков</small></article>
               <article><b>{totals.goalieGoalsAgainst}</b><small>пропущено</small></article>
-              <article><b>{totals.saves}</b><small>сэйвов</small></article>
+              <article><b>{totals.saves ?? "—"}</b><small>сэйвов</small></article>
               <article><b>{totals.savePercentage}</b><small>% отраж.</small></article>
               <article><b>{totals.goalsAgainstAverage}</b><small>КН</small></article>
+              <article><b>{totals.shutouts ?? "—"}</b><small>сухие матчи</small></article>
             </>}
             {!isGoalkeeper && <>
               <article><b>{totals.goals}</b><small>голов</small></article>
