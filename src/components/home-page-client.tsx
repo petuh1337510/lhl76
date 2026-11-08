@@ -67,14 +67,21 @@ const heroSettings = (style: string | null) => {
 function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [interacted, setInteracted] = useState(false);
   const touchStart = useRef<number | null>(null);
   const current = slides[active] ?? slides[0];
+  useEffect(() => {
+    const start = () => setInteracted(true);
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    for (const event of events) window.addEventListener(event, start, {once: true, passive: true});
+    return () => { for (const event of events) window.removeEventListener(event, start); };
+  }, []);
   useEffect(() => { if (active >= slides.length) setActive(0); }, [active, slides.length]);
   useEffect(() => {
-    if (paused || slides.length < 2 || !current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!interacted || paused || slides.length < 2 || !current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = window.setTimeout(() => setActive((index) => (index + 1) % slides.length), current.duration);
     return () => window.clearTimeout(timer);
-  }, [active, paused, slides.length, current]);
+  }, [active, paused, slides.length, current, interacted]);
   if (!current) return null;
   const move = (step: number) => setActive((index) => (index + step + slides.length) % slides.length);
   const isPhotoOnly = current.variant === "photo";
@@ -124,7 +131,7 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
       <span>{String(active + 1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</span>
       <button onClick={() => move(1)} aria-label="Следующий слайд"><UiIcon name="arrow-right" /></button>
     </div> : null}
-    {!paused && slides.length > 1 ? <div className="homeMediaProgress" key={`progress-${current.id}`} /> : null}
+    {interacted && !paused && slides.length > 1 ? <div className="homeMediaProgress" key={`progress-${current.id}`} /> : null}
   </section>;
 }
 
