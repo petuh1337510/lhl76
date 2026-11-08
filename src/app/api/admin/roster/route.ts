@@ -55,11 +55,12 @@ async function handlePOST(request: NextRequest) {
   const body = await request.json();
   if (!body.playerId || !body.teamEntryId) return NextResponse.json({ error: "Игрок и заявка обязательны" }, { status: 400 });
   if (!(await validRating(body.categoryId))) return NextResponse.json({ error: "Неизвестный рейтинг" }, { status: 400 });
-  const player = await prisma.player.findUnique({ where: { id: body.playerId }, select: { id: true, baseNumber: true } });
-  if (!player) return NextResponse.json({ error: "Игрок не найден" }, { status: 404 });
   const requestedNumber = String(body.number ?? "").trim();
-  const numberOverride = requestedNumber && requestedNumber !== player.baseNumber ? requestedNumber : null;
   const entry = await prisma.$transaction(async tx=>{
+   await tx.$queryRaw`SELECT id FROM "Player" WHERE id = ${body.playerId} FOR UPDATE`;
+   const player = await tx.player.findUnique({ where: { id: body.playerId, deletedAt: null }, select: { id: true, baseNumber: true } });
+   if (!player) return null;
+   const numberOverride = requestedNumber && requestedNumber !== player.baseNumber ? requestedNumber : null;
    const created=await tx.rosterEntry.create({
     data: { teamEntryId: body.teamEntryId, playerId: body.playerId, number: numberOverride, leadership: body.leadership || "NONE", status: body.status || "ACTIVE" },
     include: { player: true },
@@ -70,6 +71,7 @@ async function handlePOST(request: NextRequest) {
    }
    return created;
   });
+  if (!entry) return NextResponse.json({ error: "Игрок удалён или не найден." }, { status: 404 });
   return NextResponse.json(entry);
 }
 

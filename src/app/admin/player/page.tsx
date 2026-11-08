@@ -5,6 +5,8 @@ import { UiIcon, type IconName } from "@/components/ui-icon";
 import { useEffect, useState, useRef } from "react";
 import MediaUpload, { usePendingMediaUploads } from "../media-upload";
 import { AdminModal } from "../admin-modal";
+import { DeleteCard } from "../delete-card";
+import { SuggestedInput, useFormSuggestions } from "../form-suggestions";
 import PlayersList from "../players/page";
 import styles from "./player-profile.module.css";
 import formStyles from "./player-form.module.css";
@@ -43,13 +45,14 @@ const playingFields: PlayerField[] = [
 ];
 
 function PlayerFields({ form, put, categories, trackUpload }: { form: any; put: (key: string, value: string) => void; categories: Category[]; trackUpload: (uploading: boolean) => void }) {
+  const suggestions = useFormSuggestions("player");
   const renderField = ({ key, label, type, options }: PlayerField) => {
     const change = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => put(key, event.target.value);
     return <label key={key}>{label}{options ? (
       <select value={form[key] || ""} onChange={change}>
         {options.map(option => <option key={option}>{option}</option>)}
       </select>
-    ) : <input type={type ?? "text"} value={form[key] || ""} onChange={change} />}</label>;
+    ) : <SuggestedInput type={type ?? "text"} value={form[key] || ""} onChange={change} suggestions={suggestions[key]} />}</label>;
   };
   return <>
     <section className={formStyles.group}>
@@ -113,6 +116,7 @@ export default function PlayerAdmin() {
   const { uploadsPending, trackUpload } = usePendingMediaUploads();
   const createKey=useRef<string|null>(null);
   const [player, setPlayer] = useState<any>(null), [form, setForm] = useState<any>(emptyPlayer);
+  const [missing, setMissing] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]), [choices, setChoices] = useState<any[]>([]);
   const [isNew, setIsNew] = useState(false), [edit, setEdit] = useState(false), [assign, setAssign] = useState(false);
   const [competitionId, setCompetitionId] = useState(""), [divisionId, setDivisionId] = useState(""), [teamEntryId, setTeamEntryId] = useState("");
@@ -129,6 +133,7 @@ export default function PlayerAdmin() {
       setForm(emptyPlayer); setEdit(true); return;
     }
     const response = await fetch(`/api/admin/player?slug=${encodeURIComponent(params.get("slug") || "rybchenko-pyotr")}`);
+    setMissing(response.status === 404);
     if (response.ok) { const value = await response.json(); setPlayer(value); setForm(value); setCategories(value.categories || []); }
   }
   useEffect(() => { load(); }, []);
@@ -151,6 +156,7 @@ export default function PlayerAdmin() {
   const competitions = Array.from(new Map(choices.map((choice) => [choice.competitionId, { id: choice.competitionId, label: `${choice.season} · ${choice.competition}` }])).values());
   const divisions = Array.from(new Map(choices.filter((choice) => choice.competitionId === competitionId).map((choice) => [choice.divisionId, { id: choice.divisionId, label: choice.division }])).values());
   const teams = choices.filter((choice) => choice.competitionId === competitionId && choice.divisionId === divisionId);
+  if (missing) return <main className="adminShell"><section className="adminContent divisionPage"><h1>Игрок не найден</h1><a href="/admin/players">← Все игроки</a></section></main>;
   if (!isNew && !player) return <main className="adminShell"><section className="adminContent divisionPage">Загрузка…</section></main>;
   if (isNew) return <><PlayersList /><div className="adminContent adminModalMount"><AdminModal title="Создание игрока" onClose={() => { window.location.href = "/admin/players"; }} wide><section className="adminForm playerCreateFull"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} trackUpload={trackUpload} /><footer><a href="/admin/players">Отмена</a><button disabled={uploadsPending || !form.lastName.trim() || !form.firstName.trim()} onClick={save}>Создать игрока</button></footer></section></AdminModal></div></>;
   const assignmentsBySeason = new Map<string, Assignment[]>();
@@ -203,5 +209,6 @@ export default function PlayerAdmin() {
       </section>)}
       {assignmentsBySeason.size === 0 && <p className={styles.empty}>У игрока пока нет заявок.</p>}
     </section>
+    <DeleteCard kind="player" id={player.id} updatedAt={player.updatedAt} name={`${player.lastName} ${player.firstName}`} />
   </section></main>;
 }

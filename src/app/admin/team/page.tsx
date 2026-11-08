@@ -1,5 +1,7 @@
 "use client";
 import { AdminModal } from "../admin-modal";
+import { DeleteCard } from "../delete-card";
+import { SuggestedInput, useFormSuggestions } from "../form-suggestions";
 import { PublicImage } from "@/components/public-image";
 import { useEffect, useState } from "react";
 import MediaUpload, { usePendingMediaUploads } from "../media-upload";
@@ -7,11 +9,14 @@ import MediaUpload, { usePendingMediaUploads } from "../media-upload";
 export default function TeamCardAdmin() {
   const { uploadsPending, trackUpload } = usePendingMediaUploads();
   const [team,setTeam]=useState<any>(null),[form,setForm]=useState<any>({}),[choices,setChoices]=useState<any[]>([]),[edit,setEdit]=useState(false),[binding,setBinding]=useState(false),[competitionId,setCompetitionId]=useState(""),[divisionId,setDivisionId]=useState(""),[message,setMessage]=useState("");
-  async function load(){const slug=new URLSearchParams(window.location.search).get("slug")||"hctanki76";const [a,b]=await Promise.all([fetch(`/api/admin/team?slug=${encodeURIComponent(slug)}`),fetch("/api/admin/team?choices=1")]);if(a.ok){const x=await a.json();setTeam(x);setForm(x)}if(b.ok)setChoices(await b.json())}
+  const [missing, setMissing] = useState(false);
+  const suggestions = useFormSuggestions("city", edit);
+  async function load(){const slug=new URLSearchParams(window.location.search).get("slug")||"hctanki76";const [a,b]=await Promise.all([fetch(`/api/admin/team?slug=${encodeURIComponent(slug)}`),fetch("/api/admin/team?choices=1")]);setMissing(a.status===404);if(a.ok){const x=await a.json();setTeam(x);setForm(x)}if(b.ok)setChoices(await b.json())}
   useEffect(()=>{load()},[]);
   const put=(key:string,value:string)=>setForm((old:any)=>({...old,[key]:value}));
   async function save(){try{const response=await fetch("/api/admin/team",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,expectedUpdatedAt:form.updatedAt})});if(response.ok){setEdit(false);await load();setMessage("Карточка команды сохранена")}else{setMessage((await response.json()).error||"Не удалось сохранить. Введённые данные остались в форме.")}}catch{setMessage("Ошибка связи. Введённые данные остались в форме.")}}
   async function saveBinding(){if(!divisionId)return;const response=await fetch("/api/admin/team",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({teamId:team.id,divisionId})});if(response.ok){setBinding(false);setCompetitionId("");setDivisionId("");await load();setMessage("Команда привязана к соревнованию")}}
+  if (missing) return <main className="adminShell"><section className="adminContent divisionPage"><h1>Команда не найдена</h1><a href="/admin/teams">← Все команды</a></section></main>;
   if(!team)return <main className="adminShell"><section className="adminContent divisionPage">Загрузка карточки команды…</section></main>;
   const competitions=Array.from(new Map(choices.map(c=>[c.competitionId,{id:c.competitionId,label:`${c.season} · ${c.competition}`}])).values());
   const divisions=choices.filter(c=>c.competitionId===competitionId);
@@ -24,7 +29,7 @@ export default function TeamCardAdmin() {
         <label>Короткое название<input value={form.shortName || ""} onChange={e => put("shortName", e.target.value)} /></label>
       </div>
       <div>
-        <label>Город<input value={form.city || ""} onChange={e => put("city", e.target.value)} /></label>
+        <label>Город<SuggestedInput value={form.city || ""} onChange={e => put("city", e.target.value)} suggestions={suggestions.city} /></label>
         <label>Короткое описание<input value={form.shortDescription || ""} onChange={e => put("shortDescription", e.target.value)} /></label>
       </div>
       <label>О команде<textarea rows={6} value={form.description || ""} onChange={e => put("description", e.target.value)} /></label>
@@ -53,5 +58,7 @@ export default function TeamCardAdmin() {
     </section>
   </AdminModal>}
   <div className="adminListHead"><p>Для каждой привязки создаётся отдельная заявка.</p><button onClick={()=>setBinding(true)}>+ ПРИВЯЗАТЬ К СЕЗОНУ</button></div>{binding&&<AdminModal title="Новая привязка команды" onClose={()=>setBinding(false)}><section className="adminForm rosterBindingForm"><h2>Новая привязка команды</h2><label>1. Сезон и соревнование<select value={competitionId} onChange={e=>{setCompetitionId(e.target.value);setDivisionId("")}}><option value="">Выберите соревнование</option>{competitions.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>2. Дивизион<select value={divisionId} disabled={!competitionId} onChange={e=>setDivisionId(e.target.value)}><option value="">{competitionId?"Выберите дивизион":"Сначала выберите соревнование"}</option>{divisions.map((d:any)=><option key={d.id} value={d.id}>{d.division}</option>)}</select></label><footer><button onClick={()=>setBinding(false)}>Отмена</button><button disabled={!divisionId} onClick={saveBinding}>Создать привязку</button></footer></section></AdminModal>}
-  <section className="assignmentTable adminSpacedRows"><h2>Сезоны и соревнования</h2>{team.entries.length?team.entries.map((entry:any)=><article key={entry.id}><div><b>{entry.season} · {entry.competition}</b><small>Дивизион: {entry.division}</small></div><strong>{entry.players} игроков</strong><a href={`/admin/team-roster?entry=${entry.id}`}>Управлять заявкой →</a></article>):<p className="registryEmpty">Команда пока не привязана ни к одному соревнованию.</p>}</section></section></main>;
+  <section className="assignmentTable adminSpacedRows"><h2>Сезоны и соревнования</h2>{team.entries.length?team.entries.map((entry:any)=><article key={entry.id}><div><b>{entry.season} · {entry.competition}</b><small>Дивизион: {entry.division}</small></div><strong>{entry.players} игроков</strong><a href={`/admin/team-roster?entry=${entry.id}`}>Управлять заявкой →</a></article>):<p className="registryEmpty">Команда пока не привязана ни к одному соревнованию.</p>}</section>
+  <DeleteCard kind="team" id={team.id} updatedAt={team.updatedAt} name={team.name} />
+  </section></main>;
 }

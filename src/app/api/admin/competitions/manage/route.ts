@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { withAdmin } from '@/lib/admin-guard';
 
@@ -33,6 +34,7 @@ export const POST = withAdmin(async request => {
       const division = await tx.division.findFirst({where:{id:data.divisionId,competitionId}});
       if (!division) return {error:'Дивизион не относится к выбранному соревнованию.',status:400};
       const teamIds = [...new Set(data.teamIds)];
+      await tx.$queryRaw`SELECT id FROM "Team" WHERE id IN (${Prisma.join(teamIds)}) ORDER BY id FOR UPDATE`;
       if (await tx.team.count({where:{id:{in:teamIds},deletedAt:null}}) !== teamIds.length)
         return {error:'Одна из команд недоступна. Обновите список.',status:400};
       const added = await tx.teamEntry.createMany({data:teamIds.map(teamId=>({teamId,divisionId:division.id})),skipDuplicates:true});

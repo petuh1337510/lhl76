@@ -41,7 +41,7 @@ export type PlayerPageData = {
 
 export async function getPlayerPage(slug: string): Promise<PlayerPageData | null> {
   const player = await prisma.player.findUnique({
-    where: { slug },
+    where: { slug, deletedAt: null },
     include: {
       statistics: { include: { teamEntry: { include: { team: true, division: { include: { competition: { include: { season: true } } } } } } } },
       ratingCategory: true,

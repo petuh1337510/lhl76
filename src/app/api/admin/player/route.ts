@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {editVersion,nextEditVersion} from '@/lib/edit-version';
 import { getPlayerSuspensionStates } from "@/lib/player-suspensions";
+import { deleteAdminCard } from "@/lib/admin-card-deletion";
 
 function serialize(player: any, activeSuspensions: any[] = []) {
   return {
@@ -61,7 +62,7 @@ async function handleGET(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get("slug");
   const id = request.nextUrl.searchParams.get("id");
   const [player, categories] = await Promise.all([prisma.player.findFirst({
-    where: id ? { id } : slug ? { slug } : undefined,
+    where: { deletedAt: null, ...(id ? { id } : slug ? { slug } : {}) },
     include: { ratingCategory: true, rosterEntries: { include: { suspensions: { orderBy: { createdAt: "desc" } }, teamEntry: { include: { team: true, division: { include: { competition: { include: { season: true } } } } } } } } },
   }), prisma.classificationCategory.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } })]);
   if (!player) return NextResponse.json({ error: "Игрок не найден" }, { status: 404 });
@@ -78,7 +79,7 @@ async function handlePATCH(request: NextRequest) {
     return NextResponse.json({ error: "Неизвестный рейтинг" }, { status: 400 });
   }
   const player = await prisma.player.update({
-    where: { id: body.id, updatedAt: version },
+    where: { id: body.id, updatedAt: version, deletedAt: null },
     data: {
       updatedAt: nextEditVersion(version),
       firstName: body.firstName,
@@ -107,3 +108,4 @@ async function handlePATCH(request: NextRequest) {
 
 export const GET = withAdmin(handleGET);
 export const PATCH = withAdmin(handlePATCH);
+export const DELETE = deleteAdminCard("player");

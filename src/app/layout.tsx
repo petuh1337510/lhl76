@@ -9,6 +9,7 @@ import "./public-ui.css";
 import { PublicSiteFooter, PublicSiteProvider } from "@/components/public-site-header";
 import { getPublicSiteContext } from "@/lib/public-site-context";
 import {pageMetadata} from '@/lib/seo';
+import { currentSession } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], display: "swap", variable: "--font-inter" });
 const condensed = Roboto_Condensed({ subsets: ["latin", "cyrillic"], display: "swap", variable: "--font-condensed", preload: false });
@@ -17,6 +18,7 @@ export const metadata: Metadata = pageMetadata('Любительская хок�
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Nonce CSP requires request-time HTML; data caches remain independently scoped.
   await headers();
-  const context = await getPublicSiteContext();
-  return <html lang="ru" className={`${inter.variable} ${condensed.variable}`}><body>{process.env.TELEMETRY_ENABLED !== "0" && <WebVitals />}<PublicSiteProvider context={context}>{children}<div className="globalPublicFooter"><PublicSiteFooter global /></div></PublicSiteProvider></body></html>;
+  const [context, session] = await Promise.all([getPublicSiteContext(), currentSession().catch(() => null)]);
+  const adminName = session?.role === "ADMIN" || session?.role === "SUPER_ADMIN" ? session.name : null;
+  return <html lang="ru" className={`${inter.variable} ${condensed.variable}`}><body>{process.env.TELEMETRY_ENABLED !== "0" && <WebVitals />}<PublicSiteProvider context={context} adminName={adminName}>{children}<div className="globalPublicFooter"><PublicSiteFooter global /></div></PublicSiteProvider></body></html>;
 }

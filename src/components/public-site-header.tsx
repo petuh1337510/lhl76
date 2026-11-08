@@ -8,6 +8,7 @@ import { UiIcon } from "@/components/ui-icon";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { usePublicLocation } from "@/components/use-public-url-state";
 import type { PublicSiteContext } from "@/lib/public-site-context";
+import styles from "./public-admin-return.module.css";
 
 const fallback = {
   championshipHref: "/championship/current",
@@ -17,8 +18,9 @@ const fallback = {
 const vkUrl = "https://vk.ru/lhl76";
 
 const SiteContext = createContext<PublicSiteContext | null>(null);
-export function PublicSiteProvider({ context, children }: { context: PublicSiteContext | null; children: React.ReactNode }) {
-  return <SiteContext.Provider value={context}>{children}</SiteContext.Provider>;
+const AdminNameContext = createContext<string | null>(null);
+export function PublicSiteProvider({ context, adminName = null, children }: { context: PublicSiteContext | null; adminName?: string | null; children: React.ReactNode }) {
+  return <SiteContext.Provider value={context}><AdminNameContext.Provider value={adminName}>{children}</AdminNameContext.Provider></SiteContext.Provider>;
 }
 function usePublicSiteContext() { return useContext(SiteContext); }
 
@@ -43,6 +45,7 @@ export function PublicSiteHeader() {
     return () => document.removeEventListener("pointerdown", close);
   }, [location]);
   const context = usePublicSiteContext();
+  const adminName = useContext(AdminNameContext);
   const championshipHref = context?.championshipHref ?? fallback.championshipHref;
   const calendarHref = context?.calendarHref ?? fallback.calendarHref;
   const tournaments = context?.tournaments.filter(t=>!/памяти.*(локо|локомотив)/i.test(t.name)) ?? [];
@@ -58,10 +61,13 @@ export function PublicSiteHeader() {
     onPointerOver={event => { const dropdown = (event.target as Element).closest<HTMLElement>(".siteDropdown"); if (dropdown) delete dropdown.dataset.dismissed; }}
     onBlur={event => { const dropdown = (event.target as Element).closest<HTMLElement>(".siteDropdown"); if (dropdown && !dropdown.contains(event.relatedTarget as Node)) delete dropdown.dataset.dismissed; }}
   >
-    <div className="leagueMasthead"><div className="leagueMastheadInner">
+    <div className="leagueMasthead"><div className={`leagueMastheadInner${adminName ? ` ${styles.signedIn}` : ""}`}>
       <Link className="leagueBrand" href="/"><PublicImage width={160} height={160} sizes="160px" priority src="/images/lhl76-logo.jpg" alt="ЛХЛ-76" /><span>Любительская<br />хоккейная лига<br />Ярославль</span></Link>
       <div className="leagueMotto"><b>Хоккей объединяет!</b><i /></div>
       <div className="leagueSocial" aria-label="Социальные сети"><a href={vkUrl} target="_blank" rel="noopener noreferrer" aria-label="ВКонтакте"><UiIcon name="vk" /></a></div>
+      {adminName && <a className={styles.returnLink} href="/admin" aria-label={`Вернуться в админку. Вы вошли как ${adminName}`}>
+        <span title={adminName}>{adminName}</span><strong>В админку <span aria-hidden="true">↗</span></strong>
+      </a>}
       <details className="mobileMenu"><summary aria-label="Открыть меню"><UiIcon name="menu" /></summary><div><Link href="/about">О нас</Link><Link href="/documents">Документы</Link><Link href="/venues">Стадионы</Link><Link href={championshipHref}>Чемпионат</Link><Link href={calendarHref}>Календарь</Link><Link href="/tournaments">Турниры</Link><Link href="/teams">Команды</Link><Link href="/media">Медиагалерея</Link><Link href="/news">Новости</Link><Link href="/broadcasts">Трансляции</Link></div></details>
     </div></div>
     <div className="siteHeaderNav"><div className="siteHeaderInner">

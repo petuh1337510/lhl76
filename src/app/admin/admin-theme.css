@@ -366,3 +366,14 @@
   border-radius: 9px;
   background-color: var(--admin-surface);
 }
+
+.adminUI .adminContent .adminCardDelete {margin-top:24px;text-align:right}
+.adminUI .adminContent .adminCardDelete .adminForm {text-align:left}
+.adminUI .adminContent .adminCardDelete > button,
+.adminUI .adminContent .adminCardDelete footer > button:last-child {
+  border:1px solid var(--admin-line);
+  background:var(--admin-danger-bg);
+  color:var(--admin-danger);
+}
+.adminUI .adminContent .adminCardDelete > button:hover,
+.adminUI .adminContent .adminCardDelete footer > button:last-child:hover:not(:disabled) {border-color:var(--admin-danger)}
