@@ -22,19 +22,19 @@ export default async function NewsPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category } = await searchParams;
-  const news = await prisma.news.findMany({
+  const [news, categories] = await Promise.all([prisma.news.findMany({
     where: {
       isPublished: true,
       ...(category ? { category } : {}),
     },
     orderBy: [{ publishedAt: "desc" }, { title: "asc" }],
-  });
-  const categories = await prisma.news.findMany({
+    select: {id:true, slug:true, title:true, excerpt:true, category:true, imageUrl:true, publishedAt:true},
+  }), prisma.news.findMany({
     where: { isPublished: true },
     distinct: ["category"],
     select: { category: true },
     orderBy: { category: "asc" },
-  });
+  })]);
 
   return (
     <>
