@@ -58,11 +58,16 @@ server {
     location / { return 301 https://\$host\$request_uri; }
 }
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
     server_name ${host_ip};
     ssl_certificate /etc/letsencrypt/live/${host_ip}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${host_ip}/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 1024;
+    gzip_comp_level 4;
+    gzip_types application/json application/javascript text/css text/plain image/svg+xml;
     client_max_body_size 160m;
     add_header X-Content-Type-Options nosniff always;
     location / {
