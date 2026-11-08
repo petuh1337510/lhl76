@@ -86,7 +86,9 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const move = (step: number) => setActive((index) => (index + step + slides.length) % slides.length);
   const isPhotoOnly = current.variant === "photo";
   const desktop = getImageProps({ src: localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
-  const mobile = getImageProps({ src: localMediaUrl(current.imageMobile || current.imageDesktop), alt: "", width: 768, height: 1080, sizes: "100vw", quality: 80, priority:active===0 }).props;
+  // This content-hashed 768px WebP was already cropped/encoded on the server.
+  // Serving it directly avoids a cold AVIF encode on the critical mobile path.
+  const mobile = getImageProps({ src: localMediaUrl(current.imageMobile || current.imageDesktop), alt: "", width: 768, height: 1080, sizes: "100vw", quality: 80, priority:active===0, unoptimized: /^\/images\/optimized\/hero-mobile-[a-f0-9]+\.webp$/.test(current.imageMobile) }).props;
   const style = {
     "--hero-duration": `${current.duration}ms`,
   } as CSSProperties;
@@ -103,7 +105,7 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
     aria-label="Главные материалы ЛХЛ-76"
   >
     <picture className="homeHeroPicture" key={current.id}>
-      <source media="(max-width: 600px)" srcSet={mobile.srcSet} sizes="100vw" />
+      <source media="(max-width: 600px)" srcSet={mobile.srcSet || mobile.src} sizes="100vw" />
       {/* The first slide is present in server HTML and discovered without JavaScript. */}
       <img {...desktop} alt="" loading="eager" fetchPriority={active === 0 ? "high" : "auto"} />
     </picture>
