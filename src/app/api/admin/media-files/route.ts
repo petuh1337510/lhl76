@@ -5,12 +5,13 @@ import { withAdmin } from "@/lib/admin-guard";
 import { readLegacyCardMedia } from "@/lib/legacy-card-media";
 import { normalizeUploadKey, readUploadFamilies, removeUploadFamily } from "@/lib/upload-files";
 import { findUploadUses } from "@/lib/upload-uses";
+import { mediaPage } from "@/lib/media-page";
 
 export const dynamic = "force-dynamic";
 
 const uploadsRoot = () => path.join(process.cwd(), "public", "uploads");
 
-async function handleGET() {
+async function handleGET(request: NextRequest) {
   const [families, uses, archive] = await Promise.all([readUploadFamilies(uploadsRoot()), findUploadUses(), readLegacyCardMedia()]);
   const items = families.map((family) => {
     const usedBy = uses.get(family.key) ?? [];
@@ -23,7 +24,7 @@ async function handleGET() {
       origin: "upload" as const,
     };
   });
-  return NextResponse.json({ items: [...items, ...archive] });
+  return NextResponse.json(mediaPage([...items, ...archive], request.nextUrl.searchParams));
 }
 
 async function handleDELETE(request: NextRequest) {

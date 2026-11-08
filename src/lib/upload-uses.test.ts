@@ -32,7 +32,7 @@ function homepage(style: string | null, imageDesktop: string | null = null) {
 
 beforeEach(() => {
   for (const model of Object.values(mocks.prisma)) model.findMany.mockReset().mockResolvedValue([]);
-  mocks.families.mockReset().mockResolvedValue([{ key, title: `${id}.png`, url }]);
+  mocks.families.mockReset().mockResolvedValue([{ key, title: `${id}.png`, url, date: "2026-11-01T00:00:00Z", size: 100, type: "image", kind: "media" }]);
   mocks.remove.mockReset();
 });
 

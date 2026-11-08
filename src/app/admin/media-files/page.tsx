@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PublicImage } from "@/components/public-image";
 import type { UploadType } from "@/lib/upload-files";
+import { SEARCH_DEBOUNCE_MS } from "@/lib/player-search";
 import styles from "./media-files.module.css";
 
 type MediaFile = {
@@ -25,11 +26,6 @@ type MediaFile = {
 const typeLabels: Record<UploadType, string> = { image: "Фото", document: "Документ", video: "Видео" };
 const kindLabels: Record<string, string> = { teams: "Команды", players: "Игроки", news: "Новости", documents: "Документы", media: "Медиагалерея", general: "Прочее" };
 
-function localDate(iso: string) {
-  const date = new Date(iso);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
 function formatSize(bytes: number) {
   return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} МБ` : `${Math.max(1, Math.round(bytes / 1024))} КБ`;
 }
@@ -47,45 +43,35 @@ export default function MediaFilesPage() {
   const [minSize, setMinSize] = useState("");
   const [maxSize, setMaxSize] = useState("");
   const [order, setOrder] = useState("newest");
-  const [visibleCount, setVisibleCount] = useState(24);
-
-  const refresh = useCallback(async () => {
-    const response = await fetch("/api/admin/media-files", { cache: "no-store" });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Не удалось загрузить медиафайлы");
-    setItems(data.items ?? []);
-  }, []);
-
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [catalogueTotal, setCatalogueTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [settledFilters, setSettledFilters] = useState("");
+  const filters = useMemo(() => new URLSearchParams({ name, type, kind, dateFrom, dateTo, minSize, maxSize, order }).toString(), [name, type, kind, dateFrom, dateTo, minSize, maxSize, order]);
   useEffect(() => {
-    refresh().catch((cause) => setError(cause instanceof Error ? cause.message : "Не удалось загрузить медиафайлы"))
-      .finally(() => setLoading(false));
-  }, [refresh]);
+    const timer = setTimeout(() => { setPage(1); setSettledFilters(filters); }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [filters]);
 
-  const filtered = useMemo(() => {
-    const query = name.trim().toLocaleLowerCase("ru");
-    const minimum = minSize === "" ? null : Number(minSize) * 1024 * 1024;
-    const maximum = maxSize === "" ? null : Number(maxSize) * 1024 * 1024;
-    return items.filter((item) => {
-      const day = localDate(item.date);
-      const startsBeforeEnd = !dateTo || (item.datePrecision === "month" ? day.slice(0, 7) <= dateTo.slice(0, 7) : day <= dateTo);
-      const endsAfterStart = !dateFrom || (item.datePrecision === "month" ? day.slice(0, 7) >= dateFrom.slice(0, 7) : day >= dateFrom);
-      return (!type || item.type === type)
-        && (!kind || item.kind === kind)
-        && (!query || [item.title, item.url, ...item.usedBy.map((use) => use.label)].some((value) => value.toLocaleLowerCase("ru").includes(query)))
-        && startsBeforeEnd
-        && endsAfterStart
-        && (minimum === null || item.size >= minimum)
-        && (maximum === null || item.size <= maximum);
-    }).sort((left, right) => {
-      if (order === "oldest") return left.date.localeCompare(right.date) || left.key.localeCompare(right.key);
-      if (order === "name") return left.title.localeCompare(right.title, "ru") || left.key.localeCompare(right.key);
-      if (order === "size-desc") return right.size - left.size || right.date.localeCompare(left.date);
-      if (order === "size-asc") return left.size - right.size || right.date.localeCompare(left.date);
-      return right.date.localeCompare(left.date) || left.key.localeCompare(right.key);
-    });
-  }, [items, name, type, kind, dateFrom, dateTo, minSize, maxSize, order]);
-
-  useEffect(() => { setVisibleCount(24); }, [name, type, kind, dateFrom, dateTo, minSize, maxSize, order]);
+  const refresh = useCallback(() => setReload(value => value + 1), []);
+  useEffect(() => {
+    // Abort on the first keystroke, not after debounce, so an old page cannot win.
+    if (filters !== settledFilters) { setLoading(true); return; }
+    const controller = new AbortController();
+    setLoading(true); setError("");
+    fetch(`/api/admin/media-files?${settledFilters}&page=${page}`, { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Не удалось загрузить медиафайлы");
+        if (controller.signal.aborted) return;
+        setItems(data.items); setTotal(data.total); setCatalogueTotal(data.catalogueTotal); setHasMore(data.hasMore);
+      })
+      .catch(cause => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Не удалось загрузить медиафайлы"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [filters, settledFilters, page, reload]);
 
   async function remove(item: MediaFile) {
     if (!window.confirm(`Удалить «${item.title}»? Оригинал и созданные версии файла будут удалены.`)) return;
@@ -95,10 +81,10 @@ export default function MediaFilesPage() {
       const response = await fetch(`/api/admin/media-files?key=${encodeURIComponent(item.key)}`, { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Не удалось удалить файл");
-      await refresh();
+      refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Не удалось удалить файл");
-      await refresh().catch(() => undefined);
+      refresh();
     } finally {
       setDeleting("");
     }
@@ -121,10 +107,11 @@ export default function MediaFilesPage() {
     </div>
 
     {error && <p className={styles.error} role="alert">{error}</p>}
-    <div className={styles.summary}>{loading ? "Загрузка…" : `Найдено ${filtered.length} из ${items.length} · показано ${Math.min(visibleCount, filtered.length)}`}</div>
-    <div className={styles.list}>
-      {!loading && !filtered.length && <p className={styles.empty}>По выбранным фильтрам файлов нет.</p>}
-      {filtered.slice(0, visibleCount).map((item) => <article className={styles.item} key={item.key}>
+    <div className={styles.summary}>{loading ? "Загрузка…" : `Найдено ${total} из ${catalogueTotal} · страница ${page}`}</div>
+    <div className={styles.list} aria-busy={loading}>
+      {loading && <div role="status" aria-label="Загрузка медиафайлов">{Array.from({length: 6}, (_, index) => <div className={styles.skeleton} key={index}><span/><div><i/><i/></div></div>)}</div>}
+      {!loading && !error && !items.length && <p className={styles.empty}>По выбранным фильтрам файлов нет.</p>}
+      {!loading && items.map((item) => <article className={styles.item} key={item.key}>
         <div className={styles.preview}>{item.previewUrl ? <PublicImage src={item.previewUrl} alt="" width={80} height={80} sizes="80px" /> : <span aria-hidden="true">{item.type === "document" ? "▤" : "▶"}</span>}</div>
         <div className={styles.details}>
           <strong>{item.title}</strong>
@@ -135,6 +122,10 @@ export default function MediaFilesPage() {
         <div className={styles.actions}><a href={item.url} target="_blank" rel="noopener noreferrer">Открыть</a><button type="button" disabled={!item.deletable || Boolean(item.usedBy.length) || Boolean(deleting)} onClick={() => void remove(item)} title={item.origin === "archive" ? "Архивные изображения нельзя удалить из этой вкладки" : item.usedBy.length ? "Сначала уберите файл из материалов сайта" : "Удалить файл и его версии"}>{deleting === item.key ? "Удаление…" : "Удалить"}</button></div>
       </article>)}
     </div>
-    {visibleCount < filtered.length && <button className={styles.more} type="button" onClick={() => setVisibleCount((count) => count + 24)}>Показать ещё</button>}
+    <nav aria-label="Страницы медиафайлов" className={styles.pagination}>
+      <button disabled={loading || page === 1} onClick={() => setPage(value => value - 1)}>Предыдущая</button>
+      <span>Страница {page}</span>
+      <button disabled={loading || !hasMore} onClick={() => setPage(value => value + 1)}>Следующая</button>
+    </nav>
   </section>;
 }
