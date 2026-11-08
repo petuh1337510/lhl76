@@ -18,5 +18,5 @@ export default async function CompetitionDivisionPage({ params }: {
   const route = await params;
   const data = await load(route.season, route.competition, route.division);
   if (!data) notFound();
-  return <DivisionPageClient data={data} />;
+  return <><link rel="preload" as="image" href="/_next/image?url=%2Fimages%2Fhero-hockey.png&w=1600&q=80" fetchPriority="high" /><DivisionPageClient data={data} /></>;
 }

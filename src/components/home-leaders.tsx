@@ -33,19 +33,19 @@ export function HomeLeaders({ players, teams, href }: { players: DivisionPlayerS
       {categories.map(category => {
         const rows = homeLeaderRows(players, category);
         return <article className={styles.board} key={category.metric}>
-          <header className={styles.heading}><Link href={`${href}&view=${category.goalie ? "goalkeepers" : "skaters"}&sort=${category.metric}`}>{category.title}</Link><span>{category.label}</span></header>
+          <header className={styles.heading}><Link prefetch={false} href={`${href}&view=${category.goalie ? "goalkeepers" : "skaters"}&sort=${category.metric}`}>{category.title}</Link><span>{category.label}</span></header>
           <ol className={styles.list}>
             {rows.map((player, index) => {
               const team = teams.find(team => team.slug === player.teamSlug);
               const value = player[category.metric];
               return <li className={styles.row} key={player.key}>
-                <Link href={`/player/${player.slug}`} className={styles.portrait} aria-label={`Карточка игрока ${player.name}`}>
+                <Link prefetch={false} href={`/player/${player.slug}`} className={styles.portrait} aria-label={`Карточка игрока ${player.name}`}>
                   <PublicImage src={player.photoUrl || "/images/player-placeholder.svg"} alt={player.name} width={192} height={256} sizes="(max-width: 600px) 72px, 80px" />
                   <span className={styles.rank} aria-label={`${index + 1} место`}>{index + 1}</span>
                 </Link>
                 <div className={styles.identity}>
-                  <Link className={styles.name} href={`/player/${player.slug}`}>{player.name}</Link>
-                  <Link className={styles.team} href={`/team/${player.teamSlug}${team ? `?competition=${team.id}` : ""}`}>
+                  <Link prefetch={false} className={styles.name} href={`/player/${player.slug}`}>{player.name}</Link>
+                  <Link prefetch={false} className={styles.team} href={`/team/${player.teamSlug}${team ? `?competition=${team.id}` : ""}`}>
                     {team?.logoUrl && <PublicImage src={team.logoUrl} alt="" width={48} height={48} sizes="24px" />}
                     <span>{player.teamName}</span>
                   </Link>

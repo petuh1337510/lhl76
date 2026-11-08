@@ -4,7 +4,7 @@ import path from "node:path";
 
 // Runs against production with Lighthouse's mobile CPU/network simulation.
 // No authenticated writes or stored cookies are used.
-const output = path.resolve(process.argv[2] || `performance-results/${new Date().toISOString().replace(/[:.]/g, "-")}`);
+const output = path.resolve(process.argv[2] || `outputs/performance/${new Date().toISOString().replace(/[:.]/g, "-")}`);
 mkdirSync(output, {recursive: true});
 const targets = [
   ["home", "https://lhl-76.ru/"],
@@ -15,7 +15,9 @@ const targets = [
 const summary = [];
 for (const [name, url] of targets) {
   const args = ["dlx", "lighthouse@13.6.0", url, "--chrome-flags=--headless=new", "--only-categories=performance", "--form-factor=mobile", "--throttling-method=simulate", "--throttling.cpuSlowdownMultiplier=4", "--throttling.rttMs=150", "--throttling.throughputKbps=1638.4", "--output=json", "--output=html", `--output-path=${path.join(output, name)}`, "--quiet"];
-  const result = process.env.PNPM_CLI ? spawnSync(process.execPath, [process.env.PNPM_CLI, ...args], {stdio:"inherit"}) : spawnSync(process.platform === "win32" ? "pnpm.cmd" : "pnpm", args, {stdio:"inherit", shell:process.platform === "win32"});
+  const cli = process.env.PNPM_CLI || process.env.npm_execpath;
+  if (process.platform === "win32" && !cli) throw Error("Run pnpm check:performance, or set PNPM_CLI to pnpm.cjs");
+  const result = cli ? spawnSync(process.execPath, [cli, ...args], {stdio:"inherit"}) : spawnSync("pnpm", args, {stdio:"inherit"});
   if (result.error || result.status !== 0) throw result.error || Error(`Lighthouse failed: ${name}`);
   const report = JSON.parse(readFileSync(path.join(output, `${name}.report.json`), "utf8"));
   if (report.runtimeError) throw Error(`${name}: ${report.runtimeError.message}`);

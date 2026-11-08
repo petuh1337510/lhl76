@@ -51,7 +51,7 @@ function Title({
   return (
     <div className="sectionTitle">
       <h2>{text}</h2>
-      <Link href={href}>{link}</Link>
+      <Link prefetch={false} href={href}>{link}</Link>
     </div>
   );
 }
@@ -110,14 +110,14 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
           <p>{current.subtitle}</p>
           {current.link ? /^https?:\/\//.test(current.link)
             ? <a className="homeMediaButton" href={safeHref(current.link)} target="_blank" rel="noopener noreferrer">{current.buttonLabel}<b>→</b></a>
-            : <Link className="homeMediaButton" href={safeHref(current.link)}>{current.buttonLabel}<b>→</b></Link>
+            : <Link prefetch={false} className="homeMediaButton" href={safeHref(current.link)}>{current.buttonLabel}<b>→</b></Link>
             : null}
         </div>
         {current.homeLogoUrl || current.awayLogoUrl ? <div className="homeMediaTeams" aria-hidden="true">
           <span>{current.homeLogoUrl ? <PublicImage width={160} height={160} sizes="160px" src={current.homeLogoUrl} alt="" /> : "ЛХЛ"}</span><b>VS</b><span>{current.awayLogoUrl ? <PublicImage width={160} height={160} sizes="160px" src={current.awayLogoUrl} alt="" /> : "76"}</span>
         </div> : null}
       </div>
-    </> : current.link && current.link !== "#" ? <Link className="homeMediaPhotoLink" href={safeHref(current.link)} aria-label={current.title || "Открыть материал"} /> : null}
+    </> : current.link && current.link !== "#" ? <Link prefetch={false} className="homeMediaPhotoLink" href={safeHref(current.link)} aria-label={current.title || "Открыть материал"} /> : null}
     {slides.length > 1 ? <div className="homeMediaNavigation shell">
       <button onClick={() => move(-1)} aria-label="Предыдущий слайд"><UiIcon name="arrow-left" /></button>
       <div className="homeMediaDots">{slides.map((slide, index) => <button key={slide.id} onClick={() => setActive(index)} className={index === active ? "active" : ""} aria-label={`Слайд ${index + 1}: ${slide.title}`}><i /></button>)}</div>
@@ -185,7 +185,7 @@ function PromoTiles({ items }: { items: HomepageItem[] }) {
       <div className="shell homePromoInner">
         <div className="homePromoTrack">
           {visible.map((tile, tileIndex) => (
-            <Link
+            <Link prefetch={false}
               className={`homePromoTile ${tile.className}`}
               href={tile.href}
               key={`${String(tile.title)}-${tileIndex}`}
@@ -449,14 +449,14 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                       <p className="venue">{match.venue}</p>
                       <div className="scorebox">
                         <div className={homeWinner ? "winner" : awayWinner ? "loser" : ""}>
-                          <Link
+                          <Link prefetch={false}
                             href={`/team/${match.homeSlug ?? teamSlug(match.home)}`}
                           >
                             <Mark name={match.home} logoUrl={match.homeLogoUrl} />
                             <strong>{match.home}</strong>
                           </Link>
                         </div>
-                        <Link
+                        <Link prefetch={false}
                           className="matchScore"
                           href={href}
                           aria-label={`Открыть матч ${match.home} — ${match.away}`}
@@ -464,7 +464,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                           {scheduled ? <span className="versus">VS</span> : match.score ?? "0 : 0"}
                         </Link>
                         <div className={awayWinner ? "winner" : homeWinner ? "loser" : ""}>
-                          <Link
+                          <Link prefetch={false}
                             href={`/team/${match.awaySlug ?? teamSlug(match.away)}`}
                           >
                             <Mark name={match.away} logoUrl={match.awayLogoUrl} />
@@ -472,7 +472,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                           </Link>
                         </div>
                       </div>
-                      <Link className="matchDetails" href={href}>
+                      <Link prefetch={false} className="matchDetails" href={href}>
                         <span>{live ? "Открыть матч-центр" : final ? "Протокол матча" : awaitingResult ? "Карточка матча" : "Превью матча"}</span><b>→</b>
                       </Link>
                     </article>
@@ -536,7 +536,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                   return (
                     <div className="row" key={team.id}>
                       <span>{team.rank ?? rank + 1}</span>
-                      <Link href={`/team/${team.slug}`}>
+                      <Link prefetch={false} href={`/team/${team.slug}`}>
                         <Mark name={team.name} logoUrl={team.logoUrl} />
                         {team.name}
                       </Link>
@@ -557,7 +557,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                       <strong className="standingPoints">{team.points}</strong>
                       <i className="standingWide">
                         {team.form.slice(-5).map((game: any, gameIndex: number) => (
-                          <Link
+                          <Link prefetch={false}
                             href={`/match/${game.matchSlug}`}
                             className={game.result === "w" ? "win" : game.result === "l" ? "loss" : "draw"}
                             aria-label="Открыть последний матч"
@@ -574,7 +574,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                     </div>
                   );
                 })}
-                <Link href={divisionHref(selectedStanding.name)}>
+                <Link prefetch={false} href={divisionHref(selectedStanding.name)}>
                   ОТКРЫТЬ РАЗДЕЛ ДИВИЗИОНА →
                 </Link>
               </article>
@@ -609,7 +609,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
           <Title text="НОВОСТИ ЛИГИ" href="/news" link="ВСЕ НОВОСТИ →" />
           <div className="newsGrid">
             {(homeSummary?.news ?? []).map((news, index) => (
-              <Link
+              <Link prefetch={false}
                 className={`news ${index === 0 ? "featured" : ""}`}
                 href={`/news/${news.slug}`}
                 key={news.id}
@@ -633,14 +633,14 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
 
         {(homeSummary?.laureates ?? []).length ? <section className="homeLaureates">
           <div className="shell section">
-            <div className="sectionTitle"><div><small>ГОРДОСТЬ ЛИГИ</small><h2>ЛАУРЕАТЫ</h2></div><Link href="/laureates">ВСЕ ЛАУРЕАТЫ →</Link></div>
+            <div className="sectionTitle"><div><small>ГОРДОСТЬ ЛИГИ</small><h2>ЛАУРЕАТЫ</h2></div><Link prefetch={false} href="/laureates">ВСЕ ЛАУРЕАТЫ →</Link></div>
             <div className="homeLaureateGrid">{homeSummary!.laureates.map((item) => {
               const content = <>
                 <div>{item.imageUrl?<PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" src={item.imageUrl} alt=""/>:<span>{item.name.slice(0,1)}</span>}<i>★</i></div>
                 <small>{item.category}{item.season?` · ${item.season}`:""}</small><h3>{item.name}</h3><b>{item.title}</b>{item.teamName?<p>{item.teamName}</p>:null}
               </>;
               return item.link
-                ? <Link className="homeLaureateCard" href={safeHref(item.link)} key={item.id}>{content}</Link>
+                ? <Link prefetch={false} className="homeLaureateCard" href={safeHref(item.link)} key={item.id}>{content}</Link>
                 : <article className="homeLaureateCard" key={item.id}>{content}</article>;
             })}</div>
           </div>

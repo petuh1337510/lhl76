@@ -2,6 +2,7 @@ import {NextRequest} from 'next/server';
 import {Resolver} from 'node:dns/promises';
 import {request as httpsRequest} from 'node:https';
 import sharp from 'sharp';
+import {trace,SpanStatusCode} from '@opentelemetry/api';
 import {remoteImageUrl,publicIpv4} from '@/lib/remote-image-policy';
 export const runtime='nodejs';
 let active=0;
@@ -39,7 +40,11 @@ export async function GET(request:NextRequest){
   const addresses=await resolver.resolve4(url.hostname);
   if(!addresses.length||addresses.some(x=>!publicIpv4(x)))return new Response(null,{status:400});
   // Pin the checked address in the HTTPS connection to prevent DNS rebinding.
-  const bytes=await download(url,addresses[0]);
+  const bytes=await trace.getTracer('lhl76-http').startActiveSpan('HTTP external',async span=>{
+   try{return await download(url,addresses[0]);}
+   catch(error){span.setStatus({code:SpanStatusCode.ERROR});throw error;}
+   finally{span.end();}
+  });
   const meta=await sharp(bytes,{limitInputPixels:40000000}).metadata();
   const mime:Record<string,string>={jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp'};
   if(!meta.format||!mime[meta.format])return new Response(null,{status:415});
