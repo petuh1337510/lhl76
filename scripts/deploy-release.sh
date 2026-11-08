@@ -12,16 +12,12 @@ for file in "${release}/docker-compose.production.yml" "${release}/runtime.env" 
   test -s "${file}" || { echo "Missing release file: ${file}" >&2; exit 1; }
 done
 
-mkdir -p "${backup_dir}" "${app_path}/secrets"
-chmod 700 "${app_path}/secrets"
+mkdir -p "${backup_dir}"
 rollback="$(mktemp -d "${app_path}/.rollback.XXXXXX")"
 previous=0
 if test -s "${environment}" && test -s "${compose}"; then
   previous=1
   cp -p "${environment}" "${rollback}/runtime.env"
-  cp -p "${compose}" "${rollback}/docker-compose.production.yml"
-  cp -p "${app_path}/secrets/postgres_owner_password" "${rollback}/postgres_owner_password"
-  cp -p "${app_path}/secrets/postgres_app_password" "${rollback}/postgres_app_password"
 fi
 if test "${previous}" -ne 1; then
   echo "Existing production release is required; refusing to initialize a database" >&2
@@ -39,6 +35,12 @@ cmp -s <(sed '/^LHL76_IMAGE=/d' "${environment}") \
   echo "Runtime configuration changed beyond the image; refusing automatic deployment" >&2
   exit 1
 }
+for secret in postgres_owner_password postgres_app_password; do
+  cmp -s "${app_path}/secrets/${secret}" "${release}/secrets/${secret}" || {
+    echo "Database credentials changed; refusing automatic deployment" >&2
+    exit 1
+  }
+done
 grep -Fxq 'MEDIA_ROOT=/opt/lhl76/public-files' "${environment}" || {
   echo "Unexpected media root" >&2
   exit 1
@@ -51,6 +53,7 @@ test -n "${running_db}" && test -n "${running_app}" || {
   exit 1
 }
 db_mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Type}}|{{.Name}}{{end}}{{end}}' "${running_db}")"
+db_started_at="$(docker inspect --format '{{.State.StartedAt}}' "${running_db}")"
 test "${db_mount}" = 'volume|lhl76_postgres_data' || {
   echo "Unexpected PostgreSQL volume" >&2
   exit 1
@@ -77,7 +80,7 @@ media_manifest > "${rollback}/media-before.txt"
 db_counts() {
   printf '%s\n' 'SELECT (SELECT count(*) FROM "User"), (SELECT count(*) FROM "Player"), (SELECT count(*) FROM "Match"), (SELECT count(*) FROM "Goal"), (SELECT count(*) FROM "Penalty"), (SELECT count(*) FROM "PlayerStatistic"), (SELECT count(*) FROM "TeamStatistic");' |
     docker compose --env-file "${environment}" -f "${compose}" exec -T db \
-      sh -ec 'exec psql -XAt -F, -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+      sh -ec 'PGOPTIONS="-c default_transaction_read_only=on" exec psql -XAt -F, -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 }
 counts_before="$(db_counts)"
 IFS=, read -r -a before_values <<< "${counts_before}"
@@ -93,12 +96,7 @@ restore_previous() {
   trap - ERR
   if test "${switched}" -eq 1; then
     install -m 600 "${rollback}/runtime.env" "${environment}"
-    install -m 644 "${rollback}/docker-compose.production.yml" "${compose}"
-    install -m 600 "${rollback}/postgres_owner_password" "${app_path}/secrets/postgres_owner_password"
-    install -m 600 "${rollback}/postgres_app_password" "${app_path}/secrets/postgres_app_password"
-    chown 1000:1000 "${app_path}/secrets/postgres_app_password"
-    chmod 400 "${app_path}/secrets/postgres_app_password"
-    docker compose --env-file "${environment}" -f "${compose}" up -d --wait --wait-timeout 180 || true
+    docker compose --env-file "${environment}" -f "${compose}" up -d --no-deps --wait --wait-timeout 180 app || true
   fi
   echo "Release failed; previous configuration retained or restored; database and media were not rolled back" >&2
   rm -rf -- "${rollback}" "${release}"
@@ -108,7 +106,7 @@ trap restore_previous ERR
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 docker compose --env-file "${environment}" -f "${compose}" exec -T db \
-  sh -ec 'pg_dump -Fc --no-owner --no-acl -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  sh -ec 'PGOPTIONS="-c default_transaction_read_only=on" exec pg_dump -Fc --no-owner --no-acl -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
   > "${backup_dir}/postgres-${stamp}.dump"
 test -s "${backup_dir}/postgres-${stamp}.dump"
 chmod 600 "${backup_dir}/postgres-${stamp}.dump"
@@ -117,15 +115,16 @@ docker compose --env-file "${environment}" -f "${compose}" exec -T db \
 
 switched=1
 install -m 600 "${release}/runtime.env" "${environment}"
-install -m 644 "${release}/docker-compose.production.yml" "${compose}"
-install -m 600 "${release}/secrets/postgres_owner_password" "${app_path}/secrets/postgres_owner_password"
-install -m 600 "${release}/secrets/postgres_app_password" "${app_path}/secrets/postgres_app_password"
-chown 1000:1000 "${app_path}/secrets/postgres_app_password"
-chmod 400 "${app_path}/secrets/postgres_app_password"
 
 docker compose --env-file "${environment}" -f "${compose}" config --quiet
 docker compose --env-file "${environment}" -f "${compose}" pull app
-docker compose --env-file "${environment}" -f "${compose}" up -d --wait --wait-timeout 180
+docker compose --env-file "${environment}" -f "${compose}" up -d --no-deps --wait --wait-timeout 180 app
+
+test "$(docker compose --env-file "${environment}" -f "${compose}" ps -q db)" = "${running_db}" &&
+  test "$(docker inspect --format '{{.State.StartedAt}}' "${running_db}")" = "${db_started_at}" || {
+  echo "PostgreSQL container changed or restarted during deployment" >&2
+  false
+}
 
 counts_after="$(db_counts)"
 IFS=, read -r -a after_values <<< "${counts_after}"
