@@ -7,13 +7,7 @@ import { PublicImage } from "./public-image";
 import { UiIcon } from "./ui-icon";
 import styles from "./home-leaders.module.css";
 
-const categories = [
-  { title: "Бомбардиры", label: "Очки", metric: "points", goalie: false },
-  { title: "Снайперы", label: "Шайбы", metric: "goals", goalie: false },
-  { title: "Ассистенты", label: "Голевые передачи", metric: "assists", goalie: false },
-  { title: "Вратари (КН)", label: "Коэффициент надёжности", metric: "goalsAgainstAverage", goalie: true },
-  { title: "Вратари (%ОБ)", label: "Отражённые броски", metric: "savePercentage", goalie: true },
-] as const;
+import { homeLeaderCategories as categories, homeLeaderRows } from "@/lib/home-leaders";
 
 export function HomeLeaders({ players, teams, href }: { players: DivisionPlayerStatistic[]; teams: DivisionTeam[]; href: string }) {
   const track = useRef<HTMLDivElement>(null);
@@ -37,8 +31,7 @@ export function HomeLeaders({ players, teams, href }: { players: DivisionPlayerS
   return <>
     <div ref={track} className={styles.track} onScroll={measure} tabIndex={0} role="region" aria-label="Категории лучших игроков — прокрутите для просмотра вратарей">
       {categories.map(category => {
-        const rows = players.filter(player => !category.goalie || (player.isGoalkeeper && player[category.metric] !== null))
-          .slice().sort((a, b) => category.metric === "goalsAgainstAverage" ? Number(a[category.metric]) - Number(b[category.metric]) : Number(b[category.metric]) - Number(a[category.metric])).slice(0, 5);
+        const rows = homeLeaderRows(players, category);
         return <article className={styles.board} key={category.metric}>
           <header className={styles.heading}><Link href={`${href}&view=${category.goalie ? "goalkeepers" : "skaters"}&sort=${category.metric}`}>{category.title}</Link><span>{category.label}</span></header>
           <ol className={styles.list}>

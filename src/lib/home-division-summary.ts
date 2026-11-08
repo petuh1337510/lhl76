@@ -1,4 +1,5 @@
 import "server-only";
+import { compactHomeLeaders } from "./home-leaders";
 
 import { calculateStandings } from "@/lib/domain/standings";
 import { calculateGoalieMetrics } from "@/lib/domain/goalie-statistics";
@@ -19,7 +20,7 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
           team: { select: { slug: true, name: true, city: true, logoUrl: true } },
           playerStats: {
             select: {
-              id: true, playerId: true, games: true, goals: true, assists: true,
+              playerId: true, games: true, goals: true, assists: true,
               penaltyMinutes: true, goalieGames: true, goalieSeconds: true,
               shotsAgainst: true, goalieGoalsAgainst: true,
               player: { select: { slug: true, lastName: true, firstName: true, position: true, photoUrl: true } },
@@ -118,5 +119,5 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
       };
     }),
   );
-  return { teams, leaders };
+  return { teams, leaders: compactHomeLeaders(leaders) };
 }

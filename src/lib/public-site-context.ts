@@ -18,10 +18,10 @@ export type PublicSiteContext = {
 export const getPublicSiteContext = cache(async function getPublicSiteContext(): Promise<PublicSiteContext | null> {
   const seasons = await prisma.season.findMany({
     orderBy: [{ isActive: "desc" }, { startsAt: "desc" }, { name: "desc" }],
-    include: {
+    select: { name: true, slug: true, isActive: true,
       competitions: {
         orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { name: "asc" }],
-        include: { divisions: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
+        select: { name: true, slug: true, type: true, isActive: true, divisions: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: {id: true, name: true} } },
       },
     },
   });
