@@ -429,7 +429,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                   const live = match.status === "LIVE";
                   const final = match.status === "FINAL" || match.status === "ЗАВЕРШЕН";
                   const scheduled = !live && !final;
-                  const awaitingResult = scheduled && match.startsAt && new Date(match.startsAt).getTime() < Date.now();
+                  const awaitingResult = scheduled && match.startsAt && new Date(match.startsAt).getTime() < now;
                   const href = `/match/${match.slug ?? (index === 0 ? "tanki-volki-2026-09-28" : `league-match-${index + 1}`)}`;
                   const [homeScore, awayScore] = String(match.score ?? "").split(":").map((value) => Number(value.trim()));
                   const homeWinner = final && (match.homeWinner === true || (Number.isFinite(homeScore) && Number.isFinite(awayScore) && homeScore > awayScore));
@@ -618,7 +618,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                   {news.imageUrl ? <PublicImage className="homeNewsImage" src={news.imageUrl} alt="" width={960} height={540} sizes={index === 0 ? "(max-width: 800px) 92vw, 50vw" : "(max-width: 600px) 92vw, 30vw"} /> : null}
                   <span>{news.category}</span>
                 </div>
-                <time>{news.publishedAt ? new Date(news.publishedAt).toLocaleDateString("ru-RU") : ""}</time>
+                <time>{news.publishedAt ? new Date(news.publishedAt).toLocaleDateString("ru-RU", {timeZone: "Europe/Moscow"}) : ""}</time>
                 <h3>{news.title}</h3>
                 <p>{news.excerpt}</p>
                 <b>Читать новость →</b>
@@ -663,7 +663,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                       <i aria-hidden="true">▶</i>
                       {broadcast.isLive ? <b>● ЛАЙВ</b> : null}
                     </div>
-                    <time>{broadcast.startsAt ? new Date(broadcast.startsAt).toLocaleString("ru-RU", { day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" }) : "ВИДЕО ЛИГИ"}</time>
+                    <time>{broadcast.startsAt ? new Date(broadcast.startsAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" }) : "ВИДЕО ЛИГИ"}</time>
                     <h3>{broadcast.title}</h3>
                   </a>
                 ))}
