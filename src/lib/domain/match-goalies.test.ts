@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { matchClockResolver, matchClockVersion } from "./match-clock";
 import { aggregateMatchGoalies, calculateMatchGoalies, type GoalieMatch } from "./match-goalies";
+import { deriveMatchProtocol } from "./match-protocol";
 
 const stint = (playerId: string, from: string, to: string, shotsAgainst?: number) =>
   ({ teamEntryId: "home", playerId, from, to, shotsAgainst });
@@ -12,6 +13,23 @@ const match = (stints: ReturnType<typeof stint>[], goals: GoalieMatch["goals"] =
 });
 
 describe("match goalkeeper statistics", () => {
+  it("counts the opposing team's period shots for both full-game goalies, including during protocol save", () => {
+    const goalieStints = [stint("bars", "00:00", "60:00", 1), { ...stint("armada", "00:00", "60:00"), teamEntryId: "away" }];
+    const shots = [{ home: 13, away: 6 }, { home: "12", away: 7 }, { home: 11, away: 8 }];
+    const game = { ...match(goalieStints), protocolData: { goalieStints, shots } };
+    expect(calculateMatchGoalies(game).map(row => row.shotsAgainst)).toEqual([21, 36]);
+    expect(deriveMatchProtocol({ ...game, goalieStints, shots }).contributions.map(row => row.shotsAgainst)).toEqual([21, 36]);
+  });
+
+  it("keeps manual counts if a period is missing or the team used a replacement", () => {
+    const missing = [{ home: 13, away: 6 }, { home: 12, away: 7 }, { home: 11, away: null }];
+    const sole = [stint("bars", "00:00", "60:00", 15)];
+    expect(calculateMatchGoalies({ ...match(sole), protocolData: { goalieStints: sole, shots: missing } })[0].shotsAgainst).toBe(15);
+    const full = missing.map(row => ({ ...row, away: row.away ?? 0 }));
+    expect(calculateMatchGoalies({ ...match(sole), protocolData: { goalieStints: sole, shots: full } })[0].shotsAgainst).toBe(13);
+    const replaced = [stint("bars", "00:00", "30:00", 8), stint("backup", "30:00", "60:00", 5)];
+    expect(calculateMatchGoalies({ ...match(replaced), protocolData: { goalieStints: replaced, shots: full } }).map(row => row.shotsAgainst)).toEqual([8, 5]);
+  });
   it("uses the five real goal times in the Bars–Vympel example, even after the old editor added period offsets", () => {
     const scorerId = "scorer";
     const legacyTimes = ["17:57", "35:41", "36:51", "42:37", "45:17"];

@@ -2,7 +2,7 @@ import "server-only";
 
 import { competitionPublicPath, publicSlug } from "@/lib/division-page";
 import { matchClockResolver } from "@/lib/domain/match-clock";
-import { calculateMatchGoalies } from "@/lib/domain/match-goalies";
+import { calculateMatchGoalies, sumPeriodShots } from "@/lib/domain/match-goalies";
 import { prisma } from "@/lib/prisma";
 
 export type PublicMatchEvent = {
@@ -364,10 +364,6 @@ export async function getPublicMatch(
     home: Number(row?.home) || 0,
     away: Number(row?.away) || 0,
   }));
-  const shotTotals = shots.reduce(
-    (total, row) => ({ home: total.home + row.home, away: total.away + row.away }),
-    { home: 0, away: 0 },
-  );
   const allPlayers = new Map(
     match.rosters.map((row) => [
       row.rosterEntry.playerId,
@@ -578,11 +574,11 @@ export async function getPublicMatch(
     goalieStats: {
       home: technical ? [] : goalieStatsFor(
         match.homeTeamEntryId,
-        shots.length ? shotTotals.away : null,
+        sumPeriodShots(rawShots, "away"),
       ),
       away: technical ? [] : goalieStatsFor(
         match.awayTeamEntryId,
-        shots.length ? shotTotals.home : null,
+        sumPeriodShots(rawShots, "home"),
       ),
     },
     shots: technical ? [] : shots,

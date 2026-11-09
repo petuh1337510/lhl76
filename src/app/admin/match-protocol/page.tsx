@@ -1,5 +1,6 @@
 "use client";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { automaticGoalieShots } from "@/lib/domain/match-goalies";
 import { AdminModal } from "../admin-modal";
 import { MatchRosterCard, MatchRosterEditor } from "./match-roster";
 import { PrintProtocol, readPrintDetails } from "./print-protocol";
@@ -477,6 +478,7 @@ export default function MatchProtocolPage() {
           : a.filter((x) => x.teamEntryId !== tid),
       );
   const teams = [match.homeTeamEntry, match.awayTeamEntry];
+  const automaticShots = automaticGoalieShots(goalieStints, shots, match.homeTeamEntryId, match.awayTeamEntryId);
   const scoringGoals = goals.filter(isScoringGoal);
   const eventCounts = {
     all: goals.length + penalties.length + goalieStints.length + timeouts.length + shootouts.length,
@@ -531,7 +533,10 @@ export default function MatchProtocolPage() {
             <span className={eventStyles.home}><EventTeamIdentity team={match.homeTeamEntry.team} /></span>
             <span className={eventStyles.result}>
               <strong>{scoreFor(match.homeTeamEntryId, homeScore)} <span>:</span> {scoreFor(match.awayTeamEntryId, awayScore)}</strong>
-              <small className={eventStyles.status} data-live={status === "LIVE"} aria-live="polite">{matchStatusLabels[status] || status}</small>
+              <select className={eventStyles.status} aria-label="Статус матча" value={status} data-live={status === "LIVE"}
+                disabled={technicalResult} onChange={event => setStatus(event.target.value)}>
+                {Object.entries(matchStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
             </span>
             <EventTeamIdentity team={match.awayTeamEntry.team} />
           </h1>
@@ -561,20 +566,6 @@ export default function MatchProtocolPage() {
         <section className="protocolResult">
           <h3>Результат матча</h3>
           <div>
-            <label>
-              Статус
-              <select
-                value={status}
-                disabled={resultType === "TECHNICAL"}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="SCHEDULED">Запланирован</option>
-                <option value="LIVE">Идёт матч</option>
-                <option value="FINAL">Завершён</option>
-                <option value="POSTPONED">Перенесён</option>
-                <option value="CANCELLED">Отменён</option>
-              </select>
-            </label>
             <label>
               Тип результата
               <select
@@ -781,7 +772,7 @@ export default function MatchProtocolPage() {
             )}
             {(eventFilter === "goalies" || (eventFilter === "all" && eventCounts.goalies > 0)) && (
               <div className={eventStyles.supportGrid}>
-          <section className="protocolExtra">
+          <section className={`protocolExtra ${eventStyles.goalieCard}`}>
             <h3>Время игры вратарей</h3>
             {teams.map((entry: any) => (
               <div className="goalieTeam" key={entry.id}>
@@ -810,9 +801,11 @@ export default function MatchProtocolPage() {
                   .filter((x) => x.teamEntryId === entry.id)
                   .map((x) => {
                     const i = goalieStints.indexOf(x);
+                    const calculatedShots = automaticShots.get(x);
                     return (
-                      <div className="goalieStint" key={x.id}>
+                      <div className={`goalieStint ${eventStyles.goalieStint}`} key={x.id}>
                         <select
+                          aria-label={`Вратарь команды ${entry.team.name}`}
                           value={x.playerId}
                           onChange={(e) =>
                             setGoalieStints(
@@ -832,6 +825,7 @@ export default function MatchProtocolPage() {
                           ))}
                         </select>
                         <input
+                          aria-label="Начало отрезка"
                           inputMode="numeric"
                           value={x.from}
                           onFocus={(event) => event.currentTarget.select()}
@@ -845,6 +839,7 @@ export default function MatchProtocolPage() {
                           placeholder="С 00:00"
                         />
                         <input
+                          aria-label="Конец отрезка"
                           inputMode="numeric"
                           value={x.to}
                           onFocus={(event) => event.currentTarget.select()}
@@ -858,9 +853,12 @@ export default function MatchProtocolPage() {
                           placeholder="До 60:00"
                         />
                         <input
+                          aria-label={calculatedShots === undefined ? "Броски по воротам" : "Броски по воротам, автоматически"}
                           type="number"
                           min="0"
-                          value={x.shotsAgainst ?? ""}
+                          value={calculatedShots ?? x.shotsAgainst ?? ""}
+                          readOnly={calculatedShots !== undefined}
+                          data-automatic={calculatedShots !== undefined}
                           onChange={(e) =>
                             setGoalieStints(
                               goalieStints.map((v, n) =>
@@ -871,9 +869,11 @@ export default function MatchProtocolPage() {
                             )
                           }
                           placeholder="Броски"
-                          title="Броски в створ по воротам за этот отрезок"
+                          title={calculatedShots === undefined ? "Броски в створ по воротам за этот отрезок" : "Сумма бросков соперника за три периода"}
                         />
                         <button
+                          type="button"
+                          aria-label="Удалить отрезок вратаря"
                           onClick={() =>
                             setGoalieStints(
                               goalieStints.filter((_, n) => n !== i),

@@ -35,6 +35,33 @@ function goalieStints(data: unknown): unknown[] {
   return Array.isArray(data.goalieStints) ? data.goalieStints : [];
 }
 
+export function sumPeriodShots(periods: unknown, side: "home" | "away"): number | null {
+  if (!Array.isArray(periods) || periods.length < 3) return null;
+  let total = 0;
+  for (const period of periods.slice(0, 3)) {
+    const value = period?.[side];
+    if (typeof value !== "number" && (typeof value !== "string" || !value.trim())) return null;
+    const shots = Number(value);
+    if (!Number.isSafeInteger(shots) || shots < 0) return null;
+    total += shots;
+  }
+  return total;
+}
+
+export function automaticGoalieShots(stints: readonly unknown[], periods: unknown, homeId: string, awayId: string) {
+  const result = new Map<unknown, number>();
+  const entries = stints.filter((value): value is Record<string, unknown> => Boolean(value && typeof value === "object"));
+  for (const [teamId, opponent] of [[homeId, "away"], [awayId, "home"]] as const) {
+    const teamStints = entries.filter(stint => stint.teamEntryId === teamId);
+    if (teamStints.length !== 1) continue;
+    const [stint] = teamStints;
+    if (!stint.playerId || parseMatchClock(stint.from) !== 0 || parseMatchClock(stint.to) !== 3600) continue;
+    const shots = sumPeriodShots(periods, opponent);
+    if (shots !== null) result.set(stint, shots);
+  }
+  return result;
+}
+
 export function calculateMatchGoalies(match: GoalieMatch) {
     if (match.resultType === "TECHNICAL") return [];
     const teams = [match.homeTeamEntryId, match.awayTeamEntryId];
@@ -44,15 +71,19 @@ export function calculateMatchGoalies(match: GoalieMatch) {
       match.isPlayoff && goals[0].length === goals[1].length && shootoutScores[index] > shootoutScores[1 - index],
     ));
 
+    const rawStints = goalieStints(match.protocolData);
+    const protocol = match.protocolData as { shots?: unknown } | null;
+    const automatic = automaticGoalieShots(rawStints, protocol?.shots, match.homeTeamEntryId, match.awayTeamEntryId);
     const stints = new Map<string, { playerId: string; teamEntryId: string; intervals: GoalieStint[]; invalid: boolean }>();
-    for (const raw of goalieStints(match.protocolData)) {
+    for (const raw of rawStints) {
       if (!raw || typeof raw !== "object") continue;
       const { playerId, teamEntryId, from, to, shotsAgainst } = raw as Record<string, unknown>;
       if (typeof playerId !== "string" || !playerId || typeof teamEntryId !== "string" || !teams.includes(teamEntryId)) continue;
       const key = goalieStatisticKey(teamEntryId, playerId);
       const stint = stints.get(key) ?? { playerId, teamEntryId, intervals: [], invalid: false };
       const start = parseMatchClock(from), end = parseMatchClock(to);
-      const shots = typeof shotsAgainst === "number" || (typeof shotsAgainst === "string" && shotsAgainst.trim()) ? Number(shotsAgainst) : NaN;
+      const enteredShots = typeof shotsAgainst === "number" || (typeof shotsAgainst === "string" && shotsAgainst.trim()) ? Number(shotsAgainst) : NaN;
+      const shots = automatic.get(raw) ?? enteredShots;
       if (start === null || end === null || end <= start) stint.invalid = true;
       else stint.intervals.push({ from: start, to: end, shots: Number.isSafeInteger(shots) && shots >= 0 ? shots : null });
       stints.set(key, stint);

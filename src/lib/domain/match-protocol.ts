@@ -59,6 +59,7 @@ export function deriveMatchProtocol(input: {
   penalties?: ProtocolPenaltyInput[];
   roster?: ProtocolRosterInput[];
   goalieStints?: ProtocolGoalieStintInput[];
+  shots?: unknown;
   status?: string;
 }) {
   const goals = (input.goals || []).filter((goal) => !isMissedPenaltyShot(goal));
@@ -129,7 +130,7 @@ export function deriveMatchProtocol(input: {
       awayTeamEntryId: input.awayTeamEntryId,
       homeScore,
       awayScore,
-      protocolData: { goalieStints: input.goalieStints },
+      protocolData: { goalieStints: input.goalieStints, shots: input.shots },
       goals: goals.map(goal => ({
         teamEntryId: goal.teamEntryId,
         situation: goal.situation ?? "",

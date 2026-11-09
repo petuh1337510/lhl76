@@ -248,6 +248,7 @@ async function handlePUT(request: NextRequest) {
     penalties: body.penalties || [],
     roster: validRosterEntries,
     goalieStints: body.protocolData?.goalieStints || [],
+    shots: body.protocolData?.shots,
     status: body.status,
   });
   const newContributions =

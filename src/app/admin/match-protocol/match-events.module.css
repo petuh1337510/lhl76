@@ -29,8 +29,20 @@
 .result { display: flex; align-items: center; gap: 9px; text-align: center; white-space: nowrap; }
 .result strong { font-size: 30px; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .result strong span { color: var(--admin-muted); }
-.status { padding: 4px 8px; border-radius: 6px; background: var(--admin-surface-soft); color: var(--admin-ink); font-size: 12px; font-weight: 700; }
-.status[data-live="true"] { background: var(--admin-success-bg); color: var(--admin-success-ink); }
+:global(.adminUI .adminContent) .summary select.status {
+  min-height: 34px;
+  padding: 4px 6px 4px 8px;
+  border-radius: 6px;
+  background: var(--admin-surface-soft);
+  color: var(--admin-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+:global(.adminUI .adminContent) .summary select.status[data-live="true"] {
+  background: var(--admin-success-bg);
+  color: var(--admin-success-ink);
+}
+:global(.adminUI .adminContent) .summary select.status:disabled { opacity: 1; }
 .matchDetails {
   display: flex;
   justify-content: center;
@@ -145,7 +157,23 @@
 :global(.adminUI .adminContent) .layout button:disabled { opacity: .55; cursor: default; }
 
 .supportGrid > section { min-width: 0; border-color: var(--admin-line); background: var(--admin-surface); color: var(--admin-ink); }
+.supportGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .supportGrid .matchShots { grid-column: 1 / -1; }
+.goalieCard { container-type: inline-size; }
+:global(.adminUI .adminContent) .goalieStint {
+  grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 85px)) 34px;
+}
+.goalieStint :is(select, input, button) { box-sizing: border-box; width: 100%; min-width: 0; }
+.goalieStint select { grid-column: auto; }
+:global(.adminUI .adminContent) .goalieStint button { padding-inline: 0; }
+:global(.adminUI .adminContent) .goalieStint input[data-automatic="true"] { background: var(--admin-surface-soft); color: var(--admin-link); font-weight: 700; }
+@container (max-width: 440px) {
+  :global(.adminUI .adminContent) .goalieStint { grid-template-columns: repeat(3, minmax(0, 1fr)) 34px; }
+  .goalieStint select { grid-column: 1 / -1; }
+}
+@media (max-width: 780px) {
+  .supportGrid { grid-template-columns: minmax(0, 1fr); }
+}
 .unavailable { margin: 0; padding: 16px; color: var(--admin-muted); font-size: 13px; }
 
 @media (max-width: 600px) {
@@ -155,7 +183,7 @@
   .scoreboard .identity img { width: 25px; height: 25px; flex-basis: 25px; }
   .result strong { font-size: 24px; }
   .result { flex-direction: column; gap: 4px; }
-  .status { font-size: 11px; }
+  :global(.adminUI .adminContent) .summary select.status { font-size: 11px; }
   .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
   .filters button { flex: 0 0 auto; }
   .title { font-size: 19px; }
