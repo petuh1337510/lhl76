@@ -6,7 +6,7 @@ import { UiIcon } from "@/components/ui-icon";
 import { AdminModal } from "../admin-modal";
 import styles from "./match-protocol.module.css";
 
-type RosterPlayer = {
+export type RosterPlayer = {
   id: string;
   playerId: string;
   number: string | null;
@@ -20,8 +20,8 @@ function nameOf(row: RosterPlayer) {
   return [row.player.lastName, row.player.firstName, row.player.patronymic].filter(Boolean).join(" ");
 }
 
-function numberOf(row: RosterPlayer, numbers: Record<string, string>) {
-  return numbers[row.id] || row.number || row.player.baseNumber || "";
+export function matchJerseyNumber(row: RosterPlayer, numbers: Record<string, string>) {
+  return numbers[row.id]?.trim() || row.number?.trim() || row.player.baseNumber?.trim() || "";
 }
 
 function positionOf(row: RosterPlayer) {
@@ -39,7 +39,7 @@ function useRosterRows(entry: RosterTeam, numbers: Record<string, string>, query
   const search = normalize(query).trim().replace(/^№\s*/, "").split(/\s+/).filter(Boolean);
   return sorted.filter(row => {
     const name = normalize(nameOf(row));
-    return search.every(word => /^\d+$/.test(word) ? numberOf(row, numbers) === word : name.includes(word));
+    return search.every(word => /^\d+$/.test(word) ? matchJerseyNumber(row, numbers) === word : name.includes(word));
   });
 }
 
@@ -86,7 +86,7 @@ export function MatchRosterCard({ entry, selected, numbers, onEdit }: RosterProp
       <table className={styles.rosterTable}>
         <thead><tr><th scope="col">№</th><th scope="col">Фото и ФИО</th><th scope="col">Амплуа</th><th scope="col">К/А</th><th scope="col">Фактически<br />играл</th></tr></thead>
         <tbody>{rows.map(row => <tr key={row.id}>
-          <td>{numberOf(row, numbers) || "—"}</td>
+          <td>{matchJerseyNumber(row, numbers) || "—"}</td>
           <td><PlayerIdentity row={row} /></td>
           <td><PlayerPosition row={row} /></td>
           <td><PlayerLeadership row={row} /></td>
@@ -129,9 +129,9 @@ export function MatchRosterEditor({ entry, selected, numbers, activeSuspension, 
             return <tr key={row.id} data-selected={checked}>
               <td>{checked ? <input className={styles.jerseyInput} type="text" inputMode="numeric" maxLength={3}
                 aria-label={`Номер на матч: ${playerName}`} disabled={saving}
-                value={draftNumbers[row.id] ?? numberOf(row, numbers)}
+                value={draftNumbers[row.id] ?? matchJerseyNumber(row, numbers)}
                 onChange={event => { const number = event.currentTarget.value.replace(/\D/g, "").slice(0, 3); setDraftNumbers(current => ({ ...current, [row.id]: number })); }} />
-                : numberOf(row, draftNumbers) || "—"}</td>
+                : matchJerseyNumber(row, draftNumbers) || "—"}</td>
               <td>
                 <label className={styles.editorPlayer}>
                   <input type="checkbox" checked={checked} aria-label={`Участвует: ${playerName}`} disabled={saving || locked || (Boolean(suspension) && !checked)}

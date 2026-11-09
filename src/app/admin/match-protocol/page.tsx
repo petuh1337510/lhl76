@@ -2,7 +2,7 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { automaticGoalieShots } from "@/lib/domain/match-goalies";
 import { AdminModal } from "../admin-modal";
-import { MatchRosterCard, MatchRosterEditor } from "./match-roster";
+import { MatchRosterCard, MatchRosterEditor, matchJerseyNumber, type RosterPlayer } from "./match-roster";
 import { PrintProtocol, readPrintDetails } from "./print-protocol";
 import { useProtocolAutosave } from "./use-protocol-autosave";
 import { EventFilters, EventTeamIdentity, isScoringGoal, MatchEventTables, type EventFilter } from "./match-events";
@@ -22,6 +22,11 @@ type MatchTab = typeof matchTabs[number][0];
 const matchStatusLabels: Record<string, string> = {
   SCHEDULED: "Запланирован", LIVE: "Матч идёт", FINAL: "Матч завершён", POSTPONED: "Матч перенесён", CANCELLED: "Матч отменён",
 };
+const jerseyOrder = new Intl.Collator("ru", { numeric: true });
+
+function eventPlayerLabel(row: RosterPlayer, number: string) {
+  return `${number ? `№${number} · ` : ""}${row.player.lastName} ${row.player.firstName}`;
+}
 
 function MatchPanel({ tab, active, children }: { tab: MatchTab; active: MatchTab; children: ReactNode }) {
   return <div className={styles.panel} id={`match-panel-${tab}`} role="tabpanel"
@@ -342,32 +347,30 @@ export default function MatchProtocolPage() {
     );
   const homeRoster = match.homeTeamEntry.roster,
     awayRoster = match.awayTeamEntry.roster,
-    rosterFor = (id: string) =>
+    rosterFor = (id: string): RosterPlayer[] =>
       id === match.homeTeamEntryId ? homeRoster : awayRoster,
     selectedFor = (id: string) =>
-      rosterFor(id).filter((x: any) => selected.includes(x.id)),
+      rosterFor(id).filter((x) => selected.includes(x.id)),
     teamName = (id: string) =>
       id === match.homeTeamEntryId
         ? match.homeTeamEntry.team.name
         : match.awayTeamEntry.team.name,
     eventPlayer = (tid: string, pid: string) => {
-      const x = rosterFor(tid).find((r: any) => r.playerId === pid);
+      const x = rosterFor(tid).find((r) => r.playerId === pid);
       return x ? {
         name: `${x.player.lastName} ${x.player.firstName}`,
-        number: String(numbers[x.id] || x.number || x.player.baseNumber || ""),
+        number: matchJerseyNumber(x, numbers),
       } : { name: "Игрок не указан", number: "" };
     };
   const numberedPlayersFor = (teamEntryId: string) => selectedFor(teamEntryId)
-    .map((row: any) => ({ row, number: String(numbers[row.id] ?? row.number ?? "").trim() }))
-    .filter((item: any) => item.number)
-    .sort((a: any, b: any) => Number(a.number) - Number(b.number) || a.row.player.lastName.localeCompare(b.row.player.lastName, "ru"));
+    .map((row) => ({ row, number: matchJerseyNumber(row, numbers) }))
+    .sort((a, b) => Number(!a.number) - Number(!b.number) || jerseyOrder.compare(a.number, b.number)
+      || eventPlayerLabel(a.row, "").localeCompare(eventPlayerLabel(b.row, ""), "ru"));
   const goalNumberPlayers = numberedPlayersFor(goal.teamEntryId);
   const penaltyNumberPlayers = numberedPlayersFor(penalty.teamEntryId);
   const goalRoleLabel = (playerId: string) => {
-    const row = selectedFor(goal.teamEntryId).find((item: any) => item.playerId === playerId);
-    if (!row) return "—";
-    const number = numbers[row.id] ?? row.number;
-    return `${number ? `№${number} · ` : ""}${row.player.lastName} ${row.player.firstName}`;
+    const row = selectedFor(goal.teamEntryId).find((item) => item.playerId === playerId);
+    return row ? eventPlayerLabel(row, matchJerseyNumber(row, numbers)) : "—";
   };
   const chooseGoalNumber = (playerId: string) => {
     setGoal((current: any) => {
@@ -699,16 +702,17 @@ export default function MatchProtocolPage() {
                   }}><option value="">Выберите игрока</option>{selectedFor(goal.teamEntryId).map((row: any) => <option key={row.playerId} value={row.playerId}>{row.player.lastName} {row.player.firstName}</option>)}</select></label>
                   {goal.situation !== "PENALTY_SHOT" && [1, 2].map((n) => <label key={n}>Ассистент {n}<select value={goal[`assist${n}Id`]} onChange={(e) => { setGoal({ ...goal, [`assist${n}Id`]: e.target.value }); setGoalFormError(""); }}><option value="">Не указан</option>{selectedFor(goal.teamEntryId).filter((row: any) => row.playerId !== goal.scorerId && row.playerId !== goal[`assist${n === 1 ? 2 : 1}Id`]).map((row: any) => <option key={row.playerId} value={row.playerId}>{row.player.lastName} {row.player.firstName}</option>)}</select></label>)}
                 </div> : <div className="goalNumberMode" role="tabpanel">
-                  <p>Нажмите номер автора гола, затем номера ассистентов. Повторное нажатие снимает выбор.</p>
+                  <p>Выберите автора гола, затем ассистентов. Игроки без номера показаны в конце. Повторное нажатие снимает выбор.</p>
                   <div className="goalNumberRoles">
                     <div><span>Автор гола</span><strong>{goalRoleLabel(goal.scorerId)}</strong></div>
                     {goal.situation !== "PENALTY_SHOT" && <><div><span>Ассистент 1</span><strong>{goalRoleLabel(goal.assist1Id)}</strong></div><div><span>Ассистент 2</span><strong>{goalRoleLabel(goal.assist2Id)}</strong></div></>}
                   </div>
-                  {goalNumberPlayers.length ? <div className="goalNumberGrid">{goalNumberPlayers.map(({ row, number }: any) => {
+                  {goalNumberPlayers.length > 0 && <div className="goalNumberGrid">{goalNumberPlayers.map(({ row, number }) => {
                     const role = goal.scorerId === row.playerId ? "scorer" : goal.assist1Id === row.playerId || goal.assist2Id === row.playerId ? "assist" : "";
                     const full = Boolean(goal.scorerId && (goal.situation === "PENALTY_SHOT" || (goal.assist1Id && goal.assist2Id)));
-                    return <button type="button" key={row.id} className={`goalNumberTile${role ? ` is-${role}` : ""}`} aria-pressed={Boolean(role)} aria-label={`№ ${number}, ${row.player.lastName} ${row.player.firstName}${role === "scorer" ? ", автор гола" : role === "assist" ? ", ассистент" : ""}`} disabled={!role && full} onClick={() => chooseGoalNumber(row.playerId)}><b>{number}</b><small>{row.player.lastName}</small></button>;
-                  })}</div> : <p className="goalNumberEmpty">В составе этой команды нет игроков с номерами. Укажите номера во вкладке «Игроки матча» или выберите игроков по фамилиям.</p>}
+                    const playerLabel = eventPlayerLabel(row, number);
+                    return <button type="button" key={row.id} className={`goalNumberTile${role ? ` is-${role}` : ""}`} aria-pressed={Boolean(role)} aria-label={`${playerLabel}${role === "scorer" ? ", автор гола" : role === "assist" ? ", ассистент" : ""}`} title={playerLabel} disabled={!role && full} onClick={() => chooseGoalNumber(row.playerId)}><b>{number || "—"}</b><small>{number ? row.player.lastName : playerLabel}</small></button>;
+                  })}</div>}
                 </div>}
                 <div className="goalCommonFields">
                   <label>Время матча<input inputMode="numeric" value={goal.time} onFocus={(event) => event.currentTarget.select()} onChange={(event) => setGoal({ ...goal, time: formatMatchTime(event.target.value) })} placeholder="34:25" /></label>
@@ -743,8 +747,11 @@ export default function MatchProtocolPage() {
                   {penaltyMode === "names" ? <div className="penaltyNameFields" role="tabpanel">
                     <label>Игрок<select value={penalty.playerId || ""} onChange={(event) => { setPenalty({ ...penalty, playerId: event.target.value }); setPenaltyFormError(""); }}><option value="">Выберите игрока</option>{selectedFor(penalty.teamEntryId).map((row: any) => <option key={row.playerId} value={row.playerId}>{row.player.lastName} {row.player.firstName}</option>)}</select></label>
                   </div> : <div className="goalNumberMode penaltyNumberMode" role="tabpanel">
-                    <p>Выберите номер удалённого игрока. Повторное нажатие снимает выбор.</p>
-                    {penaltyNumberPlayers.length ? <div className="goalNumberGrid">{penaltyNumberPlayers.map(({ row, number }: any) => <button type="button" key={row.id} className={`goalNumberTile${penalty.playerId === row.playerId ? " is-penalty" : ""}`} aria-pressed={penalty.playerId === row.playerId} aria-label={`№ ${number}, ${row.player.lastName} ${row.player.firstName}`} onClick={() => { setPenalty({ ...penalty, playerId: penalty.playerId === row.playerId ? "" : row.playerId }); setPenaltyFormError(""); }}><b>{number}</b><small>{row.player.lastName}</small></button>)}</div> : <p className="goalNumberEmpty">В составе этой команды нет игроков с номерами. Укажите номера во вкладке «Игроки матча» или выберите игрока по фамилии.</p>}
+                    <p>Выберите удалённого игрока. Игроки без номера показаны в конце. Повторное нажатие снимает выбор.</p>
+                    {penaltyNumberPlayers.length > 0 && <div className="goalNumberGrid">{penaltyNumberPlayers.map(({ row, number }) => {
+                      const playerLabel = eventPlayerLabel(row, number);
+                      return <button type="button" key={row.id} className={`goalNumberTile${penalty.playerId === row.playerId ? " is-penalty" : ""}`} aria-pressed={penalty.playerId === row.playerId} aria-label={playerLabel} title={playerLabel} onClick={() => { setPenalty({ ...penalty, playerId: penalty.playerId === row.playerId ? "" : row.playerId }); setPenaltyFormError(""); }}><b>{number || "—"}</b><small>{number ? row.player.lastName : playerLabel}</small></button>;
+                    })}</div>}
                   </div>}
                 </>}
                 <div className="penaltyCommonFields">
