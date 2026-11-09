@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { PublicImage } from "@/components/public-image";
 import { UiIcon } from "@/components/ui-icon";
 import { AdminModal } from "../admin-modal";
+import { completeGoalieStint, MatchGoalieStints, type GoalieStint } from "./match-goalie-stints";
 import styles from "./match-protocol.module.css";
+import eventStyles from "./match-events.module.css";
 
 export type RosterPlayer = {
   id: string;
@@ -97,21 +99,29 @@ export function MatchRosterCard({ entry, selected, numbers, onEdit }: RosterProp
   </section>;
 }
 
-export function MatchRosterEditor({ entry, selected, numbers, activeSuspension, lockedPlayers, saving, error, onClose, onSave }: RosterProps & {
+export function MatchRosterEditor({ entry, selected, numbers, activeSuspension, lockedPlayers, goalieEditor, saving, error, onClose, onSave }: RosterProps & {
   activeSuspension: (row: RosterPlayer) => { reason?: string } | undefined;
   lockedPlayers: ReadonlySet<string>;
+  goalieEditor?: { stints: GoalieStint[]; shots: unknown; teamIds: readonly [string, string] };
   saving: boolean;
   error: string;
   onClose: () => void;
-  onSave: (selected: string[], numbers: Record<string, string>) => void;
+  onSave: (selected: string[], numbers: Record<string, string>, stints: GoalieStint[]) => void;
 }) {
   const [chosen, setChosen] = useState(() => new Set(selected));
   const [draftNumbers, setDraftNumbers] = useState<Record<string, string>>(() =>
     Object.fromEntries(entry.roster.filter(row => numbers[row.id] !== undefined).map(row => [row.id, numbers[row.id]])));
   const [query, setQuery] = useState("");
+  const [stints, setStints] = useState(() => goalieEditor?.stints ?? []);
+  const [stintError, setStintError] = useState("");
   const rows = useRosterRows(entry, draftNumbers, query);
+  const participating = entry.roster.filter(row => chosen.has(row.id));
   function submit() {
-    onSave([...chosen], Object.fromEntries([...chosen].filter(id => draftNumbers[id] !== undefined).map(id => [id, draftNumbers[id]])));
+    if (stints.some(stint => !completeGoalieStint(stint) || !participating.some(row => row.playerId === stint.playerId))) {
+      setStintError("Укажите вратаря из нового состава и время каждого отрезка или удалите лишний отрезок.");
+      return;
+    }
+    onSave([...chosen], Object.fromEntries([...chosen].filter(id => draftNumbers[id] !== undefined).map(id => [id, draftNumbers[id]])), stints);
   }
   return <AdminModal title={`Состав на матч — ${entry.team.name}`} onClose={() => { if (!saving) onClose(); }} wide>
     <section className={styles.rosterEditor}>
@@ -147,6 +157,14 @@ export function MatchRosterEditor({ entry, selected, numbers, activeSuspension, 
           })}</tbody>
         </table>
       </div> : <EmptyRoster hasPlayers={Boolean(entry.roster.length)} />}
+      {goalieEditor && <section className={`${styles.rosterGoalies} ${eventStyles.goalieCard}`} aria-label="Время игры вратарей">
+        <h3>Время игры вратарей</h3>
+        <p>Отметьте нужного игрока в составе и назначьте его на отрезок.</p>
+        {stintError && <p className="formError" role="alert">{stintError}</p>}
+        <MatchGoalieStints teamId={entry.id} teamName={entry.team.name} players={participating} stints={stints}
+          shots={goalieEditor.shots} teamIds={goalieEditor.teamIds} disabled={saving}
+          onChange={value => { setStints(value); setStintError(""); }} />
+      </section>}
       <footer className={styles.editorActions}>
         <button type="button" onClick={onClose} disabled={saving}>Отмена</button>
         <button type="button" onClick={submit} disabled={saving}>{saving ? "Сохраняем…" : "Сохранить состав"}</button>

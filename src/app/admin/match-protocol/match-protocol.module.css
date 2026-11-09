@@ -114,6 +114,10 @@
 .rosterEditor { padding: 21px; }
 .rosterEditor header { padding-right: 42px; }
 .rosterEditor .rosterSearch { margin-inline: 0; }
+.rosterGoalies { margin-top: 16px; }
+.rosterGoalies h3 { margin: 0; font-size: 16px; }
+.rosterGoalies > p { margin: 4px 0 8px; color: var(--admin-muted); font-size: 13px; }
+.rosterEditor .rosterGoalies header { padding-right: 0; }
 .editorList { max-height: min(56dvh, 560px); overflow: auto; border: 1px solid var(--admin-line); border-radius: 8px; scrollbar-color: var(--admin-line) var(--admin-surface); }
 .editorTable thead { position: sticky; top: 0; z-index: 1; }
 .editorTable th { border-top: 0; border-bottom: 1px solid var(--admin-line); }

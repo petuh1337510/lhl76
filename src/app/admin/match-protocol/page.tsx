@@ -1,8 +1,8 @@
 "use client";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
-import { automaticGoalieShots } from "@/lib/domain/match-goalies";
 import { AdminModal } from "../admin-modal";
 import { MatchRosterCard, MatchRosterEditor, matchJerseyNumber, type RosterPlayer } from "./match-roster";
+import { completeGoalieStint, formatMatchTime, MatchGoalieStints, toSeconds, validMatchTime, type GoalieStint } from "./match-goalie-stints";
 import { PrintProtocol, readPrintDetails } from "./print-protocol";
 import { useProtocolAutosave } from "./use-protocol-autosave";
 import { EventFilters, EventTeamIdentity, isScoringGoal, MatchEventTables, type EventFilter } from "./match-events";
@@ -94,22 +94,6 @@ const reasons = [
   ["ШТ-ВР", "Штрафы вратаря"],
   ["OTHER", "Другая причина"],
 ];
-const toSeconds = (v: string) => {
-  const [m, s] = v.split(":").map(Number);
-  return Number.isFinite(m) && Number.isFinite(s) ? Math.max(0, m * 60 + s) : 0;
-};
-const formatMatchTime = (value: string) => {
-  const withColon = value.match(/^(\d{0,3}):(\d{0,2})$/);
-  if (withColon) return `${withColon[1]}:${withColon[2]}`;
-  const digits = value.replace(/\D/g, "").slice(0, 5);
-  if (digits.length <= 2) return digits;
-  const minuteLength = digits.length === 5 ? 3 : 2;
-  return `${digits.slice(0, minuteLength)}:${digits.slice(minuteLength)}`;
-};
-const validMatchTime = (value: string) => {
-  const match = typeof value === "string" && value.match(/^\d{1,3}:(\d{2})$/);
-  return Boolean(match && Number(match[1]) < 60);
-};
 const toClock = (v: number | null) =>
   `${String(Math.floor((v || 0) / 60)).padStart(2, "0")}:${String((v || 0) % 60).padStart(2, "0")}`;
 const getPeriod = (v: string | number) => {
@@ -155,7 +139,7 @@ export default function MatchProtocolPage() {
       { home: "", away: "" },
       { home: "", away: "" },
     ]),
-    [goalieStints, setGoalieStints] = useState<any[]>([]),
+    [goalieStints, setGoalieStints] = useState<GoalieStint[]>([]),
     [timeouts, setTimeouts] = useState<any[]>([]),
     [playoff, setPlayoff] = useState({ winnerTeamEntryId: "" }),
     [shootouts, setShootouts] = useState<any[]>([]),
@@ -177,6 +161,7 @@ export default function MatchProtocolPage() {
     [editGoal, setEditGoal] = useState<number | null>(null),
     [editPenalty, setEditPenalty] = useState<number | null>(null),
     [editingRosterTeamId, setEditingRosterTeamId] = useState<string | null>(null),
+    [rosterError, setRosterError] = useState(""),
     [hasSavedShootouts, setHasSavedShootouts] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
@@ -308,15 +293,16 @@ export default function MatchProtocolPage() {
     goals: technicalResult ? [] : goals.map(eventPayload),
     penalties: technicalResult ? [] : penalties.map(eventPayload),
   }) : null;
-  const incompleteStint = goalieStints.some(stint => !stint.playerId || !validMatchTime(stint.from || "") ||
-    !validMatchTime(stint.to || "") || toSeconds(stint.to) <= toSeconds(stint.from));
-  let blockedReason = "";
-  if (technicalResult && !technicalWinnerTeamEntryId) blockedReason = "Выберите победителя для технического результата.";
-  else if (!technicalResult && incompleteStint) blockedReason = "Заполните вратаря и время каждого отрезка.";
-  else if (!technicalResult && timeouts.some(timeout => !validMatchTime(timeout.time || ""))) blockedReason = "Заполните время тайм-аута.";
-  else if (!technicalResult && shootouts.some(shot => !shot.playerId)) blockedReason = "Выберите исполнителя буллита.";
+  const getBlockedReason = (stints = goalieStints) => {
+    if (technicalResult) return technicalWinnerTeamEntryId ? "" : "Выберите победителя для технического результата.";
+    if (stints.some(stint => !completeGoalieStint(stint))) return "Заполните вратаря и время каждого отрезка.";
+    if (timeouts.some(timeout => !validMatchTime(timeout.time || ""))) return "Заполните время тайм-аута.";
+    if (shootouts.some(shot => !shot.playerId)) return "Выберите исполнителя буллита.";
+    return "";
+  };
+  const blockedReason = getBlockedReason();
 
-  const { saveNow, saving, dirty, saveError, conflict } = useProtocolAutosave(match, draft, blockedReason, ({ response, latest, hasShootouts }) => {
+  const { saveNow, saving, dirty, saveError, conflict } = useProtocolAutosave(match, draft, getBlockedReason, ({ response, latest, hasShootouts }) => {
     setHasSavedShootouts(hasShootouts);
     if (!latest) return;
     setHomeScore(String(response.score.home));
@@ -481,7 +467,14 @@ export default function MatchProtocolPage() {
           : a.filter((x) => x.teamEntryId !== tid),
       );
   const teams = [match.homeTeamEntry, match.awayTeamEntry];
-  const automaticShots = automaticGoalieShots(goalieStints, shots, match.homeTeamEntryId, match.awayTeamEntryId);
+  const teamIds = [match.homeTeamEntryId, match.awayTeamEntryId] as const;
+  const stintsFor = (teamId: string) => goalieStints.filter(stint => stint.teamEntryId === teamId);
+  const withTeamStints = (teamId: string, stints: GoalieStint[]) => {
+    const otherStints = goalieStints.filter(stint => stint.teamEntryId !== teamId);
+    const first = goalieStints.findIndex(stint => stint.teamEntryId === teamId);
+    otherStints.splice(first < 0 ? otherStints.length : first, 0, ...stints);
+    return otherStints;
+  };
   const scoringGoals = goals.filter(isScoringGoal);
   const eventCounts = {
     all: goals.length + penalties.length + goalieStints.length + timeouts.length + shootouts.length,
@@ -499,7 +492,6 @@ export default function MatchProtocolPage() {
   const lockedPlayersFor = (teamEntryId: string) => new Set<string>(resultType === "TECHNICAL" ? [] : [
     ...goals.filter(goal => goal.teamEntryId === teamEntryId).flatMap(goal => [goal.scorerId, goal.assist1Id, goal.assist2Id]),
     ...penalties.filter(penalty => penalty.teamEntryId === teamEntryId).map(penalty => penalty.playerId),
-    ...goalieStints.filter(stint => stint.teamEntryId === teamEntryId).map(stint => stint.playerId),
     ...shootouts.map(shot => shot.teamEntryId === teamEntryId ? shot.playerId : shot.goalieId),
   ].filter(Boolean));
   const activeSuspension = (row: any) =>
@@ -509,15 +501,23 @@ export default function MatchProtocolPage() {
       return matchTime >= new Date(suspension.startsAt).getTime() &&
         (!suspension.endsAt || matchTime <= new Date(suspension.endsAt).getTime());
     });
-  async function saveTeamRoster(entry: any, teamSelected: string[], teamNumbers: Record<string, string>) {
+  async function saveTeamRoster(entry: any, teamSelected: string[], teamNumbers: Record<string, string>, teamStints: GoalieStint[]) {
+    const nextStints = technicalResult ? goalieStints : withTeamStints(entry.id, teamStints);
+    const incomplete = !technicalResult && nextStints.find(stint => !completeGoalieStint(stint));
+    const validation = incomplete
+      ? `Заполните отрезки команды «${teamName(incomplete.teamEntryId)}» во вкладке «События матча».`
+      : getBlockedReason(nextStints);
+    setRosterError(validation);
+    if (validation) return;
     const teamIds = new Set<string>(entry.roster.map((row: any) => row.id));
     const rosterEntryIds = [...selected.filter((id) => !teamIds.has(id)), ...teamSelected];
     const numberOverrides = { ...numbers };
     for (const id of teamIds) delete numberOverrides[id];
     Object.assign(numberOverrides, teamNumbers);
-    await saveNow({ rosterEntryIds, numberOverrides }, () => {
+    await saveNow({ rosterEntryIds, numberOverrides, goalieStints: nextStints }, () => {
       setSelected(rosterEntryIds);
       setNumbers(numberOverrides);
+      setGoalieStints(nextStints);
       setEditingRosterTeamId(null);
       setMessage(`Состав команды «${entry.team.name}» сохранён`);
     });
@@ -649,7 +649,7 @@ export default function MatchProtocolPage() {
         <MatchPanel tab="players" active={activeTab}>
           <div className={styles.rosters}>
             {teams.map((entry: any) => <MatchRosterCard key={entry.id} entry={entry} selected={selected} numbers={numbers}
-              onEdit={() => { setError(""); setEditingRosterTeamId(entry.id); }} />)}
+              onEdit={() => { setRosterError(""); setEditingRosterTeamId(entry.id); }} />)}
           </div>
         </MatchPanel>
         {teams.map((entry: any) => activeTab === "players" && editingRosterTeamId === entry.id && <MatchRosterEditor
@@ -659,10 +659,11 @@ export default function MatchProtocolPage() {
           numbers={numbers}
           activeSuspension={activeSuspension}
           lockedPlayers={lockedPlayersFor(entry.id)}
+          goalieEditor={technicalResult ? undefined : { stints: stintsFor(entry.id), shots, teamIds }}
           saving={saving}
-          error={saveError || blockedReason || error}
+          error={rosterError || saveError}
           onClose={() => setEditingRosterTeamId(null)}
-          onSave={(teamSelected, teamNumbers) => saveTeamRoster(entry, teamSelected, teamNumbers)}
+          onSave={(teamSelected, teamNumbers, teamStints) => saveTeamRoster(entry, teamSelected, teamNumbers, teamStints)}
         />)}
         <MatchPanel tab="staff" active={activeTab}>
           <section className={styles.noteCard}>
@@ -782,117 +783,9 @@ export default function MatchProtocolPage() {
           <section className={`protocolExtra ${eventStyles.goalieCard}`}>
             <h3>Время игры вратарей</h3>
             {teams.map((entry: any) => (
-              <div className="goalieTeam" key={entry.id}>
-                <header>
-                  <b>{entry.team.name}</b>
-                  <button
-                    className="textAdd"
-                    onClick={() =>
-                      setGoalieStints([
-                        ...goalieStints,
-                        {
-                          id: `s-${Date.now()}`,
-                          teamEntryId: entry.id,
-                          playerId: selectedFor(entry.id)[0]?.playerId || "",
-                          from: "00:00",
-                          to: "60:00",
-                          shotsAgainst: "",
-                        },
-                      ])
-                    }
-                  >
-                    + Добавить отрезок
-                  </button>
-                </header>
-                {goalieStints
-                  .filter((x) => x.teamEntryId === entry.id)
-                  .map((x) => {
-                    const i = goalieStints.indexOf(x);
-                    const calculatedShots = automaticShots.get(x);
-                    return (
-                      <div className={`goalieStint ${eventStyles.goalieStint}`} key={x.id}>
-                        <select
-                          aria-label={`Вратарь команды ${entry.team.name}`}
-                          value={x.playerId}
-                          onChange={(e) =>
-                            setGoalieStints(
-                              goalieStints.map((v, n) =>
-                                n === i
-                                  ? { ...v, playerId: e.target.value }
-                                  : v,
-                              ),
-                            )
-                          }
-                        >
-                          <option value="">Выберите игрока</option>
-                          {selectedFor(entry.id).map((r: any) => (
-                            <option key={r.playerId} value={r.playerId}>
-                              {r.player.lastName} {r.player.firstName}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          aria-label="Начало отрезка"
-                          inputMode="numeric"
-                          value={x.from}
-                          onFocus={(event) => event.currentTarget.select()}
-                          onChange={(e) =>
-                            setGoalieStints(
-                              goalieStints.map((v, n) =>
-                                n === i ? { ...v, from: formatMatchTime(e.target.value) } : v,
-                              ),
-                            )
-                          }
-                          placeholder="С 00:00"
-                        />
-                        <input
-                          aria-label="Конец отрезка"
-                          inputMode="numeric"
-                          value={x.to}
-                          onFocus={(event) => event.currentTarget.select()}
-                          onChange={(e) =>
-                            setGoalieStints(
-                              goalieStints.map((v, n) =>
-                                n === i ? { ...v, to: formatMatchTime(e.target.value) } : v,
-                              ),
-                            )
-                          }
-                          placeholder="До 60:00"
-                        />
-                        <input
-                          aria-label={calculatedShots === undefined ? "Броски по воротам" : "Броски по воротам, автоматически"}
-                          type="number"
-                          min="0"
-                          value={calculatedShots ?? x.shotsAgainst ?? ""}
-                          readOnly={calculatedShots !== undefined}
-                          data-automatic={calculatedShots !== undefined}
-                          onChange={(e) =>
-                            setGoalieStints(
-                              goalieStints.map((v, n) =>
-                                n === i
-                                  ? { ...v, shotsAgainst: e.target.value }
-                                  : v,
-                              ),
-                            )
-                          }
-                          placeholder="Броски"
-                          title={calculatedShots === undefined ? "Броски в створ по воротам за этот отрезок" : "Сумма бросков соперника за три периода"}
-                        />
-                        <button
-                          type="button"
-                          aria-label="Удалить отрезок вратаря"
-                          onClick={() =>
-                            setGoalieStints(
-                              goalieStints.filter((_, n) => n !== i),
-                            )
-                          }
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-              </div>
+              <MatchGoalieStints key={entry.id} teamId={entry.id} teamName={entry.team.name}
+                players={selectedFor(entry.id)} stints={stintsFor(entry.id)} shots={shots} teamIds={teamIds}
+                onChange={stints => setGoalieStints(withTeamStints(entry.id, stints))} />
             ))}
           </section>
           <section className="protocolExtra">
