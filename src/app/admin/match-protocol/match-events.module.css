@@ -11,7 +11,15 @@
   color: var(--admin-ink);
 }
 
-.summary { position: relative; padding: 16px 18px; }
+.summary { container-type: inline-size; padding: 16px 18px; }
+.summaryLayout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "status finish" "match match";
+  align-items: center;
+  gap: 8px 12px;
+}
+.matchCenter { grid-area: match; min-width: 0; }
 :global(.adminUI .adminContent) .scoreboard {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -26,23 +34,35 @@
 .identity { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
 .identity strong { overflow-wrap: anywhere; }
 .identity img { display: block; width: 37px; height: 37px; flex: 0 0 37px; object-fit: contain; }
-.result { display: flex; align-items: center; gap: 9px; text-align: center; white-space: nowrap; }
-.result strong { font-size: 30px; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.result strong span { color: var(--admin-muted); }
-:global(.adminUI .adminContent) .summary select.status {
-  min-height: 34px;
-  padding: 4px 6px 4px 8px;
-  border-radius: 6px;
-  background: var(--admin-surface-soft);
-  color: var(--admin-ink);
-  font-size: 12px;
+.result { text-align: center; white-space: nowrap; font-size: 30px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.result span { color: var(--admin-muted); }
+:global(.adminUI .adminProtocol .adminContent) .summary .summaryLayout > select.status {
+  grid-area: status;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 6px 9px;
+  border: 1px solid var(--admin-accent);
+  border-radius: 8px;
+  background: var(--admin-accent);
+  color: var(--admin-accent-ink);
+  font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
 }
-:global(.adminUI .adminContent) .summary select.status[data-live="true"] {
+:global(.adminUI .adminProtocol .adminContent) .summary .summaryLayout > select.status:not([data-live="true"]):hover:not(:disabled) {
+  border-color: var(--admin-accent-hover);
+  background: var(--admin-accent-hover);
+}
+:global(.adminUI .adminProtocol .adminContent) .summary .summaryLayout > select.status[data-live="true"] {
+  border-color: var(--admin-success-ink);
   background: var(--admin-success-bg);
   color: var(--admin-success-ink);
 }
-:global(.adminUI .adminContent) .summary select.status:disabled { opacity: 1; }
+:global(.adminUI .adminProtocol .adminContent) .summary .summaryLayout > select.status:focus-visible { outline-color: currentColor; }
+:global(.adminUI .adminProtocol .adminContent) .summary .summaryLayout > select.status:disabled { opacity: 1; cursor: default; }
+.status option { background: var(--admin-surface); color: var(--admin-ink); }
 .matchDetails {
   display: flex;
   justify-content: center;
@@ -55,21 +75,21 @@
 }
 
 :global(.adminUI .adminContent) .summary .finish {
-  display: block;
-  margin: 12px 0 0 auto;
+  grid-area: finish;
+  justify-self: end;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
   border: 1px solid var(--admin-control-line);
   background: var(--admin-surface);
   color: var(--admin-ink);
+  white-space: normal;
 }
 
-@media (min-width: 1200px) {
-  .summary:has(.finish) { padding-inline: 170px; }
-  :global(.adminUI .adminContent) .summary .finish {
-    position: absolute;
-    top: 50%;
-    right: 16px;
-    margin: 0;
-    transform: translateY(-50%);
+@container (min-width: 760px) {
+  .summaryLayout {
+    grid-template-columns: minmax(160px, 1fr) minmax(0, 4fr) minmax(160px, 1fr);
+    grid-template-areas: "status match finish";
   }
 }
 
@@ -181,9 +201,8 @@
   :global(.adminUI .adminContent) .scoreboard { gap: 8px; }
   .scoreboard .identity { flex-direction: column; gap: 3px; font-size: 12px; line-height: 1.25; }
   .scoreboard .identity img { width: 25px; height: 25px; flex-basis: 25px; }
-  .result strong { font-size: 24px; }
-  .result { flex-direction: column; gap: 4px; }
-  :global(.adminUI .adminContent) .summary select.status { font-size: 11px; }
+  .result { font-size: 24px; }
+  :global(.adminUI .adminProtocol .adminContent) .summary .summaryLayout > select.status { font-size: 11px; }
   .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
   .filters button { flex: 0 0 auto; }
   .title { font-size: 19px; }

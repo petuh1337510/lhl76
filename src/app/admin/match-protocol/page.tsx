@@ -532,23 +532,25 @@ export default function MatchProtocolPage() {
         {message && <p className="adminNotice">{message}</p>}
         {error && <p className="formError">{error}</p>}
         <header className={eventStyles.summary} aria-label="Табло матча">
-          <h1 className={eventStyles.scoreboard}>
-            <span className={eventStyles.home}><EventTeamIdentity team={match.homeTeamEntry.team} /></span>
-            <span className={eventStyles.result}>
-              <strong>{scoreFor(match.homeTeamEntryId, homeScore)} <span>:</span> {scoreFor(match.awayTeamEntryId, awayScore)}</strong>
-              <select className={eventStyles.status} aria-label="Статус матча" value={status} data-live={status === "LIVE"}
-                disabled={technicalResult} onChange={event => setStatus(event.target.value)}>
-                {Object.entries(matchStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-            </span>
-            <EventTeamIdentity team={match.awayTeamEntry.team} />
-          </h1>
-          <p className={eventStyles.matchDetails}>
-            <span>{match.division.competition.season.name} · {match.division.competition.name} · {match.division.name}</span>
-            <span>{match.startsAt ? new Date(match.startsAt).toLocaleString("ru-RU") : "Дата не указана"} · {match.venue?.name || "Арена не указана"}</span>
-          </p>
-          {status === "LIVE" && !technicalResult && <button type="button" className={eventStyles.finish} disabled={saving || conflict || Boolean(blockedReason)}
-            onClick={() => void saveNow({ status: "FINAL" }, () => setStatus("FINAL"))}>Завершить матч</button>}
+          <div className={eventStyles.summaryLayout}>
+            <select className={eventStyles.status} aria-label="Статус матча" value={status} data-live={status === "LIVE"}
+              disabled={technicalResult} onChange={event => setStatus(event.target.value)}>
+              {Object.entries(matchStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <div className={eventStyles.matchCenter}>
+              <h1 className={eventStyles.scoreboard}>
+                <span className={eventStyles.home}><EventTeamIdentity team={match.homeTeamEntry.team} /></span>
+                <strong className={eventStyles.result}>{scoreFor(match.homeTeamEntryId, homeScore)} <span>:</span> {scoreFor(match.awayTeamEntryId, awayScore)}</strong>
+                <EventTeamIdentity team={match.awayTeamEntry.team} />
+              </h1>
+              <p className={eventStyles.matchDetails}>
+                <span>{match.division.competition.season.name} · {match.division.competition.name} · {match.division.name}</span>
+                <span>{match.startsAt ? new Date(match.startsAt).toLocaleString("ru-RU") : "Дата не указана"} · {match.venue?.name || "Арена не указана"}</span>
+              </p>
+            </div>
+            {status === "LIVE" && !technicalResult && <button type="button" className={eventStyles.finish} disabled={saving || conflict || Boolean(blockedReason)}
+              onClick={() => void saveNow({ status: "FINAL" }, () => setStatus("FINAL"))}>Завершить матч</button>}
+          </div>
         </header>
         <div className={styles.tabs} role="tablist" aria-label="Разделы матча" onKeyDown={event => {
           const current = matchTabs.findIndex(([id]) => id === activeTab);
