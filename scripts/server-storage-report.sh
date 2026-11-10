@@ -9,9 +9,15 @@ df -i /
 printf '\n=== ROOT_DIRECTORIES_BYTES ===\n'
 du -x -B1 --max-depth=1 / 2>/dev/null | sort -n || true
 printf '\n=== VAR_DIRECTORIES_BYTES ===\n'
-du -x -B1 --max-depth=1 /var /var/lib /var/log /var/cache 2>/dev/null | sort -n || true
+for directory in /var /var/lib /var/log /var/cache; do
+  du -x -B1 --max-depth=1 "$directory" 2>/dev/null | sort -n || true
+done
 printf '\n=== APPLICATION_DIRECTORIES_BYTES ===\n'
-du -x -B1 --max-depth=1 /opt/lhl76 /opt/lhl76/public-files /opt/lhl76/backups 2>/dev/null | sort -n || true
+for directory in /opt/lhl76 /opt/lhl76/public-files; do
+  du -x -B1 --max-depth=1 "$directory" 2>/dev/null | sort -n || true
+done
+printf '\n=== ROOT_FILES_BYTES ===\n'
+find / -maxdepth 1 -type f -printf '%s %f\n' 2>/dev/null | sort -n
 printf '\n=== DOCKER_STORAGE ===\n'
 docker system df -v
 printf '\n=== CONTAINER_LOG_BYTES ===\n'
