@@ -19,7 +19,9 @@ def choose_images(images, current, previous, used):
         raise RuntimeError("Both distinct retained images must exist")
     def owned(image):
         digests = image.get("RepoDigests") or []
-        return bool(digests) and all(ref.startswith(REPOSITORY) for ref in digests) and all(tag.startswith("ghcr.io/petuh1337510/lhl76:") for tag in image.get("RepoTags") or [])
+        # Docker's containerd image store also reports digest references in RepoTags.
+        return bool(digests) and all(ref.startswith(REPOSITORY) for ref in digests) and all(
+            tag.startswith(("ghcr.io/petuh1337510/lhl76:", REPOSITORY)) for tag in image.get("RepoTags") or [])
     if not owned(by_id[current]) or not owned(by_id[previous]):
         raise RuntimeError("Retained images must belong to the LHL-76 repository")
     return [image["Id"] for image in images

@@ -9,6 +9,12 @@ def image(name, repository="ghcr.io/petuh1337510/lhl76"):
     return {"Id": name, "RepoDigests": [repository+"@sha256:"+name]}
 
 class CleanupSelectionTests(unittest.TestCase):
+    def test_accepts_containerd_digest_references_in_repo_tags(self):
+        images = [image(name) for name in ["current", "previous", "old"]]
+        for value in images:
+            value["RepoTags"] = list(value["RepoDigests"])
+        self.assertEqual(choose(images, "current", "previous", {"current"}), ["old"])
+
     def test_retains_current_previous_and_all_container_images(self):
         images = [image(name) for name in ["current", "previous", "old", "stopped-container"]] + [image("postgres", "postgres")]
         self.assertEqual(choose(images, "current", "previous", {"current", "postgres", "stopped-container"}), ["old"])
