@@ -14,7 +14,13 @@ export type VkAlbum = {
   updated?: number;
   size?: number;
   thumb_src?: string;
+  sizes?: VkPhotoSize[];
 };
+
+/** With photo_sizes=1 VK returns the album cover in sizes, not necessarily thumb_src. */
+export function vkAlbumCover(album: VkAlbum): string | null {
+  return album.sizes?.filter(size => size.url).sort((a, b) => b.width * b.height - a.width * a.height)[0]?.url || album.thumb_src || null;
+}
 
 export type VkPhotoAlbum = {
   title: string;
@@ -110,7 +116,7 @@ export async function loadVkPhotoAlbum(ownerId: number, albumId: number): Promis
     title: album.title,
     description: album.description?.trim() || null,
     photos,
-    coverUrl: album.thumb_src || photos[0] || null,
+    coverUrl: vkAlbumCover(album) || photos[0] || null,
     eventDate: album.created ? new Date(album.created * 1000) : null,
   };
 }

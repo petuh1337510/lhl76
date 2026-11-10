@@ -1,7 +1,7 @@
 import { withAdmin } from "@/lib/admin-guard";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getCachedVkCommunityAlbums, loadVkPhotoAlbum, parseVkAlbumSlug, vkAlbumSlug } from "@/lib/integrations/vk-photos";
+import { getCachedVkCommunityAlbums, loadVkPhotoAlbum, parseVkAlbumSlug, vkAlbumSlug, vkAlbumCover } from "@/lib/integrations/vk-photos";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ async function catalogue() {
   const items = albums.map(album => {
     const slug = vkAlbumSlug(ownerId, album.id);
     const selected = saved.find(item => item.slug === slug);
-    return { albumId: album.id, slug, title: album.title, coverUrl: album.thumb_src ?? null, count: album.size ?? 0, isPublished: selected?.isPublished ?? false, available: true };
+    return { albumId: album.id, slug, title: album.title, coverUrl: vkAlbumCover(album), count: album.size ?? 0, isPublished: selected?.isPublished ?? false, available: true };
   });
   for (const item of saved) {
     const ref = parseVkAlbumSlug(item.slug);

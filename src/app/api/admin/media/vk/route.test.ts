@@ -4,7 +4,7 @@ const m = vi.hoisted(() => ({ list: vi.fn(), album: vi.fn(), saved: vi.fn(), ups
 vi.mock("@/lib/admin-guard", () => ({ withAdmin: (handler: unknown) => handler }));
 vi.mock("next/cache", () => ({ revalidateTag: m.invalidate }));
 vi.mock("@/lib/prisma", () => ({ prisma: { mediaAlbum: { findMany: m.saved, upsert: m.upsert, updateMany: m.update } } }));
-vi.mock("@/lib/integrations/vk-photos", () => ({ getCachedVkCommunityAlbums: m.list, loadVkPhotoAlbum: m.album, vkAlbumSlug: (owner: number, id: number) => `vk-photo-${Math.abs(owner)}-${id}`, parseVkAlbumSlug: (slug: string) => /^vk-photo-123-456$/.test(slug) ? { ownerId: -123, albumId: 456 } : null }));
+vi.mock("@/lib/integrations/vk-photos", () => ({ vkAlbumCover: () => null, getCachedVkCommunityAlbums: m.list, loadVkPhotoAlbum: m.album, vkAlbumSlug: (owner: number, id: number) => `vk-photo-${Math.abs(owner)}-${id}`, parseVkAlbumSlug: (slug: string) => /^vk-photo-123-456$/.test(slug) ? { ownerId: -123, albumId: 456 } : null }));
 import { GET, POST } from "./route";
 const request = (body: unknown) => new NextRequest("http://localhost/api/admin/media/vk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("VK_API_ACCESS_TOKEN", "test-only"); m.saved.mockResolvedValue([]); m.list.mockResolvedValue({ ownerId: -123, albums: [{ id: 456, title: "Альбом" }] }); m.album.mockResolvedValue({ title: "Альбом", description: null, photos: [], coverUrl: null, eventDate: null }); });

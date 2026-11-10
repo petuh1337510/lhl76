@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadVkCommunityAlbums, loadVkPhotoAlbum, parseVkAlbumSlug, parseVkAlbumUrl, vkAlbumSlug } from "./vk-photos";
+import { loadVkCommunityAlbums, loadVkPhotoAlbum, parseVkAlbumSlug, parseVkAlbumUrl, vkAlbumSlug, vkAlbumCover } from "./vk-photos";
 
 describe("VK photo albums", () => {
+  it("uses the VK album cover returned as sizes when thumb_src is absent", () => {
+    expect(vkAlbumCover({ id: 1, title: "Album", sizes: [{ url: "https://sun9.userapi.com/cover.jpg", width: 1280, height: 720 }, { url: "https://sun9.userapi.com/small.jpg", width: 160, height: 90 }] })).toBe("https://sun9.userapi.com/cover.jpg");
+    expect(vkAlbumCover({ id: 1, title: "Album", thumb_src: "https://sun9.userapi.com/old.jpg" })).toBe("https://sun9.userapi.com/old.jpg");
+    expect(vkAlbumCover({ id: 1, title: "Empty" })).toBeNull();
+  });
   it("accepts only VK album links", () => {
     expect(parseVkAlbumUrl("https://vk.com/album-170455976_310217710"))
       .toEqual({ ownerId: -170455976, albumId: 310217710 });
