@@ -1,0 +1,28 @@
+name: Server storage report
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect disk usage without changing the server
+        env:
+          SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${SERVER_PRIVATE_KEY}" > ~/.ssh/lhl76-deploy
+          chmod 600 ~/.ssh/lhl76-deploy
+          cp docs/production-known-hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -i ~/.ssh/lhl76-deploy root@191.217.231.118 \
+            'bash -s' < scripts/server-storage-report.sh
