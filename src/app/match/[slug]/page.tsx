@@ -4,13 +4,17 @@ import Link from "next/link";
 import { PublicReturnLink } from "@/components/public-return-link";
 import { safeReturn } from "@/lib/public-navigation";
 import { notFound } from "next/navigation";
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { MatchStatScroller } from "./match-stat-scroller";
 import { PublicSiteHeader } from "@/components/public-site-header";
 import { LiveMatchRefresh } from "@/components/live-match-refresh";
 import { getPublicMatch } from "@/lib/match-page";
 
 export const dynamic = "force-dynamic";
+
+function MatchPlayerLink({ slug, className, children }: { slug: string; className: string; children: ReactNode }) {
+  return slug ? <Link className={className} href={`/player/${slug}`}>{children}</Link> : <div className={className}>{children}</div>;
+}
 
 function formatDate(value: string | null) {
   if (!value) return { date: "Дата и время уточняются", time: "—" };
@@ -126,7 +130,7 @@ function Roster({
               <h3>{group.label}</h3>
               <div className="publicRosterGrid">
                 {group.players.map((player) => (
-                  <Link className="publicRosterPlayer" href={`/player/${player.slug}`} key={player.id}>
+                  <MatchPlayerLink className="publicRosterPlayer" slug={player.slug} key={player.id}>
                     <i>
                       <PublicImage width={240} height={320} sizes="240px" src={player.photoUrl || "/images/player-placeholder.svg"} alt="" />
                     </i>
@@ -137,7 +141,7 @@ function Roster({
                         <span>Рейтинг: <b>{player.qualification}</b></span>
                       </small>
                     </span>
-                  </Link>
+                  </MatchPlayerLink>
                 ))}
               </div>
             </section>
@@ -174,7 +178,7 @@ function MatchStatistics({
             <span>Игрок</span><b>Г</b><b>П</b><b>О</b><b>Штр</b>
           </div>
           {players.map((player) => (
-            <Link className="matchPlayerStatRow" href={`/player/${player.slug}`} key={player.id}>
+            <MatchPlayerLink className="matchPlayerStatRow" slug={player.slug} key={player.id}>
               <span>
                 <i><PublicImage width={240} height={320} sizes="240px" src={player.photoUrl || "/images/player-placeholder.svg"} alt="" /></i>
                 <em>№{player.number}</em>
@@ -184,7 +188,7 @@ function MatchStatistics({
               <b>{player.assists}</b>
               <b>{player.points}</b>
               <b>{player.penaltyMinutes}</b>
-            </Link>
+            </MatchPlayerLink>
           ))}
         </div>
       </MatchStatScroller>
@@ -224,11 +228,7 @@ function MatchGoalieStatistics({
                 <b>{player.savePercentage}</b>
               </>
             );
-            return player.slug ? (
-              <Link className="matchGoalieStatRow" href={`/player/${player.slug}`} key={player.id}>{content}</Link>
-            ) : (
-              <div className="matchGoalieStatRow" key={player.id}>{content}</div>
-            );
+            return <MatchPlayerLink className="matchGoalieStatRow" slug={player.slug} key={player.id}>{content}</MatchPlayerLink>;
           })}
         </div>
       </MatchStatScroller>
@@ -345,7 +345,7 @@ export default async function MatchPage({
           return (
             <Fragment key={`${name}-${index}`}>
               {index > 0 ? ", " : null}
-              {assistant ? <Link href={`/player/${assistant.slug}`}>{name}</Link> : name}
+              {assistant?.slug ? <Link href={`/player/${assistant.slug}`}>{name}</Link> : name}
             </Fragment>
           );
         })}
@@ -466,7 +466,7 @@ export default async function MatchPage({
                             <i><PublicImage width={240} height={320} sizes="240px" src={player?.photoUrl || "/images/player-placeholder.svg"} alt="" /></i>
                             <p>
                               <b>
-                                {player ? (
+                                {player?.slug ? (
                                   <Link href={`/player/${player.slug}`}>
                                     {event.playerName}
                                   </Link>

@@ -216,7 +216,7 @@ export async function getDivisionPage(
       teamEntries: {
         include: {
           team: true,
-          playerStats: { include: { player: true } },
+          playerStats: { where: { player: { deletedAt: null } }, include: { player: true } },
         },
       },
       matches: {

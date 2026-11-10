@@ -17,7 +17,7 @@ async function handleGET(request: NextRequest) {
   }
   const slug = request.nextUrl.searchParams.get("slug");
   if (!slug) return NextResponse.json({ error: "Не указана команда" }, { status: 400 });
-  const team = await prisma.team.findUnique({ where: { slug, deletedAt: null }, include: { entries: { include: { division: { include: { competition: { include: { season: true } } } }, _count: { select: { roster: true } } }, orderBy: { createdAt: "desc" } } } });
+  const team = await prisma.team.findUnique({ where: { slug, deletedAt: null }, include: { entries: { include: { division: { include: { competition: { include: { season: true } } } }, _count: { select: { roster: { where: { player: { deletedAt: null } } } } } }, orderBy: { createdAt: "desc" } } } });
   if (!team) return NextResponse.json({ error: "Команда не найдена" }, { status: 404 });
   return NextResponse.json({ ...team, achievements: achievementsText(team.achievements), entries: team.entries.map((entry) => ({ id: entry.id, season: entry.division.competition.season.name, competition: entry.division.competition.name, division: entry.division.name, players: entry._count.roster })) });
 }

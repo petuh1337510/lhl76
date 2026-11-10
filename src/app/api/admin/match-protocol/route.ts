@@ -1,5 +1,6 @@
 import { withAdmin } from "@/lib/admin-guard";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   deriveMatchProtocol,
@@ -15,6 +16,12 @@ async function handleGET(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get("slug");
   if (!slug)
     return NextResponse.json({ error: "Не указан матч" }, { status: 400 });
+  const rosterVisibility = {
+    OR: [
+      { status: { not: "INACTIVE" as const }, player: { deletedAt: null } },
+      { player: { deletedAt: { not: null } }, matchRosters: { some: { match: { slug } } } },
+    ],
+  };
   const match = await prisma.match.findUnique({
     where: { slug },
     include: {
@@ -24,7 +31,7 @@ async function handleGET(request: NextRequest) {
         include: {
           team: true,
           roster: {
-            where: { status: { not: "INACTIVE" } },
+            where: rosterVisibility,
             include: {
               player: true,
               suspensions: { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" } },
@@ -36,7 +43,7 @@ async function handleGET(request: NextRequest) {
         include: {
           team: true,
           roster: {
-            where: { status: { not: "INACTIVE" } },
+            where: rosterVisibility,
             include: {
               player: true,
               suspensions: { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" } },
@@ -170,6 +177,7 @@ async function handlePUT(request: NextRequest) {
           id: true,
           playerId: true,
           teamEntryId: true,
+          matchRosters: { where: { matchId: match.id }, select: { id: true }, take: 1 },
         },
       })
     : [];
@@ -296,6 +304,19 @@ async function handlePUT(request: NextRequest) {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${match.divisionId}))`;
     const claimed=await tx.match.updateMany({where:{id:match.id,updatedAt:new Date(body.expectedUpdatedAt)},data:{updatedAt:new Date()}});
     if(claimed.count!==1){const conflict=new Error('Concurrent protocol edit');conflict.name='WriteConflict';throw conflict;}
+    const newPlayerIds = [...new Set(validRosterEntries.filter(row => !row.matchRosters.length).map(row => row.playerId))];
+    if (newPlayerIds.length) {
+      const activePlayers = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Player"
+        WHERE id IN (${Prisma.join(newPlayerIds)}) AND "deletedAt" IS NULL
+        ORDER BY id FOR SHARE
+      `;
+      if (activePlayers.length !== newPlayerIds.length) {
+        const conflict = new Error("A player was deleted before saving the match roster");
+        conflict.name = "WriteConflict";
+        throw conflict;
+      }
+    }
     await tx.assist.deleteMany({ where: { matchId: body.matchId } });
     await tx.goal.deleteMany({ where: { matchId: body.matchId } });
     await tx.penalty.deleteMany({ where: { matchId: body.matchId } });

@@ -21,6 +21,7 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
           id: true,
           team: { select: { slug: true, name: true, city: true, logoUrl: true } },
           playerStats: {
+            where: { player: { deletedAt: null } },
             select: {
               playerId: true, games: true, goals: true, assists: true,
               penaltyMinutes: true, goalieGames: true, goalieSeconds: true,

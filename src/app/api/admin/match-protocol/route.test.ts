@@ -6,37 +6,38 @@ const database = vi.hoisted(() => {
   const deleteMany = vi.fn();
   const tx = {
     $executeRaw: vi.fn(),
+    $queryRaw: vi.fn(),
     match: { updateMany: vi.fn(), update: vi.fn(), findMany: vi.fn() },
     assist: { deleteMany },
     goal: { deleteMany, create: vi.fn() },
     penalty: { deleteMany },
     penaltyShot: { deleteMany },
-    matchRoster: { deleteMany },
+    matchRoster: { deleteMany, createMany: vi.fn() },
     teamEntry: { findMany: vi.fn() },
     teamStatistic: { upsert: vi.fn() },
     standing: { deleteMany, createMany: vi.fn() },
   };
-  return { tx, findMatch: vi.fn(), transaction: vi.fn() };
+  return { tx, findMatch: vi.fn(), findRoster: vi.fn(), transaction: vi.fn() };
 });
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/admin-guard", () => ({ withAdmin: (handler: unknown) => handler }));
 vi.mock("@/lib/prisma", () => ({
-  prisma: { match: { findUnique: database.findMatch }, $transaction: database.transaction },
+  prisma: { match: { findUnique: database.findMatch }, rosterEntry: { findMany: database.findRoster }, $transaction: database.transaction },
 }));
 vi.mock("@/lib/player-suspensions", () => ({ getPlayerSuspensionStates: () => new Map() }));
 
 const version = new Date("2026-11-10T00:00:00Z");
 const match = { id: "match", divisionId: "division", homeTeamEntryId: "home", awayTeamEntryId: "away", updatedAt: version };
 
-function save(protocolData: Record<string, unknown>, status = "FINAL") {
+function save(protocolData: Record<string, unknown>, status = "FINAL", rosterEntryIds: string[] = []) {
   return PUT(new NextRequest("http://localhost/api/admin/match-protocol", {
     method: "PUT",
-    body: JSON.stringify({ matchId: match.id, expectedUpdatedAt: version.toISOString(), status, protocolData }),
+    body: JSON.stringify({ matchId: match.id, expectedUpdatedAt: version.toISOString(), status, protocolData, rosterEntryIds }),
   }));
 }
 
-describe("manual match result", () => {
+describe("match protocol", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     database.findMatch.mockResolvedValue(match);
@@ -78,5 +79,22 @@ describe("manual match result", () => {
     database.findMatch.mockResolvedValue({ ...match, isPlayoff: true });
     expect((await save({ manualScore: { home: 1, away: 1 } })).status).toBe(400);
     expect(database.transaction).not.toHaveBeenCalled();
+  });
+
+  it("preserves archived players already present in a saved match roster", async () => {
+    database.findRoster.mockResolvedValue([{ id: "roster", playerId: "archived", teamEntryId: "home", matchRosters: [{ id: "appearance" }] }]);
+    expect((await save({}, "SCHEDULED", ["roster"])).status).toBe(200);
+    expect(database.tx.$queryRaw).not.toHaveBeenCalled();
+    expect(database.tx.matchRoster.createMany).toHaveBeenCalledWith({
+      data: [{ matchId: match.id, rosterEntryId: "roster", numberOverride: null }],
+    });
+  });
+
+  it("blocks newly adding an archived player before rewriting match history", async () => {
+    database.findRoster.mockResolvedValue([{ id: "roster", playerId: "archived", teamEntryId: "home", matchRosters: [] }]);
+    database.tx.$queryRaw.mockResolvedValue([]);
+    await expect(save({}, "SCHEDULED", ["roster"])).rejects.toMatchObject({ name: "WriteConflict" });
+    expect(database.tx.matchRoster.deleteMany).not.toHaveBeenCalled();
+    expect(database.tx.goal.deleteMany).not.toHaveBeenCalled();
   });
 });

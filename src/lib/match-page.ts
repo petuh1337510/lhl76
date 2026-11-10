@@ -376,7 +376,7 @@ export async function getPublicMatch(
       .map((row) => {
         return {
           id: row.rosterEntry.playerId,
-          slug: row.rosterEntry.player.slug,
+          slug: row.rosterEntry.player.deletedAt ? "" : row.rosterEntry.player.slug,
           name: playerName(row.rosterEntry.player) || "Игрок",
           number: row.numberOverride || row.rosterEntry.number || row.rosterEntry.player.baseNumber || "—",
           position: row.rosterEntry.player.position || "Игрок",
@@ -417,7 +417,7 @@ export async function getPublicMatch(
       );
       participants.set(eventPlayer.id, {
         id: eventPlayer.id,
-        slug: eventPlayer.slug,
+        slug: eventPlayer.deletedAt ? "" : eventPlayer.slug,
         name: playerName(eventPlayer) || "Игрок",
         number: rosterEntry?.number || rosterEntry?.player.baseNumber || "—",
         position: eventPlayer.position || "Игрок",

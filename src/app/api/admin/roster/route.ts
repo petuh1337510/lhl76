@@ -33,7 +33,7 @@ async function handleGET(request: NextRequest) {
     })));
   }
   if (!teamEntryId) return NextResponse.json({ error: "Не указана заявка команды" }, { status: 400 });
-  const teamEntry = await prisma.teamEntry.findUnique({ where: { id: teamEntryId }, include: { team: true, division: { include: { competition: { include: { season: true } } } }, roster: { include: { suspensions: { orderBy: { createdAt: "desc" } }, player: { include: { ratingCategory: true } } } } } });
+  const teamEntry = await prisma.teamEntry.findUnique({ where: { id: teamEntryId }, include: { team: true, division: { include: { competition: { include: { season: true } } } }, roster: { where: { player: { deletedAt: null } }, include: { suspensions: { orderBy: { createdAt: "desc" } }, player: { include: { ratingCategory: true } } } } } });
   if (!teamEntry) return NextResponse.json({ error: "Заявка не найдена" }, { status: 404 });
   const categories = await prisma.classificationCategory.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
   const activeSuspensions = await getPlayerSuspensionStates(teamEntry.roster.map((item) => item.playerId), new Date());

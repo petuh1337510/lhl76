@@ -17,7 +17,7 @@ export function DeleteCard({ kind, id, name, updatedAt }: { kind: "player" | "te
       const response = await fetch(`/api/admin/${kind}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, expectedUpdatedAt: updatedAt }),
+        body: JSON.stringify({ id, expectedUpdatedAt: updatedAt, confirmed: true }),
       });
       if (response.ok) { window.location.assign(kind === "player" ? "/admin/players" : "/admin/teams"); return; }
       const result = await response.json();
@@ -33,7 +33,9 @@ export function DeleteCard({ kind, id, name, updatedAt }: { kind: "player" | "te
     {open && <AdminModal title={title} onClose={() => { if (!busy) setOpen(false); }}>
       <section className="adminForm">
         <h2>{title}</h2>
-        <p>Карточка «{name}» будет скрыта из списка и с публичного сайта. Удалить можно только карточку без спортивной истории.</p>
+        <p>Карточка «{name}» будет скрыта из списка и с публичного сайта. {kind === "player"
+          ? "Игрок исчезнет из заявок, доступных для редактирования. Записи о сыгранных матчах сохранятся."
+          : "Удалить можно только команду без привязки к соревнованиям."}</p>
         {error && <p className="formError" role="alert">{error}</p>}
         <footer>
           <button type="button" disabled={busy} onClick={() => setOpen(false)}>Отмена</button>

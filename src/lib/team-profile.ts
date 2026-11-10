@@ -140,13 +140,14 @@ export async function getTeamProfile(
         include: {
           division: { include: { competition: { include: { season: true } } } },
           roster: {
+            where: { player: { deletedAt: null } },
             include: {
               player: {
                 include: { ratingCategory: true },
               },
             },
           },
-          playerStats: { include: { player: true } },
+          playerStats: { where: { player: { deletedAt: null } }, include: { player: true } },
           homeMatches: {
             include: {
               venue: true,
