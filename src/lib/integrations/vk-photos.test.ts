@@ -32,6 +32,14 @@ describe("VK API snapshots", () => {
     expect(result.ownerId).toBe(-123); expect(result.albums).toHaveLength(101); expect(result.albums[0].id).toBe(101);
     expect(fetcher.mock.calls[2][1].body.get("offset")).toBe("100");
   });
+  it("continues when VK count describes the returned page rather than the whole catalogue", async () => {
+    vi.stubEnv("VK_API_ACCESS_TOKEN", "test-only");
+    const fetcher = vi.fn().mockResolvedValueOnce(apiResponse({ type: "group", object_id: 123 }))
+      .mockResolvedValueOnce(apiResponse({ count: 100, items: Array.from({ length: 100 }, (_, id) => ({ id: id + 1, title: String(id) })) }))
+      .mockResolvedValueOnce(apiResponse({ count: 1, items: [{ id: 101, title: "Older" }] }));
+    vi.stubGlobal("fetch", fetcher);
+    expect((await loadVkCommunityAlbums()).albums).toHaveLength(101);
+  });
   it("does not treat an incomplete catalogue as deletions", async () => {
     vi.stubEnv("VK_API_ACCESS_TOKEN", "test-only");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(apiResponse({ type: "group", object_id: 123 })).mockResolvedValueOnce(apiResponse({ count: 10, items: [] })));

@@ -133,12 +133,13 @@ export async function loadVkCommunityAlbums() {
       owner_id: String(ownerId), need_covers: "1", photo_sizes: "1", count: "100", offset: String(offset),
     }, token);
     albums.push(...page.items.filter(album => album.id > 0));
-    if (offset + page.items.length >= page.count) break;
-    if (!page.items.length) throw new Error("VK вернул неполный список альбомов");
+    if (!page.items.length && page.count > offset) throw new Error("VK вернул неполный список альбомов");
+    // getAlbums count can describe this page, unlike photos.get's total count.
+    if (page.items.length < 100) break;
   }
   albums.sort((a, b) => (b.created ?? 0) - (a.created ?? 0) || b.id - a.id);
   return { ownerId, albums };
 }
 
 export const getCachedVkCommunityAlbums = unstable_cache(loadVkCommunityAlbums,
-  ["vk-lhl76-albums"], { revalidate: 3600, tags: ["vk-photos"] });
+  ["vk-lhl76-albums-v2"], { revalidate: 3600, tags: ["vk-photos"] });

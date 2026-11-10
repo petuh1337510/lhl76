@@ -7,7 +7,7 @@ export async function middleware(request:NextRequest){
  const path=request.nextUrl.pathname;
  if(path.startsWith('/api/')&&!path.startsWith('/api/admin/'))return NextResponse.next();
  const nonce=Buffer.from(crypto.randomUUID()).toString('base64');
- const policy=["default-src 'self'","base-uri 'self'","object-src 'none'","frame-ancestors 'self'","form-action 'self'",`script-src 'self' 'nonce-${nonce}'${process.env.NODE_ENV==='development'?" 'unsafe-eval'":''}`,"style-src 'self' 'unsafe-inline'","img-src 'self' data: blob:","font-src 'self'","connect-src 'self'"+(process.env.NODE_ENV==='development'?' ws: wss:':''),"frame-src https://vk.com https://vkvideo.ru https://www.youtube.com https://www.youtube-nocookie.com https://rutube.ru"].join('; ');
+ const policy=["default-src 'self'","base-uri 'self'","object-src 'none'","frame-ancestors 'self'","form-action 'self'",`script-src 'self' 'nonce-${nonce}'${process.env.NODE_ENV==='development'?" 'unsafe-eval'":''}`,"style-src 'self' 'unsafe-inline'","img-src 'self' data: blob: https://*.userapi.com https://*.vkuserphoto.ru","font-src 'self'","connect-src 'self'"+(process.env.NODE_ENV==='development'?' ws: wss:':''),"frame-src https://vk.com https://vkvideo.ru https://www.youtube.com https://www.youtube-nocookie.com https://rutube.ru"].join('; ');
  const headers=new Headers(request.headers);headers.set('x-nonce',nonce);headers.set('Content-Security-Policy',policy);
  const next=()=>NextResponse.next({request:{headers}});
  const response=(path==='/admin'||path.startsWith('/admin/')||path.startsWith('/api/admin/'))?await authorize(request,next):next();
