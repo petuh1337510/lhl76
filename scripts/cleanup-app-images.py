@@ -66,6 +66,9 @@ def main():
         raise RuntimeError("Running version differs from expected current image")
     ids = run("docker", "image", "ls", "-aq", "--no-trunc").splitlines()
     images = json.loads(run("docker", "image", "inspect", *sorted(set(ids))))
+    print(json.dumps({"inventory": [{"Id": image["Id"], "RepoDigests": image.get("RepoDigests"), "RepoTags": image.get("RepoTags"),
+                                    "oci_labels": {key: value for key, value in (image.get("Config", {}).get("Labels") or {}).items() if key.startswith("org.opencontainers.image.")}}
+                                   for image in images]}), flush=True)
     container_ids = run("docker", "ps", "-aq").splitlines()
     used = {container["Image"] for container in json.loads(run("docker", "inspect", *container_ids))}
     candidates = choose_images(images, current, previous, used)
