@@ -14,6 +14,18 @@ import { getPublicBroadcasts } from "./public-broadcasts";
 beforeEach(() => { m.reset(); m.matches.mockResolvedValue([]); m.findMany.mockReset().mockResolvedValue([]); vi.stubEnv("VK_API_ACCESS_TOKEN", "test-only"); vi.stubEnv("VK_VIDEO_OWNER_ID", "-123"); });
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("public broadcasts used by the homepage", () => {
+  it("continues beyond a short VK page and does not repeat overlapping videos", async () => {
+    const fetcher = vi.fn().mockImplementation(async (_url, options) => {
+      const offset = Number(options.body.get("offset"));
+      return { ok: true, json: async () => ({ response: { count: 250, items: [
+        { id: 1, owner_id: -123, title: "Repeated", date: 1000 },
+        { id: offset + 2, owner_id: -123, title: "Page " + offset, date: 2000 + offset },
+      ] } }) };
+    });
+    vi.stubGlobal("fetch", fetcher);
+    expect((await getPublicBroadcasts()).map(item => item.title)).toEqual(["Page 200", "Page 100", "Page 0", "Repeated"]);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
   it("keeps an unpublished VK override hidden instead of reintroducing its automatic copy", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ response: { items: [
       { id: 3, owner_id: -123, title: "Hidden", live: 1, date: 2000 },

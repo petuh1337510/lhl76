@@ -81,19 +81,22 @@ const cachedBroadcasts = unstable_cache(async () => {
     ownerId = owner.type === "user" ? owner.object_id : -owner.object_id;
   }
   const all: VkVideo[] = [];
-  for (let offset = 0; offset < 10000; offset += 200) {
+  for (let offset = 0; offset < 10000; offset += 100) {
     const videos = await vkMethod<{ items: VkVideo[]; count: number }>(
-      "video.get", { owner_id: String(ownerId), count: "200", offset: String(offset) }, token,
+      "video.get", { owner_id: String(ownerId), count: "100", offset: String(offset) }, token,
     );
     if (!Array.isArray(videos.items)) throw new Error("VK API: неверный список видео");
     all.push(...videos.items);
-    if (videos.items.length < 200 || all.length >= videos.count) {
-      return { ownerId, items: normalizeVkVideos(all), updatedAt: new Date().toISOString() };
+    // VK can return a short page while the catalogue still has later pages.
+    // Advance by the requested range, not by the number of visible videos.
+    if (Number.isFinite(videos.count) ? offset + 100 >= videos.count : videos.items.length < 100) {
+      const items = [...new Map(normalizeVkVideos(all).map(item => [item.id, item])).values()];
+      return { ownerId, items, updatedAt: new Date().toISOString() };
     }
     await new Promise(resolve => setTimeout(resolve, 350));
   }
   throw new Error("VK API: слишком большой каталог видео");
-}, ["lhl76-vk-broadcasts-v2"], { revalidate: 300, tags: ["vk-broadcasts"] });
+}, ["lhl76-vk-broadcasts-v3"], { revalidate: 300, tags: ["vk-broadcasts"] });
 
 export async function getVkBroadcastCatalogue() {
   if (!process.env.VK_API_ACCESS_TOKEN) return { configured: false, available: false, ownerId: null, items: [] as VkBroadcast[], updatedAt: null, error: "На сервере не настроено подключение VK." };
