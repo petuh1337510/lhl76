@@ -28,7 +28,7 @@ function LoginForm() {
       });
       const data = await response.json();
       if (!response.ok) setError(data.error || "Не удалось войти");
-      else router.replace(safeAdminReturn(params.get("next")));
+      else router.replace(safeAdminReturn(params?.get("next") ?? null));
     } catch {
       setError("Не удалось связаться с сервером. Повторите попытку позже.");
     }

@@ -20,7 +20,7 @@ function update(key: string, value: (current: string | null) => string) {
 }
 export function usePublicChoice<T extends string>(key: string, fallback: T, allowed: readonly T[]) {
   const params = useSearchParams();
-  const paramValue = params.get(key);
+  const paramValue = params?.get(key) ?? null;
   const [optimistic, setOptimistic] = useState<T | null>(null);
   useEffect(() => { if (optimistic !== null && paramValue === optimistic) setOptimistic(null); }, [optimistic, paramValue]);
   const value = choice(optimistic ?? paramValue, fallback, allowed);
@@ -36,14 +36,14 @@ export function usePublicChoice<T extends string>(key: string, fallback: T, allo
 }
 export function usePublicPage(key: string, maximum: number) {
   const params = useSearchParams();
-  const value = pageNumber(params.get(key), maximum);
+  const value = pageNumber(params?.get(key) ?? null, maximum);
   const setValue = (next: SetStateAction<number>) => update(key, current => String(pageNumber(String(typeof next === "function" ? next(pageNumber(current, maximum)) : next), maximum)));
   return [value, setValue] as const;
 }
 export function usePublicLocation() {
-  const path = usePathname();
+  const path = usePathname() ?? "/";
   const params = useSearchParams();
-  return path + (params.size ? `?${params.toString()}` : "");
+  return path + (params?.size ? `?${params.toString()}` : "");
 }
 
 export function handleTabKeys(event: KeyboardEvent<HTMLElement>) {

@@ -1,4 +1,6 @@
 "use client";
+import { RecentMatchLink } from "@/components/recent-match-link";
+import { formatGoalDifference } from "@/lib/format-goal-difference";
 
 import { UiIcon } from "@/components/ui-icon";
 import {safeHref} from '@/lib/editorial-url';
@@ -85,6 +87,7 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   if (!current) return null;
   const move = (step: number) => setActive((index) => (index + step + slides.length) % slides.length);
   const isPhotoOnly = current.variant === "photo";
+  const isDosaafPartner = current.variant === "partner" && /^https?:\/\/(?:www\.)?dosaaf\.ru(?:[/?#]|$)/i.test(current.link);
   const desktop = getImageProps({ src: localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
   // This content-hashed 768px WebP was already cropped/encoded on the server.
   // Serving it directly avoids a cold AVIF encode on the critical mobile path.
@@ -93,7 +96,7 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
     "--hero-duration": `${current.duration}ms`,
   } as CSSProperties;
   return <section
-    className={`homeMediaHero heroVariant-${current.variant} ${current.live ? "isLive" : ""}`}
+    className={`homeMediaHero heroVariant-${current.variant} ${isDosaafPartner ? "heroPartnerDosaaf" : ""} ${current.live ? "isLive" : ""}`}
     style={style}
     onMouseEnter={() => setPaused(true)}
     onMouseLeave={() => setPaused(false)}
@@ -236,7 +239,6 @@ function PromoTiles({ items }: { items: HomepageItem[] }) {
 export default function Home({ initialMatches, initialSummary, initialNow }: { initialMatches: any[]; initialSummary: any; initialNow: string }) {
   const [division, setDivision] = useState("Все");
   const [leadersDivision, setLeadersDivision] = useState("Любитель Плюс");
-  const [standingsDivision, setStandingsDivision] = useState("Любитель Плюс");
   const [expandedStandingTeam, setExpandedStandingTeam] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [slideDirection, setSlideDirection] = useState<-1 | 0 | 1>(0);
@@ -291,7 +293,6 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
         const firstDivision = summary?.divisions?.slice().sort((a:any,b:any)=>divisionOrder(a.name)-divisionOrder(b.name))[0]?.name;
         if (firstDivision) {
           setLeadersDivision((current) => summary.divisions.some((item: any) => item.name === current) ? current : firstDivision);
-          setStandingsDivision((current) => summary.divisions.some((item: any) => item.name === current) ? current : firstDivision);
         }
       }
       } catch { if (active) { setRefreshFailed(true); setContentState("error"); } }
@@ -313,7 +314,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
   const homepageItems = homeSummary?.homepageContent ?? [];
   const heroContent = homepageItems.filter((item) => item.type === "banner");
   const selectedLeaders = homeSummary?.divisions.find((item) => item.name === leadersDivision)?.leaders ?? [];
-  const selectedStanding = homeSummary?.divisions.find((item) => item.name === standingsDivision);
+  const standings = homeSummary?.divisions ?? [];
   const divisionHref = (name: string, tab?: "calendar" | "statistics") => {
     const href = homeSummary?.divisions.find((item) => item.name === name)?.href ?? context?.championshipHref ?? "/championship/current";
     return tab ? `${href}?tab=${tab}` : href;
@@ -510,36 +511,25 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
             href={context?.championshipHref ?? "/championship/current"}
             link="ВСЕ ТАБЛИЦЫ →"
           />
-          <div className="tabs standingTabs" aria-label="Выбор дивизиона">
-            {divisions.map((item) => (
-              <button
-                type="button"
-                onClick={() => {
-                  setStandingsDivision(item);
-                  setExpandedStandingTeam(null);
-                }}
-                className={standingsDivision === item ? "active" : ""}
-                key={item}
-              >{item}</button>
-            ))}
-          </div>
-          <div className="standingGrid">
-            {selectedStanding ? (
-              <article className="standing standingFeatured">
-                <h3>{selectedStanding.name}</h3>
+          <div className="standingGrid standingFourGrid">
+            {standings.length ? standings.map((standing) => (
+              <article className="standing standingFeatured" key={standing.slug}>
+                <h3>{standing.name}</h3>
+                <div className="standingTableViewport" role="region" aria-label={`Таблица дивизиона ${standing.name}`} tabIndex={0}>
                 <div className="tableHead">
-                  <span><span className="standingWide">РАНГ</span><span className="standingCompact">#</span></span>
+                  <span>#</span>
                   <span>КОМАНДА</span>
                   <span className="standingGames"><span className="standingWide">С</span><span className="standingCompact">И</span></span>
                   <span className="standingWide">В</span>
                   <span className="standingWide">Н</span>
                   <span className="standingWide">П</span>
                   <span className="standingWide">Ш</span>
+                  <span className="standingWide" title="Разница шайб">РШ</span>
                   <span className="standingCompact standingRecord">В-Н-П</span>
                   <span className="standingPoints">О</span>
                   <span className="standingWide">ПОСЛЕДНИЕ ИГРЫ</span>
                 </div>
-                {selectedStanding.teams.map((team, rank) => {
+                {standing.teams.map((team, rank) => {
                   const expanded = expandedStandingTeam === team.id;
                   const detailsId = `standing-details-${team.id}`;
                   return (
@@ -562,32 +552,34 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                       <span className="standingWide">{team.draws}</span>
                       <span className="standingWide">{team.losses}</span>
                       <span className="standingWide">{team.goalsFor}–{team.goalsAgainst}</span>
+                      <span className="standingWide">{formatGoalDifference(team.goalsFor, team.goalsAgainst)}</span>
                       <span className="standingCompact standingRecord">{team.wins}-{team.draws}-{team.losses}</span>
                       <strong className="standingPoints">{team.points}</strong>
                       <i className="standingWide">
                         {team.form.slice(-5).map((game: any, gameIndex: number) => (
-                          <Link prefetch={false}
+                          <RecentMatchLink
+                            match={game}
+                            teamName={team.name}
                             href={`/match/${game.matchSlug}`}
                             className={game.result === "w" ? "win" : game.result === "l" ? "loss" : "draw"}
-                            aria-label="Открыть последний матч"
                             key={`${game.matchSlug}-${gameIndex}`}
-                          >
-                            {game.result === "w" ? "В" : game.result === "l" ? "П" : "Н"}
-                          </Link>
+                          />
                         ))}
                       </i>
                       <dl id={detailsId} className="standingRowDetails" hidden={!expanded}>
                         <div><dt>Забито шайб</dt><dd>{team.goalsFor}</dd></div>
                         <div><dt>Пропущено шайб</dt><dd>{team.goalsAgainst}</dd></div>
+                        <div><dt>Разница шайб</dt><dd>{formatGoalDifference(team.goalsFor, team.goalsAgainst)}</dd></div>
                       </dl>
                     </div>
                   );
                 })}
-                <Link prefetch={false} href={divisionHref(selectedStanding.name)}>
+                </div>
+                <Link prefetch={false} href={standing.href}>
                   ОТКРЫТЬ РАЗДЕЛ ДИВИЗИОНА →
                 </Link>
               </article>
-            ) : <div className="homeSectionEmpty light"><b>{contentState === "loading" ? "Загружаем таблицу…" : "Таблица временно недоступна"}</b><span>Данные появятся после подключения активного сезона.</span></div>}
+            )) : <div className="homeSectionEmpty light"><b>{contentState === "loading" ? "Загружаем таблицу…" : "Таблица временно недоступна"}</b><span>Данные появятся после подключения активного сезона.</span></div>}
           </div>
         </section>
 

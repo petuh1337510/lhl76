@@ -1,4 +1,5 @@
 'use client';
+import { formatGoalDifference } from '@/lib/format-goal-difference';
 import Link from 'next/link';
 import {Suspense,useEffect,useState} from 'react';
 import {useRouter,useSearchParams} from 'next/navigation';
@@ -7,7 +8,7 @@ type Result={competition:{id:string;name:string;season:{id:string;name:string};d
 export default function Page(){return <Suspense fallback={<p>Загрузка таблиц…</p>}><Tables/></Suspense>}
 function Tables(){
   const params=useSearchParams(),router=useRouter();
-  const seasonId=params.get('seasonId'),competitionId=params.get('competitionId'),divisionId=params.get('divisionId');
+  const seasonId=params?.get('seasonId'),competitionId=params?.get('competitionId'),divisionId=params?.get('divisionId');
   const [data,setData]=useState<Result|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[retry,setRetry]=useState(0);
   const query=new URLSearchParams();if(seasonId)query.set('seasonId',seasonId);if(competitionId)query.set('competitionId',competitionId);if(divisionId)query.set('divisionId',divisionId);
   const key=query.toString(),back='/admin/competitions?'+new URLSearchParams({...seasonId?{seasonId}:{},...competitionId?{competitionId}:{}});
@@ -26,7 +27,7 @@ function Tables(){
     {error&&<p role="alert">{error} <button onClick={()=>setRetry(v=>v+1)}>Повторить</button></p>}{loading&&<p role="status">Загрузка таблицы…</p>}
     {current&&<><div className="matchAdminFilters" aria-label="Дивизион">{current.competition.divisions.map(d=><button key={d.id} className={d.id===current.division?.id?'active':''} aria-pressed={d.id===current.division?.id} onClick={()=>{const q=new URLSearchParams(key);q.set('divisionId',d.id);router.push('/admin/standings?'+q)}}>{d.name}</button>)}</div>
       {current.division&&<p><Link href={'/admin/playoff?'+new URLSearchParams({seasonId:seasonId!,competitionId:competitionId!,divisionId:current.division.id})}>Настроить плей-офф дивизиона «{current.division.name}» →</Link></p>}
-      {!current.division?<p>В этом соревновании пока нет дивизионов. Добавьте их в настройках соревнования.</p>:<><h2>{current.division.name}</h2>{!current.rows.length?<p>В дивизион ещё не добавлены команды.</p>:<div className={styles.scroll} tabIndex={0} role="region" aria-label={`Таблица дивизиона ${current.division.name}`}><table><thead><tr>{['#','Команда','С','В','Н','П','Ш','РШ','О'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{current.rows.map(r=><tr key={r.id}><td>{r.rank}</td><th scope="row">{r.team}</th><td>{r.games}</td><td>{r.wins}</td><td>{r.draws}</td><td>{r.losses}</td><td>{r.goalsFor}:{r.goalsAgainst}</td><td>{r.goalsFor-r.goalsAgainst}</td><td><strong>{r.points}</strong></td></tr>)}</tbody></table></div>}</>}
+      {!current.division?<p>В этом соревновании пока нет дивизионов. Добавьте их в настройках соревнования.</p>:<><h2>{current.division.name}</h2>{!current.rows.length?<p>В дивизион ещё не добавлены команды.</p>:<div className={styles.scroll} tabIndex={0} role="region" aria-label={`Таблица дивизиона ${current.division.name}`}><table><thead><tr>{['#','Команда','С','В','Н','П','Ш','РШ','О'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead><tbody>{current.rows.map(r=><tr key={r.id}><td>{r.rank}</td><th scope="row">{r.team}</th><td>{r.games}</td><td>{r.wins}</td><td>{r.draws}</td><td>{r.losses}</td><td>{r.goalsFor}:{r.goalsAgainst}</td><td>{formatGoalDifference(r.goalsFor,r.goalsAgainst)}</td><td><strong>{r.points}</strong></td></tr>)}</tbody></table></div>}</>}
     </>}
   </section></main>;
 }

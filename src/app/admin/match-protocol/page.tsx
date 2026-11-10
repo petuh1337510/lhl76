@@ -1,6 +1,7 @@
 "use client";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { maxManualMatchScore, readManualMatchScore, type ManualMatchScore } from "@/lib/domain/match-protocol";
+import { PenaltyReasonInput } from "./penalty-reason-input";
 import { AdminModal } from "../admin-modal";
 import { MatchRosterCard, MatchRosterEditor, matchJerseyNumber, type RosterPlayer } from "./match-roster";
 import { completeGoalieStint, formatMatchTime, MatchGoalieStints, toSeconds, validMatchTime, type GoalieStint } from "./match-goalie-stints";
@@ -45,56 +46,7 @@ const situations = [
   ["EMPTY_NET", "Пустые ворота"],
   ["PENALTY_SHOT", "Штрафной бросок"],
 ];
-const reasons = [
-  ["АГРЕС", "Агрессор в драке"],
-  ["АТ-В-ГОЛ", "Атака в голову или шею"],
-  ["БЛОК", "Атака игрока, не владеющего шайбой"],
-  ["АТ-СЗ", "Атака сзади"],
-  ["БР-КЛ", "Бросок клюшки"],
-  ["ГРУБ", "Грубость"],
-  ["ВБ-ШБ", "Выброс шайбы"],
-  ["ДИСЦ", "Дисциплинарный штраф"],
-  ["ДИС-КН", "Дисциплинарный до конца матча"],
-  ["ДРАКА", "Драка"],
-  ["ЗАЧИН", "Зачинщик драки"],
-  ["ЗД-ИГ", "Задержка игры"],
-  ["ЗД-КЛ-СП", "Задержка клюшки соперника"],
-  ["ЗД-КЛ", "Задержка клюшкой"],
-  ["ЗД-СП", "Задержка соперника"],
-  ["ЗД-ШБ", "Задержка шайбы руками"],
-  ["СЛ-КЛ", "Игра со сломанной клюшкой"],
-  ["КЛ-УД", "Колющий удар"],
-  ["СК-ШТ", "Малый скамеечный штраф"],
-  ["МШ", "Матч-штраф"],
-  ["ЛД-ВР", "Направление осколков льда в лицо вратаря"],
-  ["НАР-ЭК", "Опасное снаряжение"],
-  ["НП-АТ", "Неправильная атака"],
-  ["ЧС-СТ", "Нарушение численного состава"],
-  ["ВП-КЛ", "Опасная игра высоко поднятой клюшкой"],
-  ["НС-ПВ", "Оскорбление судей и неспортивное поведение"],
-  ["ОТ-ИГ", "Отказ начать игру"],
-  ["ОТСЧ", "Отсечение"],
-  ["ПЛЕВОК", "Плевок"],
-  ["ПОДН", "Подножка"],
-  ["ПОДС", "Подсечка"],
-  ["ПОЗ-СП", "Поздний силовой прием"],
-  ["ПР-ИН", "Предупреждение инфекции"],
-  ["ПК-СК", "Покидание скамейки"],
-  ["СД-ВР", "Сдвиг ворот"],
-  ["СИМ", "Симуляция"],
-  ["ТЛ-БР", "Толчок на борт"],
-  ["ТЛ-КЛ", "Толчок клюшкой"],
-  ["УД-ГОЛ", "Удар головой"],
-  ["УД-КЛ", "Удар клюшкой"],
-  ["УД-К-КЛ", "Удар концом клюшки"],
-  ["УД-КОЛ", "Удар коленом"],
-  ["УД-ЛОК", "Удар локтем"],
-  ["УД-НГ", "Удар ногой"],
-  ["УКУС", "Укус"],
-  ["КН-ЗР", "Физический контакт со зрителем"],
-  ["ШТ-ВР", "Штрафы вратаря"],
-  ["OTHER", "Другая причина"],
-];
+
 const toClock = (v: number | null) =>
   `${String(Math.floor((v || 0) / 60)).padStart(2, "0")}:${String((v || 0) % 60).padStart(2, "0")}`;
 const getPeriod = (v: string | number) => {
@@ -812,8 +764,12 @@ export default function MatchProtocolPage() {
                   <label>Время матча<input inputMode="numeric" value={penalty.time} onFocus={(event) => event.currentTarget.select()} onChange={(event) => { setPenalty({ ...penalty, time: formatMatchTime(event.target.value) }); setPenaltyFormError(""); }} placeholder="27:10" /></label>
                   <label>Период<input disabled value={`${getPeriod(penalty.time)} период`} /></label>
                   <label>Минуты<input type="number" min="1" value={penalty.minutes} onChange={(event) => { setPenalty({ ...penalty, minutes: event.target.value }); setPenaltyFormError(""); }} /></label>
-                  <label className="penaltyReasonField">Причина<select value={penalty.reasonCode || ""} onChange={(event) => { const selectedReason = reasons.find((row) => row[0] === event.target.value); setPenalty({ ...penalty, reasonCode: event.target.value, reason: selectedReason?.[1] || "" }); }}><option value="">Выберите причину</option>{reasons.map(([code, label]) => <option key={code} value={code}>{label} · {code}</option>)}</select></label>
-                  {penalty.reasonCode === "OTHER" && <label className="penaltyReasonField">Уточнение<input value={penalty.reason} onChange={(event) => setPenalty({ ...penalty, reason: event.target.value })} /></label>}
+                  <div className="penaltyReasonField">
+                    <PenaltyReasonInput value={penalty.reason || ""} onChange={(reasonCode, reason) => {
+                      setPenalty({ ...penalty, reasonCode, reason });
+                      setPenaltyFormError("");
+                    }} />
+                  </div>
                 </div>
                 {penaltyFormError && <p role="alert" className="formError">{penaltyFormError}</p>}
                 <footer><button type="button" onClick={() => setPenaltyOpen(false)}>Отмена</button><button type="button" onClick={commitPenalty}>{editPenalty === null ? "Добавить удаление" : "Сохранить изменения"}</button></footer>

@@ -427,7 +427,7 @@ html,body{max-width:100%;overflow-x:clip}
   .leagueTableMobileControls span{text-align:center;color:#637991;font:700 10px var(--font-inter)}
   .leagueTableViewport{overflow-x:auto;overflow-y:hidden;border-radius:14px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#9bb5cc #edf3f7;-webkit-overflow-scrolling:touch}
   main.publicChamp .leagueTable{min-width:790px;overflow:visible}
-  main.publicChamp .leagueTableHead,main.publicChamp .leagueTableRow{min-width:790px!important;grid-template-columns:42px 210px repeat(4,48px) 82px 48px 150px!important;gap:7px!important;padding:0 16px!important}
+  main.publicChamp .leagueTableHead,main.publicChamp .leagueTableRow{min-width:845px!important;grid-template-columns:42px 210px repeat(4,48px) 82px 48px 48px 150px!important;gap:7px!important;padding:0 16px!important}
   main.publicChamp .leagueTableHead span,main.publicChamp .leagueTableRow span{display:block!important}
   main.publicChamp .leagueTableHead span{text-align:center}
   main.publicChamp .leagueTableHead span:nth-child(2){text-align:left}
@@ -730,7 +730,7 @@ html,body{max-width:100%;overflow-x:clip}
 .homePage .standingTabs button{padding:10px 18px;font-size:15px}
 .homePage .standingFeatured h3{padding:18px 21px;font-size:27px}
 .homePage .standingFeatured .tableHead,
-.homePage .standingFeatured .row{grid-template-columns:52px minmax(0,1fr) repeat(4,46px) 86px 52px 150px!important;min-width:0;column-gap:8px;padding-left:18px;padding-right:18px}
+.homePage .standingFeatured .row{grid-template-columns:52px minmax(0,1fr) repeat(4,46px) 86px 46px 52px 150px!important;min-width:0;column-gap:8px;padding-left:18px;padding-right:18px}
 .homePage .standingFeatured .tableHead{min-height:51px;padding-top:16px;padding-bottom:16px;font-size:11px;letter-spacing:.25px}
 .homePage .standingFeatured .row{min-height:70px;padding-top:14px;padding-bottom:14px;font-size:16px}
 .homePage .standingFeatured .row>a{min-width:0;gap:12px;font-size:17px;overflow-wrap:anywhere}

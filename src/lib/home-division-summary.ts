@@ -41,6 +41,7 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
     },
   }), getGoalieProtocolStatistics({ divisionId })]);
   if (!division) return { teams: [], leaders: [] };
+  const teamNames = new Map(division.teamEntries.map((entry) => [entry.id, entry.team.name]));
 
   const results = division.matches.map((match) => {
     const protocol = match.protocolData && typeof match.protocolData === "object"
@@ -87,6 +88,13 @@ export async function getHomeDivisionSummary(divisionId: string): Promise<{
             ? protocol.technicalWinnerTeamEntryId === entry.id ? "w" as const : "l" as const
             : own === opponent ? "d" as const : own > opponent ? "w" as const : "l" as const,
           matchSlug: match.slug,
+          startsAt: match.startsAt?.toISOString() ?? null,
+          homeName: teamNames.get(match.homeTeamEntryId) ?? "Хозяева",
+          awayName: teamNames.get(match.awayTeamEntryId) ?? "Гости",
+          homeScore: match.homeScore,
+          awayScore: match.awayScore,
+          technical: match.resultType === "TECHNICAL",
+          matchTitle: `${teamNames.get(match.homeTeamEntryId)} — ${teamNames.get(match.awayTeamEntryId)}: ${match.homeScore}:${match.awayScore}${match.resultType === "TECHNICAL" ? " (технический результат)" : ""}`,
         };
       });
     return {

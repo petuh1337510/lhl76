@@ -8,6 +8,7 @@
 .card li+li{border-top:1px solid #edf1f6}
 .rank{width:14px;flex-shrink:0;color:#62758b;font-size:12px;font-variant-numeric:tabular-nums}
 .player{display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-decoration:none;color:inherit}
+.player>span{min-width:0;overflow-wrap:anywhere}
 .player img{width:40px;height:53px;object-fit:cover;object-position:center top;border-radius:5px;background:#e9eff6;flex-shrink:0}
 .player strong{display:block;font:700 16px/1.2 var(--font-condensed),sans-serif;overflow-wrap:anywhere}
 .player small{display:block;margin-top:5px;font-size:12px;line-height:1.35;color:#62758b}
@@ -19,3 +20,11 @@
 .card a:focus-visible{outline:3px solid #438dcc;outline-offset:3px}.card a:hover{color:#15569e}
 @media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}.card h3{min-height:0}.first .value b{font-size:28px}}
+@media(max-width:430px){
+  .card h3{padding-inline:14px}
+  .card ol{padding-inline:14px}
+  .card li,.player{gap:8px}
+  .first img{width:48px;height:64px}
+  .first strong{font-size:18px}
+  .first .value b{font-size:24px}
+}

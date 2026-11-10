@@ -9,7 +9,7 @@ type ExistingMatch={id:string;homeTeamEntryId:string;awayTeamEntryId:string;home
 type Data={context:{seasonId:string;competitionId:string;divisionId:string;season:string;competition:string;division:string};teams:{id:string;name:string}[];playoffs:PlayoffView[];availableMatches:ExistingMatch[]};
 export default function Page(){return <Suspense fallback={<p>Загрузка плей-офф…</p>}><Editor/></Suspense>}
 function Editor(){
-  const params=useSearchParams();const context={seasonId:params.get('seasonId')||'',competitionId:params.get('competitionId')||'',divisionId:params.get('divisionId')||''};
+  const params=useSearchParams();const context={seasonId:params?.get('seasonId')||'',competitionId:params?.get('competitionId')||'',divisionId:params?.get('divisionId')||''};
   const key=new URLSearchParams(context).toString();
   const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
   useEffect(()=>{if(!context.divisionId||!context.competitionId||!context.seasonId){setLoading(false);return}const controller=new AbortController();setLoading(true);fetch('/api/admin/playoff?'+key,{cache:'no-store',signal:controller.signal}).then(async r=>{const body=await r.json();if(!r.ok)throw Error(body.error);setData(body)}).catch(e=>{if(e.name!=='AbortError')setError(e.message)}).finally(()=>{if(!controller.signal.aborted)setLoading(false)});return()=>controller.abort()},[key,context.divisionId,context.competitionId,context.seasonId,revision]);

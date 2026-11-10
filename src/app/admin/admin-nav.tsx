@@ -11,7 +11,7 @@ const groups = [
 ];
 
 export default function AdminNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const role = useAdminUser()?.role ?? "";
   const visible=(title:string)=>role==="SUPER_ADMIN"||(role==="ADMIN"&&title!=="СИСТЕМА")||(role==="SECRETARY"&&title==="СОРЕВНОВАНИЯ");
   const isCurrent = (href: string) => pathname === href

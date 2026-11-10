@@ -15,7 +15,7 @@ function Manager(){
   const router=useRouter(),params=useSearchParams();
   const [seasons,setSeasons]=useState<Season[]>([]),[teams,setTeams]=useState<Team[]>([]),[names,setNames]=useState<string[]>([]);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
-  const seasonId=params.get('seasonId'),competitionId=params.get('competitionId'),creating=params.get('create')==='1';
+  const seasonId=params?.get('seasonId'),competitionId=params?.get('competitionId'),creating=params?.get('create')==='1';
   const season=seasons.find(s=>s.id===seasonId)||(!seasonId?(seasons.find(s=>s.isActive)||seasons[0]):undefined);
   const competition=creating?undefined:season?.competitions.find(c=>c.id===competitionId);
   useEffect(()=>{

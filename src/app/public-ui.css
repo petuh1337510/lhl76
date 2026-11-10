@@ -137,9 +137,95 @@
 .champTabs a:hover:not(.active) { border-color:#85a9ca; color:#0a4f8f; background:#f9fbfd; }
 .champTabs a.active { border-color:var(--public-action); background:var(--public-action); color:#fff; }
 @media(max-width:700px) { .teamProfileTabs a { font-size:16px; } }
-.rosterCardMain { min-width: 0; }
-.rosterPlayerName { overflow-wrap: anywhere; }
+.rosterCardMain {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.rosterCardMain > span {
+  min-width: 0;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.rosterCardMain > span strong {
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
+}
+.rosterCardMain .rosterPlayerName {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  overflow-wrap: anywhere;
+}
+.rosterPlayerName > span { min-width: 0; }
 .rosterSuspensionInfo { line-height: 1.5; }
+/* Keep the DOSAAF partner artwork in its original colors on every screen. */
+.homeMediaHero.heroPartnerDosaaf::after,
+.homeMediaHero.heroPartnerDosaaf .homeMediaShade { display: none; }
+/* All divisions share one card size, including divisions with fewer teams. */
+.homePage .standingGrid.standingFourGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: 1fr;
+  gap: 24px;
+}
+.homePage .standingFourGrid .standingFeatured {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.homePage .standingFourGrid .standingFeatured h3 {
+  margin: 0;
+  padding: 18px 16px;
+  font-size: 23px;
+}
+.homePage .standingFourGrid .standingTableViewport {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.homePage .standingFourGrid .standingFeatured > a {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid #d7e3ef;
+  font-size: 12px;
+}
+@media (min-width: 901px) {
+  .homePage .standingFourGrid .standingFeatured :is(.tableHead, .row) {
+    grid-template-columns: 20px minmax(100px, 1fr) repeat(4, 22px) 52px 30px 24px 124px !important;
+    column-gap: 3px;
+    min-width: 570px;
+    padding-inline: 10px;
+  }
+  .homePage .standingFourGrid .standingFeatured .tableHead {
+    min-height: 44px;
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  .homePage .standingFourGrid .standingFeatured .row {
+    min-height: 58px;
+    padding-block: 10px;
+    font-size: 14px;
+  }
+  .homePage .standingFourGrid .standingFeatured .row > a { gap: 7px; font-size: 15px; }
+  .homePage .standingFourGrid .standingFeatured .row .mark { width: 28px; height: 28px; flex-shrink: 0; }
+  .homePage .standingFourGrid .standingFeatured .row strong { font-size: 18px; }
+  .homePage .standingFourGrid .standingFeatured .row i {
+    gap: 4px !important;
+    justify-content: flex-end;
+    padding-left: 24px;
+  }
+  .homePage .standingFourGrid .standingFeatured .row i a {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 7px !important;
+  }
+  .homePage .standingFourGrid .standingFeatured .tableHead > span:not(:nth-child(2)),
+  .homePage .standingFourGrid .standingFeatured .row > span,
+  .homePage .standingFourGrid .standingFeatured .standingPoints { text-align: center; }
+}
+@media (max-width: 1099px) {
+  .homePage .standingGrid.standingFourGrid { grid-template-columns: minmax(0, 1fr) !important; }
+}
 .matchPublic .matchHeroTop>a { font-size: 13px; font-weight: 600; line-height: 1.5; }
 .matchPublic .matchHeroVenue>a { color: #e0eaf5; text-decoration: none; font: 600 14px/1.5 var(--font-inter); }
 .matchHeroTop { gap: var(--ui-space-3); }
@@ -154,6 +240,7 @@
   font-variant-numeric: tabular-nums lining-nums;
 }
 .teamStatisticsTable,.leagueTableViewport,.playerHistoryBlock { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #7797b6 #eaf0f6; }
+main.publicChamp .leagueTable { min-width: 900px; overflow: hidden; }
 .teamStatisticsTable table { font-size: 14px; }
 .teamStatisticsTable :is(th,td) { vertical-align: middle; }
 .teamStatisticsTable th { font-size: var(--ui-label); line-height: 1.4; }

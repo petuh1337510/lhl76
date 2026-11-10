@@ -1,4 +1,6 @@
 "use client";
+import { RecentMatchLink } from "@/components/recent-match-link";
+import { formatGoalDifference } from "@/lib/format-goal-difference";
 
 import { UiIcon } from "@/components/ui-icon";
 import { PlayoffBracket } from '@/components/playoff-bracket';
@@ -525,6 +527,7 @@ function DivisionTable({ data }: { data: DivisionPageData }) {
           <span>Н</span>
           <span>П</span>
           <span>Ш</span>
+          <span title="Разница шайб">РШ</span>
           <span>О</span>
           <span>Последние игры</span>
         </div>
@@ -548,17 +551,17 @@ function DivisionTable({ data }: { data: DivisionPageData }) {
             <span>
               {team.goalsFor}–{team.goalsAgainst}
             </span>
+            <span>{formatGoalDifference(team.goalsFor, team.goalsAgainst)}</span>
             <em>{team.points}</em>
             <div className="form">
               {team.form.map((item, formIndex) => (
-                <Link
+                <RecentMatchLink
+                  match={item}
+                  teamName={team.name}
                   href={withReturn(`/match/${item.matchSlug}`, location)}
                   className={item.result}
-                  aria-label={`Матч ${formIndex + 1}`}
                   key={`${item.matchSlug}-${formIndex}`}
-                >
-                  {item.result === "w" ? "В" : item.result === "l" ? "П" : "Н"}
-                </Link>
+                />
               ))}
             </div>
           </div>

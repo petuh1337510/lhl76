@@ -32,7 +32,7 @@ export type DivisionTeam = {
   goalsFor: number;
   goalsAgainst: number;
   points: number;
-  form: Array<{ result: "w" | "d" | "l"; matchSlug: string }>;
+  form: Array<{ result: "w" | "d" | "l"; matchSlug: string; matchTitle: string; startsAt: string | null; homeName: string; awayName: string; homeScore: number; awayScore: number; technical: boolean }>;
 };
 
 export type DivisionMatch = {
@@ -315,6 +315,13 @@ export async function getDivisionPage(
                 ? ("w" as const)
                 : ("l" as const),
           matchSlug: match.slug,
+          startsAt: match.startsAt?.toISOString() ?? null,
+          homeName: match.homeTeamEntry.team.name,
+          awayName: match.awayTeamEntry.team.name,
+          homeScore: match.homeScore,
+          awayScore: match.awayScore,
+          technical: match.resultType === "TECHNICAL",
+          matchTitle: `${match.homeTeamEntry.team.name} — ${match.awayTeamEntry.team.name}: ${match.homeScore}:${match.awayScore}${match.resultType === "TECHNICAL" ? " (технический результат)" : ""}`,
         };
       });
     return {
