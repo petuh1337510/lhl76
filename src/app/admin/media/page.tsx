@@ -1,4 +1,5 @@
 "use client";
+import { VkAlbums } from "./vk-albums";
 import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
@@ -17,30 +18,19 @@ type Album = {
 
 const blank = { id: "", title: "", description: "", eventDate: "", photos: [] as string[], coverUrl: "", isPublished: true };
 const list = (value: unknown): string[] => Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
-const vkUrl = (slug: string) => {
-  const match = slug.match(/^vk-photo-(\d+)-(\d+)$/);
-  return match ? `https://vk.com/album-${match[1]}_${match[2]}` : null;
-};
-
 export default function MediaAdmin() {
   const [items, setItems] = useState<Album[]>([]);
   const [form, setForm] = useState(blank);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [albumUrl, setAlbumUrl] = useState("");
-  const [vkConfigured, setVkConfigured] = useState<boolean | null>(null);
+
 
   const refresh = () => fetch("/api/admin/media", { cache: "no-store" })
     .then((response) => response.json())
     .then((data) => setItems(data.items ?? []));
   useEffect(() => {
     void refresh();
-    void fetch("/api/admin/media/vk", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data) => setVkConfigured(Boolean(data.configured)))
-      .catch(() => setVkConfigured(false));
   }, []);
 
   const upload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -76,26 +66,6 @@ export default function MediaAdmin() {
     setBusy(false);
   };
 
-  const importVk = async (url: string) => {
-    setBusy(true);
-    setError("");
-    setNotice("");
-    try {
-      const response = await fetch("/api/admin/media/vk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Не удалось загрузить альбом VK");
-      await refresh();
-      setAlbumUrl("");
-      setNotice(`${data.item.title}: загружено ${data.count} фото. Альбом опубликован.`);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Ошибка загрузки VK");
-    } finally { setBusy(false); }
-  };
-
   const edit = (item: Album) => {
     setForm({ id: item.id, title: item.title, description: item.description ?? "", eventDate: item.eventDate?.slice(0, 10) ?? "", photos: list(item.photos), coverUrl: item.coverUrl ?? "", isPublished: item.isPublished });
     setOpen(true);
@@ -111,17 +81,10 @@ export default function MediaAdmin() {
 
   return <section className="adminContent divisionPage mediaAdmin">
 
-    <div className="competitionHead"><div><h1>Медиагалерея</h1></div><button onClick={() => { setForm(blank); setOpen(true); }}>+ Новый альбом</button></div>
+    <div className="competitionHead"><div><h1>Фото</h1></div><button onClick={() => { setForm(blank); setOpen(true); }}>+ Новый альбом</button></div>
 
-    <section className="mediaVkImport">
-      <div><span>ИМПОРТ ИЗ ВКОНТАКТЕ</span><h3>Подключить фотоальбом</h3><p>Ссылка вида vk.ru/album-123_456. Фото обновляются раз в час. Если VK недоступен, сайт показывает сохранённую копию.</p>{vkConfigured === false ? <p className="mediaVkWarning">Подключение пока недоступно: на сервере не настроен токен VK. Сама ссылка подходит.</p> : null}</div>
-      <form onSubmit={(event) => { event.preventDefault(); void importVk(albumUrl); }}>
-        <input type="url" value={albumUrl} onChange={(event) => setAlbumUrl(event.target.value)} placeholder="https://vk.ru/album-123_456" aria-label="Ссылка на альбом ВКонтакте" required />
-        <button disabled={busy || vkConfigured !== true || !albumUrl.trim()}>{busy ? "Загружаю…" : "ДОБАВИТЬ ИЗ ВК"}</button>
-      </form>
-    </section>
+    <VkAlbums />
     {error ? <p className="documentError">{error}</p> : null}
-    {notice ? <p className="adminNotice">{notice}</p> : null}
 
     {open ? <AdminModal title={form.id ? "Редактировать альбом" : "Новый альбом"} onClose={() => setOpen(false)} wide><section className="mediaEditor">
       <header><div><span>{form.id ? "РЕДАКТИРОВАНИЕ" : "НОВЫЙ АЛЬБОМ"}</span><h2>{form.title || "Без названия"}</h2></div><button onClick={() => setOpen(false)}>Закрыть ×</button></header>
@@ -136,14 +99,14 @@ export default function MediaAdmin() {
       <footer><button onClick={() => setOpen(false)}>Отмена</button><button disabled={busy} onClick={save}>{busy ? "СОХРАНЯЮ…" : "СОХРАНИТЬ АЛЬБОМ"}</button></footer>
     </section></AdminModal> : null}
 
-    <section className="mediaAdminGrid">{items.length ? items.map((item) => {
-      const source = vkUrl(item.slug);
+    <section className="mediaAdminGrid">{items.filter(item => !item.slug.startsWith("vk-photo-")).length ? items.filter(item => !item.slug.startsWith("vk-photo-")).map((item) => {
+
       return <article key={item.id}>
         {item.coverUrl ? <PublicImage sizes="(max-width: 700px) 90vw, 320px" src={item.coverUrl} alt="" /> : <div>ЛХЛ-76</div>}
-        <span>{list(item.photos).length} фото{source ? " · VK" : ""}</span>
+        <span>{list(item.photos).length} фото</span>
         <h3>{item.title}</h3><small>{item.isPublished ? "Опубликован" : "Черновик"}</small>
-        <footer><button onClick={() => edit(item)}>Изменить</button>{source ? <button disabled={busy} onClick={() => void importVk(source)}>Обновить из VK</button> : null}<button onClick={() => void toggle(item)}>{item.isPublished ? "Снять" : "Опубликовать"}</button></footer>
+        <footer><button onClick={() => edit(item)}>Изменить</button><button onClick={() => void toggle(item)}>{item.isPublished ? "Снять" : "Опубликовать"}</button></footer>
       </article>;
-    }) : <p className="registryEmpty">Альбомов пока нет.</p>}</section>
+    }) : <p className="registryEmpty">Других альбомов пока нет.</p>}</section>
   </section>;
 }

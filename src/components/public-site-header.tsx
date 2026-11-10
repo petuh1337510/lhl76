@@ -68,7 +68,7 @@ export function PublicSiteHeader() {
       {adminName && <a className={styles.returnLink} href="/admin" aria-label={`Вернуться в админку. Вы вошли как ${adminName}`}>
         <span title={adminName}>{adminName}</span><strong>В админку <span aria-hidden="true">↗</span></strong>
       </a>}
-      <details className="mobileMenu"><summary aria-label="Открыть меню"><UiIcon name="menu" /></summary><div><Link href="/about">О нас</Link><Link href="/documents">Документы</Link><Link href="/venues">Стадионы</Link><Link href={championshipHref}>Чемпионат</Link><Link href={calendarHref}>Календарь</Link><Link href="/tournaments">Турниры</Link><Link href="/teams">Команды</Link><Link href="/media">Медиагалерея</Link><Link href="/news">Новости</Link><Link href="/broadcasts">Трансляции</Link></div></details>
+      <details className="mobileMenu"><summary aria-label="Открыть меню"><UiIcon name="menu" /></summary><div><Link href="/about">О нас</Link><Link href="/documents">Документы</Link><Link href="/venues">Стадионы</Link><Link href={championshipHref}>Чемпионат</Link><Link href={calendarHref}>Календарь</Link><Link href="/tournaments">Турниры</Link><Link href="/teams">Команды</Link><Link href="/media">Фото</Link><Link href="/news">Новости</Link><Link href="/broadcasts">Трансляции</Link></div></details>
     </div></div>
     <div className="siteHeaderNav"><div className="siteHeaderInner">
       <nav aria-label="Главное меню">
@@ -76,7 +76,8 @@ export function PublicSiteHeader() {
         <span className="siteDropdown"><Link href={championshipHref}>Чемпионат</Link><span className="siteDropdownMenu"><div><Link href={championshipHref}>{context ? `Чемпионат ${context.season.name}` : 'Текущий чемпионат'}</Link>{context?.seasons.filter((season) => season.slug !== context.season.slug).map((season) => <Link href={season.href} key={season.slug}>Чемпионат {season.name}</Link>)}</div></span></span>
         <Link href={calendarHref}>Календарь</Link>
         {tournaments.length?<span className="siteDropdown"><Link href="/tournaments">Турниры</Link><span className="siteDropdownMenu"><div>{tournaments.map(t=><Link href={t.href} key={t.slug}>{t.name}</Link>)}</div></span></span>:<Link href="/tournaments">Турниры</Link>}
-        <span className="siteDropdown"><Link href="/news">Новости</Link><span className="siteDropdownMenu"><div><Link href="/media">Медиагалерея</Link><Link href="/news">Новости</Link><Link href="/broadcasts">Трансляции</Link></div></span></span>
+        <Link href="/media">Фото</Link>
+        <span className="siteDropdown"><Link href="/news">Новости</Link><span className="siteDropdownMenu"><div><Link href="/news">Новости</Link><Link href="/broadcasts">Трансляции</Link></div></span></span>
       </nav>
       <Link className="headerSearch" href={context?.playersHref ?? fallback.playersHref} aria-label="Статистика игроков"><UiIcon name="search" /></Link>
     </div></div>
@@ -109,7 +110,7 @@ export function PublicSiteFooter({ global = false }: { global?: boolean }) {
       <nav className="siteFooterColumn" aria-label="Медиа и статистика">
         <strong>Медиа и статистика</strong>
         <Link href={playersHref}>Игроки</Link>
-        <Link href="/media">Фотоальбомы</Link>
+        <Link href="/media">Фото</Link>
         <Link href="/broadcasts">Трансляции</Link>
         <Link href="/laureates">Лауреаты</Link>
       </nav>

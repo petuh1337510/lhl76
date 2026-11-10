@@ -6,7 +6,7 @@ import { useAdminUser } from "./admin-session";
 const groups = [
   { title: "СОРЕВНОВАНИЯ", links: [["Обзор", "/admin"], ["Сезоны", "/admin/seasons"], ["Соревнования", "/admin/competitions"], ["Матчи и календарь", "/admin/matches"]] },
   { title: "УЧАСТНИКИ", links: [["Команды", "/admin/teams"], ["Игроки", "/admin/players"], ["Дисквалификации", "/admin/suspensions"]] },
-  { title: "КОНТЕНТ", links: [["Новости", "/admin/news"], ["Медиагалерея", "/admin/media"], ["Медиафайлы", "/admin/media-files"], ["Трансляции", "/admin/broadcasts"], ["Лауреаты", "/admin/laureates"], ["Стадионы", "/admin/venues"], ["Главная страница", "/admin/homepage-content"], ["О лиге", "/admin/league-page"], ["Документы", "/admin/content-library"]] },
+  { title: "КОНТЕНТ", links: [["Новости", "/admin/news"], ["Фото", "/admin/media"], ["Медиафайлы", "/admin/media-files"], ["Трансляции", "/admin/broadcasts"], ["Лауреаты", "/admin/laureates"], ["Стадионы", "/admin/venues"], ["Главная страница", "/admin/homepage-content"], ["О лиге", "/admin/league-page"], ["Документы", "/admin/content-library"]] },
   { title: "СИСТЕМА", links: [["Пользователи", "/admin/users"], ["Контроль данных", "/admin/audit"], ["Скорость сайта", "/admin/performance"]] },
 ];
 
