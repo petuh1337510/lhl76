@@ -6,7 +6,7 @@ import { getPublicBroadcasts } from "@/lib/public-broadcasts";
 import { getHomeEditorial } from "@/lib/home-editorial";
 
 export async function getHomeSummary(liveOnly = false) {
-  if (liveOnly) return { broadcasts: await getPublicBroadcasts(4) };
+  if (liveOnly) return { broadcasts: await getPublicBroadcasts(4), serverTime: Date.now() };
   const context = await getPublicSiteContext();
   if (!context) return null;
 
@@ -19,5 +19,5 @@ export async function getHomeSummary(liveOnly = false) {
     getHomeEditorial(),
   ]);
 
-  return { context, divisions, broadcasts, ...editorial };
+  return { context, divisions, broadcasts, ...editorial, serverTime: Date.now() };
 }

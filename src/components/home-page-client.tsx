@@ -1,4 +1,6 @@
 "use client";
+import { useBroadcastClock } from "@/components/broadcast-clock";
+import { broadcastTiming, broadcastStatusLabel, type BroadcastStatus } from "@/lib/broadcast-status";
 import { RecentMatchLink } from "@/components/recent-match-link";
 import { formatGoalDifference } from "@/lib/format-goal-difference";
 
@@ -88,10 +90,11 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const move = (step: number) => setActive((index) => (index + step + slides.length) % slides.length);
   const isPhotoOnly = current.variant === "photo";
   const isDosaafPartner = current.variant === "partner" && /^https?:\/\/(?:www\.)?dosaaf\.ru(?:[/?#]|$)/i.test(current.link);
-  const desktop = getImageProps({ src: localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
+  const directBroadcast = current.variant === "broadcast";
+  const desktop = getImageProps({ unoptimized: directBroadcast, src: directBroadcast ? current.imageDesktop : localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
   // This content-hashed 768px WebP was already cropped/encoded on the server.
   // Serving it directly avoids a cold AVIF encode on the critical mobile path.
-  const mobile = getImageProps({ src: localMediaUrl(current.imageMobile || current.imageDesktop), alt: "", width: 768, height: 1080, sizes: "100vw", quality: 80, priority:active===0, unoptimized: /^\/images\/optimized\/hero-mobile-[a-f0-9]+\.webp$/.test(current.imageMobile) }).props;
+  const mobile = getImageProps({ src: directBroadcast ? current.imageMobile || current.imageDesktop : localMediaUrl(current.imageMobile || current.imageDesktop), alt: "", width: 768, height: 1080, sizes: "100vw", quality: 80, priority:active===0, unoptimized: directBroadcast || /^\/images\/optimized\/hero-mobile-[a-f0-9]+\.webp$/.test(current.imageMobile) }).props;
   const style = {
     "--hero-duration": `${current.duration}ms`,
   } as CSSProperties;
@@ -249,10 +252,11 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
   const [contentState, setContentState] = useState<"loading" | "ready" | "error">(initialSummary ? "ready" : "error");
   const [databaseMatches, setDatabaseMatches] = useState<any[]>(initialMatches);
   const [homeSummary, setHomeSummary] = useState<{
+    serverTime?: number;
     context: PublicSiteContext;
     divisions: Array<{ name: string; slug: string; href: string; teams: any[]; leaders: any[] }>;
     news: Array<{ id: string; slug: string; title: string; excerpt: string; category: string; imageUrl: string | null; publishedAt: string | null }>;
-    broadcasts: Array<{ id: string; slug: string; title: string; description: string | null; videoUrl: string; imageUrl: string | null; startsAt: string | null; isLive: boolean }>;
+    broadcasts: Array<{ id: string; slug: string; title: string; description: string | null; videoUrl: string; imageUrl: string | null; startsAt: string | null; endsAt?: string | null; matchStatus?: string | null; status?: BroadcastStatus; isLive: boolean }>;
     homepageContent: HomepageItem[];
     laureates: Array<{ id:string; category:string; title:string; name:string; teamName:string | null; season:string | null; imageUrl:string | null; link:string | null }>;
   } | null>(initialSummary);
@@ -299,7 +303,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
       finally { clearTimeout(timeout); pending = false; }
     };
     if (retry || !initialSummary) void refresh();
-    const timer = setInterval(refresh, hasLive ? 10_000 : 60_000);
+    const timer = setInterval(refresh, hasLive ? 10_000 : 30_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       active = false;
@@ -358,7 +362,10 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
     buttonLabel:featureMatch.status === "LIVE" ? "ОТКРЫТЬ ОНЛАЙН" : "ОТКРЫТЬ МАТЧ",
     duration:7000, homeLogoUrl:featureMatch.homeLogoUrl, awayLogoUrl:featureMatch.awayLogoUrl, live:featureMatch.status === "LIVE",
   });
-  const featureBroadcast = homeSummary?.broadcasts?.find((item) => item.isLive);
+  const broadcastNow = useBroadcastClock(homeSummary?.serverTime ?? Date.parse(initialNow));
+  const homeBroadcasts = (homeSummary?.broadcasts ?? []).map(item => broadcastNow ? { ...item, ...broadcastTiming({ ...item,
+    match: item.matchStatus ? { startsAt: item.startsAt, status: item.matchStatus } : null }, broadcastNow) } : item);
+  const featureBroadcast = homeBroadcasts.find((item) => item.isLive);
   if (featureBroadcast && heroSlides.length < 3) heroSlides.push({
     id:`broadcast-${featureBroadcast.id}`, title:featureBroadcast.title, subtitle:featureBroadcast.description ?? "Смотрите матчи ЛХЛ-76 в прямом эфире и в записи", link:"/broadcasts?filter=live", imageDesktop:featureBroadcast.imageUrl ?? "/images/optimized/hero-hockey-258d60f1efb5.webp", imageMobile:featureBroadcast.imageUrl ?? "/images/optimized/hero-hockey-258d60f1efb5.webp", variant:"broadcast", eyebrow:featureBroadcast.isLive ? "ПРЯМОЙ ЭФИР" : "ТРАНСЛЯЦИЯ ЛХЛ-76", buttonLabel:featureBroadcast.isLive ? "СМОТРЕТЬ ЭФИР" : "СМОТРЕТЬ ВИДЕО", duration:7500, live:featureBroadcast.isLive,
   });
@@ -651,7 +658,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
           <div className="shell section">
             <Title text="ТРАНСЛЯЦИИ" href="/broadcasts" link="ВСЕ ВИДЕО →" />
             <div className="homeBroadcastGrid">
-                {homeSummary!.broadcasts.map((broadcast) => (
+                {homeBroadcasts.map((broadcast) => (
                   <a
                     className={`homeBroadcastCard ${broadcast.isLive ? "isLive" : ""}`}
                     href={broadcast.videoUrl}
@@ -660,9 +667,9 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                     key={broadcast.id}
                   >
                     <div className="homeBroadcastVisual">
-                      {broadcast.imageUrl ? <PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" src={broadcast.imageUrl} alt="" /> : <span className="homeBroadcastFallback">ЛХЛ-76</span>}
+                      {broadcast.imageUrl ? <PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" src={broadcast.imageUrl} alt="" direct referrerPolicy="no-referrer" /> : <span className="homeBroadcastFallback">ЛХЛ-76</span>}
                       <i aria-hidden="true">▶</i>
-                      {broadcast.isLive ? <b>● ЛАЙВ</b> : null}
+                      <b data-status={broadcast.status ?? "archive"}>{broadcastStatusLabel[broadcast.status ?? "archive"]}</b>
                     </div>
                     <time>{broadcast.startsAt ? new Date(broadcast.startsAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" }) : "ВИДЕО ЛИГИ"}</time>
                     <h3>{broadcast.title}</h3>

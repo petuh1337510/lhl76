@@ -9,7 +9,7 @@ backup_dir="${app_path}/backups"
 
 for file in "${release}/docker-compose.production.yml" "${release}/runtime.env" \
   "${release}/secrets/postgres_owner_password" "${release}/secrets/postgres_app_password" \
-  "${release}/check-vk-photos.mjs"; do
+  "${release}/check-vk-photos.mjs" "${release}/20261110-broadcast-schedule.sql"; do
   test -s "${file}" || { echo "Missing release file: ${file}" >&2; exit 1; }
 done
 
@@ -116,6 +116,12 @@ test -s "${backup_dir}/postgres-${stamp}.dump"
 chmod 600 "${backup_dir}/postgres-${stamp}.dump"
 docker compose --env-file "${environment}" -f "${compose}" exec -T db \
   pg_restore -l < "${backup_dir}/postgres-${stamp}.dump" > /dev/null
+
+# Additive, idempotent broadcast scheduling migration, after the verified backup.
+# The previous application remains compatible if deployment must roll back.
+docker compose --env-file "${environment}" -f "${compose}" exec -T db \
+  sh -ec 'exec psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < "${release}/20261110-broadcast-schedule.sql"
 
 switched=1
 install -m 600 "${release}/runtime.env" "${environment}"

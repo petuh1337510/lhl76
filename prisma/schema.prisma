@@ -318,6 +318,7 @@ model Match {
   penalties       Penalty[]
   legacyEvents    LegacyMatchEvent[]
   penaltyShots    PenaltyShot[]
+  broadcasts      Broadcast[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -577,11 +578,16 @@ model Broadcast {
   videoUrl    String
   imageUrl    String?
   startsAt    DateTime?
+  endsAt      DateTime?
+  matchId     String?
+  match       Match?    @relation(fields: [matchId], references: [id], onDelete: SetNull)
   isLive      Boolean   @default(false)
   isPublished Boolean   @default(false)
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([matchId])
 }
 
 model HomepageContent {

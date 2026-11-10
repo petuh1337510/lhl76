@@ -11,12 +11,13 @@ describe("VK Видео", () => {
       { id: 43, owner_id: -123, title: "Запись матча", date: 900 },
       { id: 44, owner_id: -123, title: "Будущий эфир", upcoming: 1 },
     ]);
-    expect(items).toHaveLength(2);
+    expect(items).toHaveLength(3);
     expect(items[0]).toMatchObject({
-      isLive: true,
-      videoUrl: "https://vkvideo.ru/live-123_42",
+      isLive: false,
+      videoUrl: "https://vkvideo.ru/video-123_42",
       imageUrl: "https://example.com/large.jpg",
     });
+    expect(items[2].startsAt).toBeNull();
     expect(items[1]).toMatchObject({ isLive: false, videoUrl: "https://vkvideo.ru/video-123_43" });
   });
 });

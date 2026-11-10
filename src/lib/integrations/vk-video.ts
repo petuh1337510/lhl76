@@ -11,6 +11,7 @@ export type VkBroadcast = {
   imageUrl: string | null;
   startsAt: Date | null;
   isLive: boolean;
+  publishedAt: Date | null;
 };
 
 type VkVideo = {
@@ -30,22 +31,22 @@ type VkApiResult<T> = { response?: T; error?: { error_code: number; error_msg: s
 export function normalizeVkVideos(videos: VkVideo[]): VkBroadcast[] {
   return videos.flatMap((video) => {
     if (!Number.isInteger(video.id) || !Number.isInteger(video.owner_id) || !video.title) return [];
-    if (video.upcoming) return [];
-    const isLive = Boolean(video.live);
+    const isLive = false;
     const ownerId = video.owner_id!;
     const videoId = video.id!;
     const image = video.image?.filter((item) => item.url?.startsWith("https://"))
       .sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url ?? null;
-    const timestamp = video.live_start_time || video.date;
+    const timestamp = video.live_start_time;
     return [{
       id: `vk-${ownerId}_${videoId}`,
       slug: `vk-${ownerId}_${videoId}`,
       title: video.title,
       description: video.description?.trim() || null,
-      videoUrl: `https://vkvideo.ru/${isLive ? "live" : "video"}${ownerId}_${videoId}`,
+      videoUrl: `https://vkvideo.ru/video${ownerId}_${videoId}`,
       imageUrl: image,
       startsAt: timestamp && Number.isFinite(timestamp) ? new Date(timestamp * 1000) : null,
       isLive,
+      publishedAt: video.date ? new Date(video.date * 1000) : null,
     }];
   });
 }
@@ -64,9 +65,9 @@ async function vkMethod<T>(method: string, params: Record<string, string>, token
   return result.response;
 }
 
-const cachedBroadcasts = unstable_cache(async (): Promise<VkBroadcast[]> => {
+const cachedBroadcasts = unstable_cache(async () => {
   const token = process.env.VK_API_ACCESS_TOKEN;
-  if (!token) return [];
+  if (!token) throw new Error("VK API: подключение не настроено");
   let ownerId = Number(process.env.VK_VIDEO_OWNER_ID);
   if (!Number.isInteger(ownerId) || ownerId === 0) {
     const screenName = new URL(VK_CHANNEL_URL).pathname.match(/^\/@([^/]+)/)?.[1];
@@ -79,23 +80,36 @@ const cachedBroadcasts = unstable_cache(async (): Promise<VkBroadcast[]> => {
     }
     ownerId = owner.type === "user" ? owner.object_id : -owner.object_id;
   }
-  const videos = await vkMethod<{ items: VkVideo[] }>(
-    "video.get", { owner_id: String(ownerId), count: "40" }, token,
-  );
-  return normalizeVkVideos(videos.items ?? []).slice(0, 24);
-}, ["lhl76-vk-broadcasts"], { revalidate: 300 });
+  const all: VkVideo[] = [];
+  for (let offset = 0; offset < 10000; offset += 200) {
+    const videos = await vkMethod<{ items: VkVideo[]; count: number }>(
+      "video.get", { owner_id: String(ownerId), count: "200", offset: String(offset) }, token,
+    );
+    if (!Array.isArray(videos.items)) throw new Error("VK API: неверный список видео");
+    all.push(...videos.items);
+    if (videos.items.length < 200 || all.length >= videos.count) {
+      return { ownerId, items: normalizeVkVideos(all), updatedAt: new Date().toISOString() };
+    }
+    await new Promise(resolve => setTimeout(resolve, 350));
+  }
+  throw new Error("VK API: слишком большой каталог видео");
+}, ["lhl76-vk-broadcasts-v2"], { revalidate: 300, tags: ["vk-broadcasts"] });
+
+export async function getVkBroadcastCatalogue() {
+  if (!process.env.VK_API_ACCESS_TOKEN) return { configured: false, available: false, ownerId: null, items: [] as VkBroadcast[], updatedAt: null, error: "На сервере не настроено подключение VK." };
+  try {
+    const result = await cachedBroadcasts();
+    return { configured: true, available: true, ownerId: result.ownerId, error: null, updatedAt: result.updatedAt,
+      items: result.items.map(item => ({ ...item,
+        startsAt: item.startsAt ? new Date(item.startsAt) : null,
+        publishedAt: item.publishedAt ? new Date(item.publishedAt) : null,
+      })) };
+  } catch (error) {
+    console.error("Не удалось загрузить трансляции VK:", error instanceof Error ? error.message : "Ошибка подключения");
+    return { configured: true, available: false, ownerId: null, items: [] as VkBroadcast[], updatedAt: null, error: "Не удалось обновить список VK. Сохранённые трансляции доступны; повторите позже." };
+  }
+}
 
 export async function getVkBroadcasts(): Promise<VkBroadcast[]> {
-  if (!process.env.VK_API_ACCESS_TOKEN) return [];
-  try {
-    const items = await cachedBroadcasts();
-    // Next Data Cache uses JSON: restore dates on every read, including warm hits.
-    return items.map(item => {
-      const startsAt = item.startsAt ? new Date(item.startsAt) : null;
-      return { ...item, startsAt: startsAt && Number.isFinite(startsAt.getTime()) ? startsAt : null };
-    });
-  } catch (error) {
-    console.error("Не удалось загрузить трансляции VK:", error instanceof Error ? error.message : error);
-    return [];
-  }
+  return (await getVkBroadcastCatalogue()).items;
 }
