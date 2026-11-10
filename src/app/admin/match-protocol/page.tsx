@@ -1,5 +1,6 @@
 "use client";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { maxManualMatchScore, readManualMatchScore, type ManualMatchScore } from "@/lib/domain/match-protocol";
 import { AdminModal } from "../admin-modal";
 import { MatchRosterCard, MatchRosterEditor, matchJerseyNumber, type RosterPlayer } from "./match-roster";
 import { completeGoalieStint, formatMatchTime, MatchGoalieStints, toSeconds, validMatchTime, type GoalieStint } from "./match-goalie-stints";
@@ -129,6 +130,8 @@ export default function MatchProtocolPage() {
     [technicalWinnerTeamEntryId, setTechnicalWinnerTeamEntryId] = useState(""),
     [homeScore, setHomeScore] = useState("0"),
     [awayScore, setAwayScore] = useState("0"),
+    [manualScore, setManualScore] = useState<ManualMatchScore | null>(null),
+    [scoreEditor, setScoreEditor] = useState<{ home: string; away: string } | null>(null),
     [periods, setPeriods] = useState([
       { home: "", away: "" },
       { home: "", away: "" },
@@ -195,6 +198,7 @@ export default function MatchProtocolPage() {
     setTechnicalWinnerTeamEntryId(p.technicalWinnerTeamEntryId || "");
     setHomeScore(String(v.homeScore));
     setAwayScore(String(v.awayScore));
+    setManualScore(v.status === "FINAL" && v.resultType !== "TECHNICAL" ? readManualMatchScore(p.manualScore) : null);
     if (Array.isArray(v.periodScores))
       setPeriods(
         [0, 1, 2].map((i) => ({
@@ -287,6 +291,7 @@ export default function MatchProtocolPage() {
       refereeNote: referees.trim(),
       printDetails,
       technicalWinnerTeamEntryId: technicalResult ? technicalWinnerTeamEntryId : null,
+      manualScore,
     },
     shootouts: technicalResult ? [] : shootouts,
     resultNote: note,
@@ -307,6 +312,10 @@ export default function MatchProtocolPage() {
     if (!latest) return;
     setHomeScore(String(response.score.home));
     setAwayScore(String(response.score.away));
+    if (response.periodScores) setPeriods([0, 1, 2].map(index => ({
+      home: String(response.periodScores?.[index]?.home ?? ""),
+      away: String(response.periodScores?.[index]?.away ?? ""),
+    })));
     if (technicalResult) {
       setGoals([]);
       setPenalties([]);
@@ -488,7 +497,16 @@ export default function MatchProtocolPage() {
   const canEditShootouts = match.isPlayoff && (Number(homeScore) === Number(awayScore) || (regulationTie && hasSavedShootouts));
   const scoreFor = (teamId: string, score: string) => technicalResult
     ? !technicalWinnerTeamEntryId ? "—" : technicalWinnerTeamEntryId === teamId ? "+" : "−"
-    : score;
+    : manualScore ? String(teamId === match.homeTeamEntryId ? manualScore.home : manualScore.away) : score;
+  const enteredScore = scoreEditor && /^\d{1,3}$/.test(scoreEditor.home) && /^\d{1,3}$/.test(scoreEditor.away)
+    ? readManualMatchScore({ home: Number(scoreEditor.home), away: Number(scoreEditor.away) })
+    : null;
+  const manualTie = Boolean(match.isPlayoff && enteredScore && enteredScore.home === enteredScore.away);
+  const saveScore = (score: ManualMatchScore | null) => saveNow({ status: "FINAL", manualScore: score }, () => {
+    setStatus("FINAL");
+    setManualScore(score);
+    setScoreEditor(null);
+  });
   const lockedPlayersFor = (teamEntryId: string) => new Set<string>(resultType === "TECHNICAL" ? [] : [
     ...goals.filter(goal => goal.teamEntryId === teamEntryId).flatMap(goal => [goal.scorerId, goal.assist1Id, goal.assist2Id]),
     ...penalties.filter(penalty => penalty.teamEntryId === teamEntryId).map(penalty => penalty.playerId),
@@ -534,7 +552,10 @@ export default function MatchProtocolPage() {
         <header className={eventStyles.summary} aria-label="Табло матча">
           <div className={eventStyles.summaryLayout}>
             <select className={eventStyles.status} aria-label="Статус матча" value={status} data-live={status === "LIVE"}
-              disabled={technicalResult} onChange={event => setStatus(event.target.value)}>
+              disabled={technicalResult} onChange={event => {
+                setStatus(event.target.value);
+                if (event.target.value !== "FINAL") setManualScore(null);
+              }}>
               {Object.entries(matchStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
             <div className={eventStyles.matchCenter}>
@@ -546,12 +567,41 @@ export default function MatchProtocolPage() {
               <p className={eventStyles.matchDetails}>
                 <span>{match.division.competition.season.name} · {match.division.competition.name} · {match.division.name}</span>
                 <span>{match.startsAt ? new Date(match.startsAt).toLocaleString("ru-RU") : "Дата не указана"} · {match.venue?.name || "Арена не указана"}</span>
+                {manualScore && <span>Счёт внесён вручную</span>}
               </p>
             </div>
-            {status === "LIVE" && !technicalResult && <button type="button" className={eventStyles.finish} disabled={saving || conflict || Boolean(blockedReason)}
-              onClick={() => void saveNow({ status: "FINAL" }, () => setStatus("FINAL"))}>Завершить матч</button>}
+            {!technicalResult && <div className={eventStyles.summaryActions}>
+              <button type="button" className={eventStyles.finish} disabled={saving || conflict}
+                onClick={() => setScoreEditor(manualScore ? { home: String(manualScore.home), away: String(manualScore.away) }
+                  : status === "FINAL" ? { home: homeScore, away: awayScore } : { home: "", away: "" })}>
+                {manualScore ? "Изменить счёт" : "Внести счёт"}
+              </button>
+              {status === "LIVE" && <button type="button" className={eventStyles.finish} disabled={saving || conflict || Boolean(blockedReason)}
+                onClick={() => void saveNow({ status: "FINAL" }, () => setStatus("FINAL"))}>Завершить матч</button>}
+            </div>}
           </div>
         </header>
+        {scoreEditor && <AdminModal title="Итоговый счёт" onClose={() => { if (!saving) setScoreEditor(null); }}>
+          <form className="adminForm" onSubmit={event => { event.preventDefault(); if (enteredScore && !manualTie) void saveScore(enteredScore); }}>
+            <h2>Итоговый счёт</h2>
+            <p>Счёт сохранится как результат завершённого матча. Если позже внесёте протокол, сможете переключиться на расчёт по голам.</p>
+            <div className={eventStyles.manualScoreFields}>
+              {(["home", "away"] as const).map(side => <label key={side}>{teamName(side === "home" ? match.homeTeamEntryId : match.awayTeamEntryId)}
+                <input type="number" min="0" max={maxManualMatchScore} step="1" inputMode="numeric" required
+                  value={scoreEditor[side]} disabled={saving}
+                  onChange={event => setScoreEditor({ ...scoreEditor, [side]: event.target.value })} />
+              </label>)}
+            </div>
+            {manualTie && <p className="formError" role="alert">Укажите итоговый счёт с победителем матча плей-офф.</p>}
+            {(blockedReason || saveError) && <p className="formError" role="alert">{blockedReason || saveError}</p>}
+            <footer>
+              {manualScore && <button type="button" disabled={saving || conflict || Boolean(blockedReason)}
+                onClick={() => void saveScore(null)}>Считать по голам</button>}
+              <button type="button" disabled={saving} onClick={() => setScoreEditor(null)}>Отмена</button>
+              <button type="submit" disabled={!enteredScore || manualTie || saving || conflict || Boolean(blockedReason)}>Сохранить счёт</button>
+            </footer>
+          </form>
+        </AdminModal>}
         <div className={styles.tabs} role="tablist" aria-label="Разделы матча" onKeyDown={event => {
           const current = matchTabs.findIndex(([id]) => id === activeTab);
           const last = matchTabs.length - 1;
@@ -578,6 +628,7 @@ export default function MatchProtocolPage() {
                 onChange={(e) => {
                   setResultType(e.target.value);
                   if (e.target.value === "TECHNICAL") {
+                    setManualScore(null);
                     setTechnicalWinnerTeamEntryId("");
                   }
                 }}
@@ -607,7 +658,7 @@ export default function MatchProtocolPage() {
               </strong> : <input
                 type="number"
                 min="0"
-                value={homeScore}
+                value={manualScore?.home ?? homeScore}
                 readOnly
               />}
             </label>
@@ -618,7 +669,7 @@ export default function MatchProtocolPage() {
               </strong> : <input
                 type="number"
                 min="0"
-                value={awayScore}
+                value={manualScore?.away ?? awayScore}
                 readOnly
               />}
             </label>
@@ -626,7 +677,7 @@ export default function MatchProtocolPage() {
           {resultType === "TECHNICAL" ? <p className="technicalResultNotice">
             После выбора победителя технический результат сохранится автоматически.
             Голы, штрафы и буллиты будут удалены из протокола.
-          </p> : <div className="periodScoreInputs">
+          </p> : manualScore ? <p>Счёт внесён вручную. Чтобы показать счёт по периодам, внесите голы и выберите «Считать по голам» на табло.</p> : <div className="periodScoreInputs">
             {periods.map((p, i) => (
               <div key={i}>
                 <b>{i + 1} период</b>

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   deriveMatchProtocol,
+  readManualMatchScore,
   type ProtocolContribution,
 } from "@/lib/domain/match-protocol";
 import { rebuildDivisionStatistics } from "@/lib/rebuild-division-statistics";
@@ -117,6 +118,18 @@ async function handlePUT(request: NextRequest) {
     return NextResponse.json({ error: "Некорректный статус матча" }, { status: 400 });
   const allowedTeams = new Set([match.homeTeamEntryId, match.awayTeamEntryId]);
   const resultType = body.resultType === "TECHNICAL" ? "TECHNICAL" : "NORMAL";
+  const previousProtocol =
+    match.protocolData && typeof match.protocolData === "object"
+      ? (match.protocolData as Record<string, unknown>)
+      : {};
+  const submittedManualScore = body.protocolData?.manualScore;
+  const manualScore = resultType === "NORMAL" && body.status === "FINAL"
+    ? readManualMatchScore(submittedManualScore === undefined ? previousProtocol.manualScore : submittedManualScore)
+    : null;
+  if (submittedManualScore != null && !manualScore)
+    return NextResponse.json({ error: "Для завершённого матча укажите целый счёт от 0 до 999." }, { status: 400 });
+  if (manualScore && match.isPlayoff && manualScore.home === manualScore.away)
+    return NextResponse.json({ error: "Укажите итоговый счёт с победителем матча плей-офф." }, { status: 400 });
   if (resultType === "TECHNICAL" && body.status !== "FINAL")
     return NextResponse.json(
       { error: "Технический результат возможен только у завершённого матча" },
@@ -250,6 +263,7 @@ async function handlePUT(request: NextRequest) {
     goalieStints: body.protocolData?.goalieStints || [],
     shots: body.protocolData?.shots,
     status: body.status,
+    manualScore,
   });
   const newContributions =
     resultType === "TECHNICAL" || ["SCHEDULED", "POSTPONED", "CANCELLED"].includes(body.status)
@@ -260,7 +274,7 @@ async function handlePUT(request: NextRequest) {
   let finalHomeScore = resultType === "TECHNICAL" ? 0 : derived.homeScore;
   let finalAwayScore = resultType === "TECHNICAL" ? 0 : derived.awayScore;
   // The deciding shootout goal affects the match/series result, not player goal totals.
-  if(match.isPlayoff && resultType !== 'TECHNICAL' && body.status === 'FINAL' && finalHomeScore === finalAwayScore){
+  if(!manualScore && match.isPlayoff && resultType !== 'TECHNICAL' && body.status === 'FINAL' && finalHomeScore === finalAwayScore){
     const homeShots=persistedShootouts.filter((s:any)=>s.teamEntryId===match.homeTeamEntryId&&s.scored).length;
     const awayShots=persistedShootouts.filter((s:any)=>s.teamEntryId===match.awayTeamEntryId&&s.scored).length;
     if(homeShots>awayShots)finalHomeScore++;else if(awayShots>homeShots)finalAwayScore++;
@@ -273,10 +287,6 @@ async function handlePUT(request: NextRequest) {
           { home: 0, away: 0 },
         ]
       : derived.periodScores;
-  const previousProtocol =
-    match.protocolData && typeof match.protocolData === "object"
-      ? (match.protocolData as Record<string, unknown>)
-      : {};
   const previousContributions = Array.isArray(previousProtocol.statContributions)
     ? (previousProtocol.statContributions as ProtocolContribution[])
     : [];
@@ -439,6 +449,7 @@ async function handlePUT(request: NextRequest) {
         periodScores: finalPeriodScores,
         protocolData: {
           ...(body.protocolData || {}),
+          manualScore,
           eventClockVersion: matchClockVersion,
           statContributions: newContributions,
         },
@@ -458,6 +469,7 @@ async function handlePUT(request: NextRequest) {
     ok: true,
     updatedAt: updatedAt.toISOString(),
     score: { home: finalHomeScore, away: finalAwayScore },
+    periodScores: finalPeriodScores,
     recalculated: {
       playerStatistics: true,
       teamStatistics: true,

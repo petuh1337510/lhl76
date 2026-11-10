@@ -1,7 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { deriveMatchProtocol } from "./match-protocol";
+import { deriveMatchProtocol, readManualMatchScore } from "./match-protocol";
 
 describe("deriveMatchProtocol", () => {
+  it("uses the manual final score without creating period scores or player goals", () => {
+    const input = {
+      homeTeamEntryId: "home",
+      awayTeamEntryId: "away",
+      status: "FINAL",
+      manualScore: { home: 4, away: 0 },
+    };
+    expect(deriveMatchProtocol(input)).toMatchObject({
+      homeScore: 4, awayScore: 0, periodScores: [], contributions: [],
+    });
+    expect(deriveMatchProtocol({ ...input, goals: [{ teamEntryId: "home", scorerId: "player", period: 1 }] }))
+      .toMatchObject({ homeScore: 4, awayScore: 0, contributions: [{ playerId: "player", goals: 1 }] });
+    expect(deriveMatchProtocol({ ...input, status: "LIVE" }).homeScore).toBe(0);
+  });
+
+  it("accepts zero and rejects incomplete or invalid manual scores", () => {
+    expect(readManualMatchScore({ home: 0, away: 0 })).toEqual({ home: 0, away: 0 });
+    for (const value of [{ home: 2 }, { home: -1, away: 3 }, { home: 1.5, away: 3 }, { home: "2", away: 3 }, { home: 1000, away: 0 }])
+      expect(readManualMatchScore(value)).toBeNull();
+  });
+
   it("derives score, periods and player statistics from events", () => {
     const result = deriveMatchProtocol({
       homeTeamEntryId: "home",

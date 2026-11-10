@@ -41,6 +41,17 @@ export type ProtocolContribution = {
   goalieGoalsAgainst: number;
 };
 
+export type ManualMatchScore = { home: number; away: number };
+export const maxManualMatchScore = 999;
+
+export function readManualMatchScore(value: unknown): ManualMatchScore | null {
+  if (!value || typeof value !== "object" || !("home" in value) || !("away" in value)) return null;
+  const { home, away } = value;
+  const valid = (score: unknown): score is number =>
+    typeof score === "number" && Number.isInteger(score) && score >= 0 && score <= maxManualMatchScore;
+  return valid(home) && valid(away) ? { home, away } : null;
+}
+
 const isMissedPenaltyShot = (goal: ProtocolGoalInput) =>
   goal.situation === "PENALTY_SHOT" && goal.penaltyShotOutcome === "miss";
 
@@ -61,6 +72,7 @@ export function deriveMatchProtocol(input: {
   goalieStints?: ProtocolGoalieStintInput[];
   shots?: unknown;
   status?: string;
+  manualScore?: ManualMatchScore | null;
 }) {
   const goals = (input.goals || []).filter((goal) => !isMissedPenaltyShot(goal));
   const contributions = new Map<string, ProtocolContribution>();
@@ -118,8 +130,9 @@ export function deriveMatchProtocol(input: {
 
   const scoreFor = (teamEntryId: string) =>
     goals.filter((goal) => goal.teamEntryId === teamEntryId).length;
-  const homeScore = scoreFor(input.homeTeamEntryId);
-  const awayScore = scoreFor(input.awayTeamEntryId);
+  const manualScore = input.status === "FINAL" ? input.manualScore : null;
+  const homeScore = manualScore?.home ?? scoreFor(input.homeTeamEntryId);
+  const awayScore = manualScore?.away ?? scoreFor(input.awayTeamEntryId);
 
   if (input.status === "FINAL") {
     const goalies = calculateMatchGoalies({
@@ -158,7 +171,7 @@ export function deriveMatchProtocol(input: {
   return {
     homeScore,
     awayScore,
-    periodScores: periods,
+    periodScores: manualScore ? [] : periods,
     contributions: [...contributions.values()],
   };
 }

@@ -74,9 +74,24 @@
   text-align: center;
 }
 
-:global(.adminUI .adminContent) .summary .finish {
+.summaryActions {
   grid-area: finish;
   justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.manualScoreFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.manualScoreFields input { width: 100%; min-width: 0; box-sizing: border-box; }
+
+:global(.adminUI .adminContent) .summary .finish {
   min-width: 0;
   max-width: 100%;
   margin: 0;

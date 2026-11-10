@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ManualMatchScore } from "@/lib/domain/match-protocol";
 import type { GoalieStint } from "./match-goalie-stints";
 
-type SaveOverride = { status?: string; rosterEntryIds?: string[]; numberOverrides?: Record<string, string>; goalieStints?: GoalieStint[] };
-type SavedProtocol = { updatedAt: string; score: { home: number; away: number } };
+type SaveOverride = { status?: string; rosterEntryIds?: string[]; numberOverrides?: Record<string, string>; goalieStints?: GoalieStint[]; manualScore?: ManualMatchScore | null };
+type SavedProtocol = { updatedAt: string; score: { home: number; away: number }; periodScores?: { home: number; away: number }[] };
 type SaveNotice = { response: SavedProtocol; latest: boolean; hasShootouts: boolean };
 
 export function useProtocolAutosave(
@@ -30,10 +31,11 @@ export function useProtocolAutosave(
     const active = session.current;
     const original = current.current.draft;
     if (!active || !original || current.current.matchId !== active.matchId || inFlight.current || active.conflict) return false;
-    const { goalieStints, ...changes } = override ?? {};
+    const { goalieStints, manualScore, ...changes } = override ?? {};
     if (current.current.getBlockedReason(goalieStints)) return false;
     const payload = { ...JSON.parse(original), ...changes };
     if (goalieStints) payload.protocolData = { ...payload.protocolData, goalieStints };
+    if (manualScore !== undefined) payload.protocolData = { ...payload.protocolData, manualScore };
     const snapshot = JSON.stringify(payload);
     if (snapshot === active.saved) {
       onCommit?.();
