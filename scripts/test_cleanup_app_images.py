@@ -1,4 +1,5 @@
 import runpy
+import json
 import unittest
 from pathlib import Path
 
@@ -9,6 +10,21 @@ def image(name, repository="ghcr.io/petuh1337510/lhl76"):
     return {"Id": name, "RepoDigests": [repository+"@sha256:"+name]}
 
 class CleanupSelectionTests(unittest.TestCase):
+    def test_container_comparison_ignores_mount_order(self):
+        inspect = module["inspect_container"]
+        original_run = inspect.__globals__["run"]
+        value = {"Id": "app", "Image": "current", "State": {"StartedAt": "unchanged"},
+                 "Mounts": [{"Destination": "/b"}, {"Destination": "/a"}]}
+        try:
+            inspect.__globals__["run"] = lambda *args: json.dumps([value])
+            before = inspect("app")
+            value["Mounts"].reverse()
+            self.assertEqual(before, inspect("app"))
+            value["State"]["StartedAt"] = "restarted"
+            self.assertNotEqual(before, inspect("app"))
+        finally:
+            inspect.__globals__["run"] = original_run
+
     def test_accepts_containerd_digest_references_in_repo_tags(self):
         images = [image(name) for name in ["current", "previous", "old"]]
         for value in images:

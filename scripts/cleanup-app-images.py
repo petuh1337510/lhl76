@@ -30,7 +30,8 @@ def choose_images(images, current, previous, used):
 
 def inspect_container(identifier):
     value = json.loads(run("docker", "inspect", identifier))[0]
-    return {"Id": value["Id"], "Image": value["Image"], "StartedAt": value["State"]["StartedAt"], "Mounts": value["Mounts"]}
+    return {"Id": value["Id"], "Image": value["Image"], "StartedAt": value["State"]["StartedAt"],
+            "Mounts": sorted(value["Mounts"], key=lambda mount: mount["Destination"])}
 
 
 def files_snapshot():
@@ -81,8 +82,10 @@ def main():
     free_before = available_bytes()
     for image_id in candidates:
         # Recheck the running release and let Docker refuse any image now in use.
-        if inspect_container(app_id) != app_before:
-            raise RuntimeError("Application changed during cleanup")
+        app_now = inspect_container(app_id)
+        if app_now != app_before:
+            changed = [key for key in app_before if app_before[key] != app_now[key]]
+            raise RuntimeError("Application changed during cleanup: " + ", ".join(changed))
         subprocess.run(["docker", "image", "rm", image_id], check=True)
     assert inspect_container(app_id) == app_before, "Application container changed"
     assert inspect_container(db_id) == db_before, "Database container or mounts changed"
