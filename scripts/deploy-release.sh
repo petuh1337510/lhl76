@@ -8,7 +8,8 @@ environment="${app_path}/.env"
 backup_dir="${app_path}/backups"
 
 for file in "${release}/docker-compose.production.yml" "${release}/runtime.env" \
-  "${release}/secrets/postgres_owner_password" "${release}/secrets/postgres_app_password"; do
+  "${release}/secrets/postgres_owner_password" "${release}/secrets/postgres_app_password" \
+  "${release}/check-vk-photos.mjs"; do
   test -s "${file}" || { echo "Missing release file: ${file}" >&2; exit 1; }
 done
 
@@ -18,21 +19,23 @@ previous=0
 if test -s "${environment}" && test -s "${compose}"; then
   previous=1
   cp -p "${environment}" "${rollback}/runtime.env"
+  cp -p "${compose}" "${rollback}/docker-compose.production.yml"
 fi
 if test "${previous}" -ne 1; then
   echo "Existing production release is required; refusing to initialize a database" >&2
   exit 1
 fi
 
-# This release may replace only the application image. Keep the database and
-# media configuration byte-for-byte identical to the running release.
-cmp -s "${compose}" "${release}/docker-compose.production.yml" || {
+# Allow only the application image and the VK photo integration secret to change.
+# Database, media mounts and every other runtime setting must remain identical.
+cmp -s <(sed '/^      VK_API_ACCESS_TOKEN: /d' "${compose}") \
+  <(sed '/^      VK_API_ACCESS_TOKEN: /d' "${release}/docker-compose.production.yml") || {
   echo "Compose configuration changed; refusing automatic deployment" >&2
   exit 1
 }
-cmp -s <(sed '/^LHL76_IMAGE=/d' "${environment}") \
-  <(sed '/^LHL76_IMAGE=/d' "${release}/runtime.env") || {
-  echo "Runtime configuration changed beyond the image; refusing automatic deployment" >&2
+cmp -s <(sed '/^LHL76_IMAGE=/d; /^VK_API_ACCESS_TOKEN=/d' "${environment}") \
+  <(sed '/^LHL76_IMAGE=/d; /^VK_API_ACCESS_TOKEN=/d' "${release}/runtime.env") || {
+  echo "Runtime configuration changed beyond the image and VK token; refusing automatic deployment" >&2
   exit 1
 }
 for secret in postgres_owner_password postgres_app_password; do
@@ -96,6 +99,7 @@ restore_previous() {
   trap - ERR
   if test "${switched}" -eq 1; then
     install -m 600 "${rollback}/runtime.env" "${environment}"
+    install -m 600 "${rollback}/docker-compose.production.yml" "${compose}"
     docker compose --env-file "${environment}" -f "${compose}" up -d --no-deps --wait --wait-timeout 180 app || true
   fi
   echo "Release failed; previous configuration retained or restored; database and media were not rolled back" >&2
@@ -115,6 +119,7 @@ docker compose --env-file "${environment}" -f "${compose}" exec -T db \
 
 switched=1
 install -m 600 "${release}/runtime.env" "${environment}"
+install -m 600 "${release}/docker-compose.production.yml" "${compose}"
 
 docker compose --env-file "${environment}" -f "${compose}" config --quiet
 docker compose --env-file "${environment}" -f "${compose}" pull app
@@ -140,6 +145,10 @@ test -z "$(comm -23 "${rollback}/media-before.txt" "${rollback}/media-after.txt"
   echo "Previously present media files are missing or changed after deployment" >&2
   false
 }
+
+# Verify the key from inside the runtime container before accepting the release.
+docker compose --env-file "${environment}" -f "${compose}" exec -T app \
+  node --input-type=module < "${release}/check-vk-photos.mjs"
 
 trap - ERR
 rm -rf -- "${rollback}" "${release}"

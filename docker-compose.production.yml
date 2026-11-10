@@ -38,6 +38,7 @@ services:
       POSTGRES_APP_USER: ${POSTGRES_APP_USER:-lhl_app}
       POSTGRES_APP_PASSWORD_FILE: /run/secrets/postgres_app_password
       AUTH_SECRET: ${AUTH_SECRET:?Set a unique authentication secret}
+      VK_API_ACCESS_TOKEN: ${VK_API_ACCESS_TOKEN:-}
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set the public HTTPS origin}
       RATE_LIMIT_DIR: /app/state/limits
       ALLOW_ADMIN_SETUP: "0"

@@ -77,22 +77,25 @@ jobs:
           POSTGRES_OWNER_PASSWORD: ${{ secrets.POSTGRES_OWNER_PASSWORD }}
           POSTGRES_APP_PASSWORD: ${{ secrets.POSTGRES_APP_PASSWORD }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          VK_API_ACCESS_TOKEN: ${{ secrets.VK_API_ACCESS_TOKEN }}
           IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
         run: |
           set -euo pipefail
+          python3 -c 'import os,re; assert re.fullmatch(r"[A-Za-z0-9_.=\-]*", os.environ.get("VK_API_ACCESS_TOKEN", "")), "Invalid VK token format"'
           install -d -m 700 ~/.ssh release/secrets
           printf '%s\n' "${SERVER_PRIVATE_KEY}" > ~/.ssh/lhl76-deploy
           chmod 600 ~/.ssh/lhl76-deploy
           cp docs/production-known-hosts ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
           cp docker-compose.production.yml release/
-          cp scripts/deploy-release.sh release/
+          cp scripts/deploy-release.sh scripts/check-vk-photos.mjs release/
           chmod +x release/deploy-release.sh
           {
             printf 'COMPOSE_PROJECT_NAME=%s\n' "${COMPOSE_PROJECT_NAME}"
             printf 'LHL76_IMAGE=ghcr.io/%s@%s\n' '${{ github.repository }}' "${IMAGE_DIGEST}"
             printf 'POSTGRES_DB=lhl76\nPOSTGRES_OWNER_USER=lhl_owner\nPOSTGRES_APP_USER=lhl_app\n'
             printf 'AUTH_SECRET=%s\n' "${AUTH_SECRET}"
+            printf 'VK_API_ACCESS_TOKEN=%s\n' "${VK_API_ACCESS_TOKEN}"
             printf 'PUBLIC_SITE_URL=%s\n' "${PUBLIC_SITE_URL}"
             printf 'MEDIA_ROOT=%s\nAPP_PORT=%s\n' "${MEDIA_ROOT}" "${APP_PORT}"
           } > release/runtime.env
@@ -105,7 +108,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/lhl76-deploy -p "${SERVER_PORT}" "${SERVER_USERNAME}@${SERVER_HOST}" \
             "mkdir -p '${SERVER_APP_PATH}/release/secrets' && chmod 700 '${SERVER_APP_PATH}/release/secrets'"
-          scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/docker-compose.production.yml release/deploy-release.sh release/runtime.env \
+          scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/docker-compose.production.yml release/deploy-release.sh release/check-vk-photos.mjs release/runtime.env \
             "${SERVER_USERNAME}@${SERVER_HOST}:${SERVER_APP_PATH}/release/"
           scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/secrets/* \
             "${SERVER_USERNAME}@${SERVER_HOST}:${SERVER_APP_PATH}/release/secrets/"
