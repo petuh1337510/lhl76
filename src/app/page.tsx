@@ -8,7 +8,7 @@ export default async function HomePage() {
   // Reuse public queries without a self-HTTP request or persistent score cache.
   const [initialMatches, initialSummary] = await Promise.all([
     getMatches().then((response) => response.json()),
-    getHomeSummary().then((summary) => JSON.parse(JSON.stringify(summary))),
+    getHomeSummary(false, { includeBroadcasts: false }).then((summary) => JSON.parse(JSON.stringify(summary))),
   ]);
   return <Home initialMatches={initialMatches} initialSummary={initialSummary} initialNow={new Date().toISOString()} />;
 }

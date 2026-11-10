@@ -5,7 +5,7 @@ import { getPublicSiteContext } from "@/lib/public-site-context";
 import { getPublicBroadcasts } from "@/lib/public-broadcasts";
 import { getHomeEditorial } from "@/lib/home-editorial";
 
-export async function getHomeSummary(liveOnly = false) {
+export async function getHomeSummary(liveOnly = false, { includeBroadcasts = true } = {}) {
   if (liveOnly) return { broadcasts: await getPublicBroadcasts(4), serverTime: Date.now() };
   const context = await getPublicSiteContext();
   if (!context) return null;
@@ -15,9 +15,9 @@ export async function getHomeSummary(liveOnly = false) {
       const data = await getHomeDivisionSummary(division.id);
       return { ...division, ...data };
     })),
-    getPublicBroadcasts(4),
+    includeBroadcasts ? getPublicBroadcasts(4) : Promise.resolve([]),
     getHomeEditorial(),
   ]);
 
-  return { context, divisions, broadcasts, ...editorial, serverTime: Date.now() };
+  return { context, divisions, broadcasts, ...editorial, broadcastsDeferred: !includeBroadcasts, serverTime: Date.now() };
 }

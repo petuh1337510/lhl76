@@ -1,5 +1,5 @@
 "use client";
-import { useBroadcastClock } from "@/components/broadcast-clock";
+import { useBroadcastBoundaryClock } from "@/components/broadcast-clock";
 import { broadcastTiming, broadcastStatusLabel, type BroadcastStatus } from "@/lib/broadcast-status";
 import { RecentMatchLink } from "@/components/recent-match-link";
 import { formatGoalDifference } from "@/lib/format-goal-difference";
@@ -74,6 +74,8 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const [interacted, setInteracted] = useState(false);
   const touchStart = useRef<number | null>(null);
   const current = slides[active] ?? slides[0];
+  const slideId = current?.id;
+  const slideDuration = current?.duration;
   useEffect(() => {
     const start = () => setInteracted(true);
     const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
@@ -82,16 +84,16 @@ function HomeHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   }, []);
   useEffect(() => { if (active >= slides.length) setActive(0); }, [active, slides.length]);
   useEffect(() => {
-    if (!interacted || paused || slides.length < 2 || !current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setTimeout(() => setActive((index) => (index + 1) % slides.length), current.duration);
+    if (!interacted || paused || slides.length < 2 || !slideDuration || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setTimeout(() => setActive((index) => (index + 1) % slides.length), slideDuration);
     return () => window.clearTimeout(timer);
-  }, [active, paused, slides.length, current, interacted]);
+  }, [active, paused, slides.length, slideId, slideDuration, interacted]);
   if (!current) return null;
   const move = (step: number) => setActive((index) => (index + step + slides.length) % slides.length);
   const isPhotoOnly = current.variant === "photo";
   const isDosaafPartner = current.variant === "partner" && /^https?:\/\/(?:www\.)?dosaaf\.ru(?:[/?#]|$)/i.test(current.link);
   const directBroadcast = current.variant === "broadcast";
-  const desktop = getImageProps({ unoptimized: directBroadcast, src: directBroadcast ? current.imageDesktop : localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
+  const desktop = getImageProps({ unoptimized: directBroadcast || /^\/images\/optimized\/hero-desktop-[a-f0-9]+\.webp$/.test(current.imageDesktop), src: directBroadcast ? current.imageDesktop : localMediaUrl(current.imageDesktop), alt: "", width: 1920, height: 820, sizes: "100vw", quality: 80, priority:active===0 }).props;
   // This content-hashed 768px WebP was already cropped/encoded on the server.
   // Serving it directly avoids a cold AVIF encode on the critical mobile path.
   const mobile = getImageProps({ src: directBroadcast ? current.imageMobile || current.imageDesktop : localMediaUrl(current.imageMobile || current.imageDesktop), alt: "", width: 768, height: 1080, sizes: "100vw", quality: 80, priority:active===0, unoptimized: directBroadcast || /^\/images\/optimized\/hero-mobile-[a-f0-9]+\.webp$/.test(current.imageMobile) }).props;
@@ -253,6 +255,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
   const [databaseMatches, setDatabaseMatches] = useState<any[]>(initialMatches);
   const [homeSummary, setHomeSummary] = useState<{
     serverTime?: number;
+    broadcastsDeferred?: boolean;
     context: PublicSiteContext;
     divisions: Array<{ name: string; slug: string; href: string; teams: any[]; leaders: any[] }>;
     news: Array<{ id: string; slug: string; title: string; excerpt: string; category: string; imageUrl: string | null; publishedAt: string | null }>;
@@ -302,12 +305,21 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
       } catch { if (active) { setRefreshFailed(true); setContentState("error"); } }
       finally { clearTimeout(timeout); pending = false; }
     };
+    // VK must not delay the first HTML response or hide already loaded league data.
+    const broadcastController = new AbortController();
+    if (initialSummary?.broadcastsDeferred) {
+      fetch("/api/public/home-summary?live=1", { cache: "no-store", signal: broadcastController.signal })
+        .then(response => response.ok ? response.json() : null)
+        .then(summary => { if (active && summary) setHomeSummary(current => ({ ...current, ...summary, broadcastsDeferred: false })); })
+        .catch(() => { /* The regular refresh retries without blocking the page. */ });
+    }
     if (retry || !initialSummary) void refresh();
     const timer = setInterval(refresh, hasLive ? 10_000 : 30_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       active = false;
       controller?.abort();
+      broadcastController.abort();
       clearInterval(timer);
       document.removeEventListener("visibilitychange", refresh);
     };
@@ -362,7 +374,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
     buttonLabel:featureMatch.status === "LIVE" ? "ОТКРЫТЬ ОНЛАЙН" : "ОТКРЫТЬ МАТЧ",
     duration:7000, homeLogoUrl:featureMatch.homeLogoUrl, awayLogoUrl:featureMatch.awayLogoUrl, live:featureMatch.status === "LIVE",
   });
-  const broadcastNow = useBroadcastClock(homeSummary?.serverTime ?? Date.parse(initialNow));
+  const broadcastNow = useBroadcastBoundaryClock(homeSummary?.serverTime ?? Date.parse(initialNow), homeSummary?.broadcasts ?? []);
   const homeBroadcasts = (homeSummary?.broadcasts ?? []).map(item => broadcastNow ? { ...item, ...broadcastTiming({ ...item,
     match: item.matchStatus ? { startsAt: item.startsAt, status: item.matchStatus } : null }, broadcastNow) } : item);
   const featureBroadcast = homeBroadcasts.find((item) => item.isLive);

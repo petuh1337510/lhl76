@@ -4,6 +4,28 @@ import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
+/** Persistent WebP: a new app container need not cold-encode the main banner. */
+export async function desktopHeroSource(source: string | null) {
+  if (!source || !/^\/(uploads|images)\//.test(source) || /^\/images\/optimized\/hero-desktop-/.test(source)) return source;
+  const root = path.resolve(process.cwd(), "public");
+  const input = path.resolve(root, `.${source}`);
+  if (!input.startsWith(root + path.sep)) return source;
+  try {
+    const original = await readFile(input);
+    const hash = createHash("sha256").update(original).update("desktop-1920-v1").digest("hex").slice(0, 20);
+    const relative = `/images/optimized/hero-desktop-${hash}.webp`;
+    const destination = path.join(root, relative);
+    try { await access(destination); return relative; } catch { /* Generate once. */ }
+    const buffer = await sharp(original, { limitInputPixels: 40_000_000 }).rotate()
+      .resize({ width: 1920, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+    await mkdir(path.dirname(destination), { recursive: true });
+    const temporary = `${destination}.${randomUUID()}.tmp`;
+    await writeFile(temporary, buffer);
+    await rename(temporary, destination);
+    return relative;
+  } catch { return source; }
+}
+
 /** Crop before resizing: a very wide banner must not become blurry on a tall phone. */
 export async function mobileHeroSource(source: string | null, mobile: string | null) {
   if (mobile || !source || !/^\/(uploads|images)\//.test(source)) return mobile;
