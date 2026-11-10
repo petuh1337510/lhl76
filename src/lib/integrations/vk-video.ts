@@ -88,7 +88,12 @@ const cachedBroadcasts = unstable_cache(async (): Promise<VkBroadcast[]> => {
 export async function getVkBroadcasts(): Promise<VkBroadcast[]> {
   if (!process.env.VK_API_ACCESS_TOKEN) return [];
   try {
-    return await cachedBroadcasts();
+    const items = await cachedBroadcasts();
+    // Next Data Cache uses JSON: restore dates on every read, including warm hits.
+    return items.map(item => {
+      const startsAt = item.startsAt ? new Date(item.startsAt) : null;
+      return { ...item, startsAt: startsAt && Number.isFinite(startsAt.getTime()) ? startsAt : null };
+    });
   } catch (error) {
     console.error("Не удалось загрузить трансляции VK:", error instanceof Error ? error.message : error);
     return [];

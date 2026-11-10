@@ -150,6 +150,30 @@ test -z "$(comm -23 "${rollback}/media-before.txt" "${rollback}/media-after.txt"
 docker compose --env-file "${environment}" -f "${compose}" exec -T app \
   node --input-type=module < "${release}/check-vk-photos.mjs"
 
+# Readiness checks database connectivity; exercise real pages twice to catch
+# failures that appear only after Next has serialized the first cached response.
+docker compose --env-file "${environment}" -f "${compose}" exec -T app \
+  node --input-type=module <<'NODE'
+for (let pass = 1; pass <= 2; pass++) {
+  for (const path of ["/", "/api/public/home-summary", "/broadcasts", "/media"]) {
+    const response = await fetch(`http://127.0.0.1:3000${path}`, { signal: AbortSignal.timeout(60000) });
+    const body = await response.text();
+    if (!response.ok || body.includes("Не удалось загрузить страницу")) {
+      console.error(`Public page check failed: ${path}, pass ${pass}, HTTP ${response.status}`);
+      process.exit(1);
+    }
+    if (path === "/api/public/home-summary") {
+      const summary = JSON.parse(body);
+      if (!summary || !Array.isArray(summary.broadcasts)) {
+        console.error("Homepage summary is missing broadcast data");
+        process.exit(1);
+      }
+    }
+    console.log(`Public page verified: ${path}, pass ${pass}`);
+  }
+}
+NODE
+
 trap - ERR
 rm -rf -- "${rollback}" "${release}"
 echo "Release healthy"
