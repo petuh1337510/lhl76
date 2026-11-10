@@ -1,0 +1,71 @@
+name: Clean old application images
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Remove the validated unused images
+        type: boolean
+        default: false
+      expected_current:
+        description: Expected current Docker image ID
+        required: true
+        type: string
+      previous:
+        description: Previous Docker image ID to retain for rollback
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lhl76-production
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate selected versions
+        env:
+          CURRENT_IMAGE: ${{ inputs.expected_current }}
+          PREVIOUS_IMAGE: ${{ inputs.previous }}
+        run: |
+          python3 -c 'import os,re; assert all(re.fullmatch(r"(?:sha256:)?[a-f0-9]{12,64}", os.environ[k]) for k in ["CURRENT_IMAGE", "PREVIOUS_IMAGE"])'
+          python3 -m py_compile scripts/cleanup-app-images.py
+      - name: Retain current and previous app images
+        env:
+          SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
+          CURRENT_IMAGE: ${{ inputs.expected_current }}
+          PREVIOUS_IMAGE: ${{ inputs.previous }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${SERVER_PRIVATE_KEY}" > ~/.ssh/lhl76-deploy
+          chmod 600 ~/.ssh/lhl76-deploy
+          cp docs/production-known-hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          mode=''
+          if [ "$APPLY" = true ]; then mode='--apply'; fi
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -i ~/.ssh/lhl76-deploy root@191.217.231.118 \
+            "python3 - --expected-current '${CURRENT_IMAGE}' --previous '${PREVIOUS_IMAGE}' ${mode}" \
+            < scripts/cleanup-app-images.py
+      - name: Check public website twice
+        run: |
+          python3 - <<'PY'
+          import urllib.request, json
+          for attempt in range(2):
+              for path in ['/', '/api/ready', '/api/public/home-summary', '/broadcasts', '/media']:
+                  with urllib.request.urlopen('https://lhl-76.ru'+path, timeout=60) as response:
+                      body=response.read().decode()
+                      assert response.status==200 and 'Не удалось загрузить страницу' not in body, path
+                      if path=='/api/public/home-summary':
+                          assert isinstance(json.loads(body)['broadcasts'], list)
+                      print('PASS', attempt+1, path, response.status)
+          PY
