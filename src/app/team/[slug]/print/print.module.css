@@ -182,11 +182,12 @@
 
 .marks span {
   font-size: 6.5pt;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .marks strong {
-  font: 400 8pt/1 Arial, sans-serif;
+  font: 900 8pt/1 Arial, sans-serif;
+  color: #000;
   background: #fff;
 }
 

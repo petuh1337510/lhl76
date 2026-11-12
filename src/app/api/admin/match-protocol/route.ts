@@ -1,4 +1,5 @@
 import { withAdmin } from "@/lib/admin-guard";
+import { parsePenaltyMinutes } from "@/lib/domain/penalty-minutes";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -226,12 +227,15 @@ async function handlePUT(request: NextRequest) {
         { status: 400 },
       );
   }
-  for (const penalty of body.penalties || [])
+  for (const penalty of body.penalties || []) {
+    if (parsePenaltyMinutes(penalty.minutes) === null)
+      return NextResponse.json({ error: "Укажите целое количество штрафных минут или ШБ" }, { status: 400 });
     if (!belongsToSelectedTeam(penalty.playerId, penalty.teamEntryId))
       return NextResponse.json(
         { error: "Удалённый игрок должен быть выбран в составе своей команды" },
         { status: 400 },
       );
+  }
   for (const shot of body.shootouts || []) {
     const opponentTeamEntryId =
       shot.teamEntryId === match.homeTeamEntryId
@@ -399,7 +403,7 @@ async function handlePUT(request: NextRequest) {
           clockSeconds: penalty.clockSeconds != null && Number.isFinite(Number(penalty.clockSeconds))
             ? Number(penalty.clockSeconds)
             : null,
-          minutes: Number(penalty.minutes) || 2,
+          minutes: parsePenaltyMinutes(penalty.minutes)!,
           reasonCode: penalty.reasonCode || null,
           reason: penalty.reason || null,
         })),

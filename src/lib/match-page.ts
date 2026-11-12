@@ -1,4 +1,5 @@
 import "server-only";
+import { formatPenaltyMinutes } from "@/lib/domain/penalty-minutes";
 
 import { competitionPublicPath, publicSlug } from "@/lib/division-page";
 import { matchClockResolver } from "@/lib/domain/match-clock";
@@ -269,7 +270,7 @@ export async function getPublicMatch(
       detail:
         [
           !penalty.playerId ? penalty.teamEntry.team.name : null,
-          `${penalty.minutes} мин.`,
+          penalty.minutes === 0 ? "ШБ · назначен штрафной бросок" : `${formatPenaltyMinutes(penalty.minutes)} мин.`,
           penalty.reason,
           penalty.reasonCode ? `код ${penalty.reasonCode}` : null,
         ]
@@ -290,8 +291,8 @@ export async function getPublicMatch(
       teamName: shot.teamEntry.team.name,
       playerName: playerName(shot.player),
       detail: [
-        shot.phase === "SHOOTOUT" ? "Послематчевый буллит" : "Штрафной бросок",
-        shot.scored ? "реализован" : "не реализован",
+        shot.phase === "SHOOTOUT" ? "Послематчевый буллит" : "ШБ",
+        shot.scored ? "реализованный" : "нереализованный",
         shot.goalie ? `вратарь: ${playerName(shot.goalie)}` : null,
       ]
         .filter(Boolean)

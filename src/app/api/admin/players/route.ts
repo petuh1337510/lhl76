@@ -7,7 +7,10 @@ async function handleGET(request: NextRequest) {
   const page = Math.max(1, Number(request.nextUrl.searchParams.get("page")) || 1);
   const pageSize = 25;
   const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
-  const where = { deletedAt: null, ...(search ? { OR: ["lastName", "firstName", "patronymic"].map((field) => ({ [field]: { contains: search, mode: "insensitive" as const } })) } : {}) };
+  const words = search.split(/\s+/).filter(Boolean);
+  const where = { deletedAt: null, ...(words.length ? { AND: words.map((word) => ({
+    OR: ["lastName", "firstName", "patronymic"].map((field) => ({ [field]: { contains: word, mode: "insensitive" as const } })),
+  })) } : {}) };
   const [total, players] = await prisma.$transaction([
     prisma.player.count({ where }),
     prisma.player.findMany({ where, orderBy: [{ lastName: "asc" }, { firstName: "asc" }, { patronymic: "asc" }], skip: (page - 1) * pageSize, take: pageSize, select: { id: true, updatedAt:true, slug: true, firstName: true, lastName: true, patronymic: true, birthDate: true, position: true, photoUrl: true, baseNumber: true, ratingCategoryId: true, _count: { select: { rosterEntries: true } } } }),

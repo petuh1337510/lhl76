@@ -32,6 +32,7 @@ function serialize(player: any, activeSuspensions: any[] = []) {
         const leftCompetition = left.teamEntry.division.competition;
         const rightCompetition = right.teamEntry.division.competition;
         return rightCompetition.season.startsAt.getTime() - leftCompetition.season.startsAt.getTime()
+          || Number(rightCompetition.type === "CHAMPIONSHIP") - Number(leftCompetition.type === "CHAMPIONSHIP")
           || leftCompetition.name.localeCompare(rightCompetition.name, "ru")
           || left.teamEntry.division.name.localeCompare(right.teamEntry.division.name, "ru")
           || left.teamEntry.team.name.localeCompare(right.teamEntry.team.name, "ru")
@@ -43,6 +44,7 @@ function serialize(player: any, activeSuspensions: any[] = []) {
       teamEntryId: entry.teamEntryId,
       season: entry.teamEntry.division.competition.season.name,
       competition: entry.teamEntry.division.competition.name,
+      competitionType: entry.teamEntry.division.competition.type,
       division: entry.teamEntry.division.name,
       team: entry.teamEntry.team.name,
       number: entry.number ?? player.baseNumber ?? "",

@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { deriveMatchProtocol, readManualMatchScore } from "./match-protocol";
 
 describe("deriveMatchProtocol", () => {
+  it.each(["ШБ", " шб ", 0, "0"])("excludes a penalty-shot award (%s) from player statistics", (minutes) => {
+    const result = deriveMatchProtocol({
+      homeTeamEntryId: "home", awayTeamEntryId: "away", status: "LIVE",
+      goals: [{ teamEntryId: "home", scorerId: "shooter", assist1Id: "assistant", situation: "PENALTY_SHOT", penaltyShotOutcome: "miss" }],
+      penalties: [{ teamEntryId: "away", playerId: "penalized", minutes }, { teamEntryId: "away", playerId: "ordinary", minutes: 2 }],
+    });
+    expect(result.homeScore).toBe(0);
+    expect(result.awayScore).toBe(0);
+    expect(result.contributions).toEqual([expect.objectContaining({ playerId: "ordinary", penaltyMinutes: 2 })]);
+  });
   it("uses the manual final score without creating period scores or player goals", () => {
     const input = {
       homeTeamEntryId: "home",

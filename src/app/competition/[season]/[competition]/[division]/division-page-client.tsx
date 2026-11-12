@@ -450,7 +450,7 @@ export function DivisionPageClient({ data }: { data: DivisionPageData }) {
                         <td>{player.goalieGames ? player.shotsAgainst ?? "—" : "—"}</td>
                         <td>{player.goalieGames ? player.goalieGoalsAgainst : "—"}</td>
                         <td>{player.goalieGames ? player.saves ?? "—" : "—"}</td>
-                        <td className="statPoints">
+                        <td>
                           {player.savePercentage === null ? "—" : `${player.savePercentage.toFixed(1)}%`}
                         </td>
                         <td>{player.goalsAgainstAverage === null ? "—" : player.goalsAgainstAverage.toFixed(2)}</td>

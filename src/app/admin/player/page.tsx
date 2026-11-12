@@ -18,6 +18,7 @@ type Assignment = {
   teamEntryId: string;
   season: string;
   competition: string;
+  competitionType: "CHAMPIONSHIP" | "TOURNAMENT";
   division: string;
   team: string;
   numberOverride: string;
@@ -91,7 +92,10 @@ function AssignmentEditor({ item, baseNumber, onSaved }: { item: Assignment; bas
       await onSaved();
     } catch { setError("Не удалось сохранить номер"); } finally { setBusy(false); }
   }
-  return <article className={styles.card}>
+  const competitionAccent = item.competitionType === "CHAMPIONSHIP" ? "championship"
+    : /памят/i.test(item.competition) ? "memorial"
+    : /апрел/i.test(item.competition) ? "april" : undefined;
+  return <article className={styles.card} data-competition={competitionAccent}>
     <div className={styles.details}>
       <div className={styles.cardHeading}>
         <h4>{item.competition}</h4>
@@ -117,6 +121,9 @@ export default function PlayerAdmin() {
   const createKey=useRef<string|null>(null);
   const [player, setPlayer] = useState<any>(null), [form, setForm] = useState<any>(emptyPlayer);
   const [missing, setMissing] = useState(false);
+  const [fromTeamEntry, setFromTeamEntry] = useState("");
+  const backHref = fromTeamEntry ? `/admin/team-roster?entry=${encodeURIComponent(fromTeamEntry)}` : "/admin/players";
+  const backLabel = fromTeamEntry ? "← Вернуться к составу команды" : "← Все игроки";
   const [categories, setCategories] = useState<Category[]>([]), [choices, setChoices] = useState<any[]>([]);
   const [isNew, setIsNew] = useState(false), [edit, setEdit] = useState(false), [assign, setAssign] = useState(false);
   const [competitionId, setCompetitionId] = useState(""), [divisionId, setDivisionId] = useState(""), [teamEntryId, setTeamEntryId] = useState("");
@@ -124,6 +131,7 @@ export default function PlayerAdmin() {
 
   async function load() {
     const params = new URLSearchParams(window.location.search), creating = params.get("new") === "1";
+    setFromTeamEntry(params.get("fromTeamEntry")?.trim() || "");
     setIsNew(creating);
     const choicesResponse = await fetch("/api/admin/roster?choices=1");
     if (choicesResponse.ok) setChoices(await choicesResponse.json());
@@ -156,7 +164,7 @@ export default function PlayerAdmin() {
   const competitions = Array.from(new Map(choices.map((choice) => [choice.competitionId, { id: choice.competitionId, label: `${choice.season} · ${choice.competition}` }])).values());
   const divisions = Array.from(new Map(choices.filter((choice) => choice.competitionId === competitionId).map((choice) => [choice.divisionId, { id: choice.divisionId, label: choice.division }])).values());
   const teams = choices.filter((choice) => choice.competitionId === competitionId && choice.divisionId === divisionId);
-  if (missing) return <main className="adminShell"><section className="adminContent divisionPage"><h1>Игрок не найден</h1><a href="/admin/players">← Все игроки</a></section></main>;
+  if (missing) return <main className="adminShell"><section className="adminContent divisionPage"><h1>Игрок не найден</h1><a href={backHref}>{backLabel}</a></section></main>;
   if (!isNew && !player) return <main className="adminShell"><section className="adminContent divisionPage">Загрузка…</section></main>;
   if (isNew) return <><PlayersList /><div className="adminContent adminModalMount"><AdminModal title="Создание игрока" onClose={() => { window.location.href = "/admin/players"; }} wide><section className="adminForm playerCreateFull"><h2>Данные игрока</h2>{error && <p className="formError">{error}</p>}<PlayerFields form={form} put={put} categories={categories} trackUpload={trackUpload} /><footer><a href="/admin/players">Отмена</a><button disabled={uploadsPending || !form.lastName.trim() || !form.firstName.trim()} onClick={save}>Создать игрока</button></footer></section></AdminModal></div></>;
   const assignmentsBySeason = new Map<string, Assignment[]>();
@@ -174,7 +182,7 @@ export default function PlayerAdmin() {
     { icon: "star", label: "Рейтинг", value: player.rating || "—" },
   ];
   return <main className="adminShell adminPlayer"><section className={`adminContent divisionPage ${styles.profile}`}>
-    <a className="backButton" href="/admin/players">← Все игроки</a>{message && <p className="adminNotice">{message}</p>}
+    <a className="backButton" href={backHref}>{backLabel}</a>{message && <p className="adminNotice">{message}</p>}
     <header className={styles.hero}>
       <div className={styles.portrait} aria-hidden="true">
         {player.photoUrl ? <PublicImage src={player.photoUrl} width={216} height={216} sizes="108px" alt="" /> : `${player.lastName?.[0] ?? ""}${player.firstName?.[0] ?? ""}`}

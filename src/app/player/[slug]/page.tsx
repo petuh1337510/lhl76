@@ -75,7 +75,7 @@ function PlayerHistorySection({
                 <span>{row.goalieGames ? Math.floor(row.goalieSeconds / 60) : "—"}</span>
                 <span>{row.goalieGames ? row.shotsAgainst ?? "—" : "—"}</span>
                 <span>{row.goalieGames ? row.goalieGoalsAgainst : "—"}</span>
-                <em>{row.goalieGames ? row.savePercentage : "—"}</em>
+                <span>{row.goalieGames ? row.savePercentage : "—"}</span>
                 <span>{row.goalieGames ? row.goalsAgainstAverage : "—"}</span>
                 <span>{row.shutouts ?? "—"}</span>
               </>}

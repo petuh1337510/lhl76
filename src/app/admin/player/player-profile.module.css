@@ -214,12 +214,26 @@
 }
 
 .card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px 20px;
-  padding: 12px 2px;
+  padding: 12px 2px 12px 14px;
 }
+
+.card[data-competition]::before {
+  content: "";
+  position: absolute;
+  inset: 14px auto 14px 0;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--competition-stripe);
+}
+
+.card[data-competition="championship"] { --competition-stripe: #22a060; }
+.card[data-competition="memorial"] { --competition-stripe: #e43c4c; }
+.card[data-competition="april"] { --competition-stripe: #ef8a24; }
 
 .card + .card {
   border-top: 1px solid var(--admin-line-soft);

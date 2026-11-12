@@ -1,0 +1,37 @@
+.page { container: roster / inline-size; min-width: 0; }
+.page.page:global(.adminContent) :global(.rosterAdminRow) {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.6fr) 90px minmax(100px, .7fr) minmax(115px, .8fr) minmax(155px, 1fr) 145px;
+  align-items: start;
+  gap: 16px;
+  padding: 18px;
+}
+.page.page:global(.adminContent) :global(.rosterAdminPerson) { grid-column: auto; align-self: center; gap: 12px; }
+.page.page:global(.adminContent) :global(.rosterAdminPerson) > :is(img, b) {
+  width: 48px; height: 60px; flex: 0 0 48px; border-radius: 8px; object-fit: cover; object-position: center top;
+}
+.page.page:global(.adminContent) :global(.rosterAdminPerson) strong { font-size: 16px; line-height: 1.3; }
+.page.page:global(.adminContent) :global(.rosterAdminPerson) small { display: block; margin-top: 4px; line-height: 1.5; }
+.page.page:global(.adminContent) :global(.rosterAdminRow) > label { display: grid; min-width: 0; gap: 6px; margin: 0; font-size: 12px; line-height: 18px; }
+.page.page:global(.adminContent) :global(.rosterAdminRow) > label :is(input, select) { width: 100%; min-width: 0; height: 42px; box-sizing: border-box; margin: 0; padding: 9px 10px; font-size: 14px; }
+.page.page:global(.adminContent) :global(.rosterNumberHint) { margin: 0; font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
+.page.page:global(.adminContent) :global(.rosterAdminActions) { grid-column: auto; display: flex; flex-direction: column; align-items: stretch; align-self: center; gap: 7px; min-width: 0; }
+.page.page:global(.adminContent) :global(.rosterAdminActions) > :is(a, button) { display: block; text-align: center; margin: 0; padding: 8px; font-size: 12px; line-height: 1.4; white-space: normal; border-radius: 7px; }
+.page.page:global(.adminContent) :global(.rosterAdminActions) > a { border: 1px solid var(--admin-line); text-decoration: none; color: var(--admin-link); }
+.toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 16px 0; }
+.toolbar > label { display: grid; gap: 7px; flex: 1 1 320px; min-width: 0; max-width: 520px; color: var(--admin-muted); font-size: 12px; font-weight: 600; }
+.toolbar input { width: 100%; min-width: 0; box-sizing: border-box; height: 44px; }
+.toolbar > button { min-height: 44px; }
+.toolbar > p { margin: 0 0 12px auto; color: var(--admin-muted); font-size: 12px; }
+.empty { padding: 28px 18px; border: 1px dashed var(--admin-line); border-radius: 10px; color: var(--admin-muted); text-align: center; }
+@container roster (max-width: 1050px) {
+  .page.page:global(.adminContent) :global(.rosterAdminRow) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .page.page:global(.adminContent) :global(.rosterAdminPerson) { grid-column: 1 / -1; padding-bottom: 12px; border-bottom: 1px solid var(--admin-line-soft); }
+  .page.page:global(.adminContent) :global(.rosterAdminActions) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+}
+@container roster (max-width: 560px) {
+  .page.page:global(.adminContent) :global(.rosterAdminRow) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; padding: 14px; }
+  .toolbar > label { max-width: none; flex-basis: 100%; }
+  .toolbar > p { margin-bottom: 12px; }
+  .page.page:global(.adminContent) :global(.rosterAdminActions) > :is(a, button) { flex: 1 1 120px; }
+}

@@ -1,4 +1,5 @@
 "use client";
+import { formatPenaltyMinutes } from "@/lib/domain/penalty-minutes";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -90,7 +91,7 @@ function formRows(minimum: number, ...lengths: number[]) {
 }
 
 function goalSituation(goal: Goal) {
-  if (goal.situation === "PENALTY_SHOT") return isScoringGoal(goal) ? "ШБ" : "ШБ (мимо)";
+  if (goal.situation === "PENALTY_SHOT") return isScoringGoal(goal) ? "ШБ" : "ШБ (нереализ.)";
   if (goal.situation === "EMPTY_NET") return "ПВ";
   return goal.situation?.replace(/X/g, "×");
 }
@@ -201,7 +202,7 @@ function ProtocolSheet({ data, printCopy = false }: { data: Props; printCopy?: b
           const penalty = penalties[side][index];
           return <Cells key={side} values={[
             ...(goal ? [index + 1, goal.time, playerLabel(side, goal.scorerId), playerLabel(side, goal.assist1Id), playerLabel(side, goal.assist2Id), goalSituation(goal)] : ["", "", "", "", "", ""]),
-            ...(penalty ? [penalty.playerId ? playerLabel(side, penalty.playerId) : "Ком.", penalty.minutes, penalty.reasonCode || penalty.reason, penalty.time, ""] : ["", "", "", "", ""]),
+            ...(penalty ? [penalty.playerId ? playerLabel(side, penalty.playerId) : "Ком.", formatPenaltyMinutes(penalty.minutes), penalty.reasonCode || penalty.reason, penalty.time, ""] : ["", "", "", "", ""]),
           ]} />;
         })}
       </tr>)}</tbody>

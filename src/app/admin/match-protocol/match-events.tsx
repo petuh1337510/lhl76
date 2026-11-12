@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { formatPenaltyMinutes } from "@/lib/domain/penalty-minutes";
 import { PublicImage } from "@/components/public-image";
 import { UiIcon } from "@/components/ui-icon";
 import styles from "./match-events.module.css";
@@ -53,7 +54,7 @@ export function isScoringGoal(goal: Goal) {
 }
 
 function goalLabel(goal: Goal) {
-  if (goal.situation === "PENALTY_SHOT") return isScoringGoal(goal) ? "ШБ · гол" : "ШБ · мимо";
+  if (goal.situation === "PENALTY_SHOT") return isScoringGoal(goal) ? "ШБ · гол" : "ШБ · нереализованный";
   if (goal.situation === "EMPTY_NET") return "Пустые ворота";
   return (goal.situation || "5X5").replace(/X/g, "×");
 }
@@ -131,7 +132,7 @@ export function MatchEventTables({ teams, filter, goals, penalties, disabled, pl
             <thead><tr><th scope="col">Время</th><th scope="col">Игрок</th><th scope="col">Мин</th><th scope="col">Причина</th><th scope="col" aria-label="Действия" /></tr></thead>
             <tbody>{teamPenalties.length ? teamPenalties.map(penalty => <tr key={penalty.id}>
               <td><time>{penalty.time}</time></td><td>{penalty.playerId ? playerBadge(id, penalty.playerId) : "Командный"}</td>
-              <td>{penalty.minutes}</td><td>{penalty.reason || penalty.reasonCode || "—"}</td>
+              <td>{formatPenaltyMinutes(penalty.minutes)}</td><td>{penalty.reason || penalty.reasonCode || "—"}</td>
               <td><RowActions label={`штраф на ${penalty.time}`} disabled={disabled} onEdit={() => onPenalty(id, penalties.indexOf(penalty))} onDelete={() => onDeletePenalty(penalties.indexOf(penalty))} /></td>
             </tr>) : <tr><td colSpan={5} className={styles.empty}>Штрафов пока нет.</td></tr>}</tbody>
           </table>

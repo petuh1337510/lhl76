@@ -1,4 +1,5 @@
 "use client";
+import { formatPenaltyMinutes, parsePenaltyMinutes } from "@/lib/domain/penalty-minutes";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { maxManualMatchScore, readManualMatchScore, type ManualMatchScore } from "@/lib/domain/match-protocol";
 import { PenaltyReasonInput } from "./penalty-reason-input";
@@ -44,7 +45,8 @@ const situations = [
   ["4X4", "4×4"],
   ["3X3", "3×3"],
   ["EMPTY_NET", "Пустые ворота"],
-  ["PENALTY_SHOT", "Штрафной бросок"],
+  ["PENALTY_SHOT", "Реализованный ШБ"],
+  ["PENALTY_SHOT_MISSED", "Нереализованный ШБ"],
 ];
 
 const toClock = (v: number | null) =>
@@ -214,7 +216,7 @@ export default function MatchProtocolPage() {
       ),
     );
     setPenalties(
-      v.penalties.map((x: any) => ({ ...x, time: eventTime(x) })),
+      v.penalties.map((x: any) => ({ ...x, minutes: formatPenaltyMinutes(x.minutes), time: eventTime(x) })),
     );
   }
   useEffect(() => {
@@ -387,7 +389,7 @@ export default function MatchProtocolPage() {
     );
   };
   const commitGoal = () => {
-    if (!goal.scorerId) { setGoalFormError("Выберите автора гола."); return; }
+    if (!goal.scorerId) { setGoalFormError(goal.situation === "PENALTY_SHOT" ? "Выберите исполнителя ШБ." : "Выберите автора гола."); return; }
     if (!validMatchTime(goal.time)) { setGoalFormError("Укажите время матча в формате ММ:СС."); return; }
     const participants = [goal.scorerId, goal.assist1Id, goal.assist2Id].filter(Boolean);
     if (new Set(participants).size !== participants.length) { setGoalFormError("Автор и ассистенты должны быть разными игроками."); return; }
@@ -405,7 +407,7 @@ export default function MatchProtocolPage() {
   const commitPenalty = () => {
     if (penaltyTarget === "player" && !penalty.playerId) { setPenaltyFormError("Выберите игрока или командный штраф."); return; }
     if (!validMatchTime(penalty.time)) { setPenaltyFormError("Укажите время матча в формате ММ:СС."); return; }
-    if (!Number.isFinite(Number(penalty.minutes)) || Number(penalty.minutes) <= 0) { setPenaltyFormError("Укажите количество штрафных минут больше нуля."); return; }
+    if (parsePenaltyMinutes(penalty.minutes) === null) { setPenaltyFormError("Укажите целое количество штрафных минут или ШБ."); return; }
     const x = { ...penalty, playerId: penaltyTarget === "team" ? "" : penalty.playerId, id: penalty.id || `p-${Date.now()}` };
     setPenalties((a) =>
       editPenalty === null
@@ -701,7 +703,7 @@ export default function MatchProtocolPage() {
                   <button type="button" role="tab" aria-selected={goalMode === "numbers"} onClick={() => setGoalMode("numbers")}>По номерам</button>
                 </div>
                 {goalMode === "names" ? <div className="goalNameFields" role="tabpanel">
-                  <label>Автор гола<select value={goal.scorerId} onChange={(e) => {
+                  <label>{goal.situation === "PENALTY_SHOT" ? "Исполнитель ШБ" : "Автор гола"}<select value={goal.scorerId} onChange={(e) => {
                     const scorerId = e.target.value;
                     setGoal({ ...goal, scorerId, assist1Id: goal.assist1Id === scorerId ? "" : goal.assist1Id, assist2Id: goal.assist2Id === scorerId ? "" : goal.assist2Id });
                     setGoalFormError("");
@@ -710,7 +712,7 @@ export default function MatchProtocolPage() {
                 </div> : <div className="goalNumberMode" role="tabpanel">
                   <p>Выберите автора гола, затем ассистентов. Игроки без номера показаны в конце. Повторное нажатие снимает выбор.</p>
                   <div className="goalNumberRoles">
-                    <div><span>Автор гола</span><strong>{goalRoleLabel(goal.scorerId)}</strong></div>
+                    <div><span>{goal.situation === "PENALTY_SHOT" ? "Исполнитель ШБ" : "Автор гола"}</span><strong>{goalRoleLabel(goal.scorerId)}</strong></div>
                     {goal.situation !== "PENALTY_SHOT" && <><div><span>Ассистент 1</span><strong>{goalRoleLabel(goal.assist1Id)}</strong></div><div><span>Ассистент 2</span><strong>{goalRoleLabel(goal.assist2Id)}</strong></div></>}
                   </div>
                   {goalNumberPlayers.length > 0 && <div className="goalNumberGrid">{goalNumberPlayers.map(({ row, number }) => {
@@ -723,14 +725,15 @@ export default function MatchProtocolPage() {
                 <div className="goalCommonFields">
                   <label>Время матча<input inputMode="numeric" value={goal.time} onFocus={(event) => event.currentTarget.select()} onChange={(event) => setGoal({ ...goal, time: formatMatchTime(event.target.value) })} placeholder="34:25" /></label>
                   <label>Период<input disabled value={`${getPeriod(goal.time)} период`} /></label>
-                  <label>Составы<select value={goal.situation} onChange={(event) => {
-                    const situation = event.target.value;
-                    setGoal({ ...goal, situation, penaltyShotOutcome: situation === "PENALTY_SHOT" ? "goal" : "", assist1Id: situation === "PENALTY_SHOT" ? "" : goal.assist1Id, assist2Id: situation === "PENALTY_SHOT" ? "" : goal.assist2Id });
+                  <label>Ситуация<select value={goal.situation === "PENALTY_SHOT" && goal.penaltyShotOutcome === "miss" ? "PENALTY_SHOT_MISSED" : goal.situation} onChange={(event) => {
+                    const missed = event.target.value === "PENALTY_SHOT_MISSED";
+                    const situation = missed ? "PENALTY_SHOT" : event.target.value;
+                    setGoal({ ...goal, situation, penaltyShotOutcome: situation === "PENALTY_SHOT" ? missed ? "miss" : "goal" : "", assist1Id: situation === "PENALTY_SHOT" ? "" : goal.assist1Id, assist2Id: situation === "PENALTY_SHOT" ? "" : goal.assist2Id });
                   }}>{situations.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                  {goal.situation === "PENALTY_SHOT" && <label>Результат броска<select value={goal.penaltyShotOutcome || "goal"} onChange={(event) => setGoal({ ...goal, penaltyShotOutcome: event.target.value })}><option value="goal">Реализован — засчитать гол</option><option value="miss">Не реализован — без гола</option></select></label>}
+                  {goal.situation === "PENALTY_SHOT" && goal.penaltyShotOutcome === "miss" && <p>Нереализованный ШБ: только запись в протоколе, без гола и начисления статистики.</p>}
                 </div>
                 {goalFormError && <p role="alert" className="formError">{goalFormError}</p>}
-                <footer><button type="button" onClick={() => setGoalOpen(false)}>Отмена</button><button type="button" onClick={commitGoal}>{editGoal === null ? "Добавить гол" : "Сохранить изменения"}</button></footer>
+                <footer><button type="button" onClick={() => setGoalOpen(false)}>Отмена</button><button type="button" onClick={commitGoal}>{editGoal === null ? goal.situation === "PENALTY_SHOT" ? "Добавить ШБ" : "Добавить гол" : "Сохранить изменения"}</button></footer>
               </section>
             </AdminModal>
           )}
@@ -763,7 +766,7 @@ export default function MatchProtocolPage() {
                 <div className="penaltyCommonFields">
                   <label>Время матча<input inputMode="numeric" value={penalty.time} onFocus={(event) => event.currentTarget.select()} onChange={(event) => { setPenalty({ ...penalty, time: formatMatchTime(event.target.value) }); setPenaltyFormError(""); }} placeholder="27:10" /></label>
                   <label>Период<input disabled value={`${getPeriod(penalty.time)} период`} /></label>
-                  <label>Минуты<input type="number" min="1" value={penalty.minutes} onChange={(event) => { setPenalty({ ...penalty, minutes: event.target.value }); setPenaltyFormError(""); }} /></label>
+                  <label>Минуты или ШБ<input type="text" value={penalty.minutes} placeholder="2 или ШБ" onChange={(event) => { setPenalty({ ...penalty, minutes: event.target.value.toLocaleUpperCase("ru") }); setPenaltyFormError(""); }} /><small>ШБ — без штрафных минут в статистике</small></label>
                   <div className="penaltyReasonField">
                     <PenaltyReasonInput value={penalty.reason || ""} onChange={(reasonCode, reason) => {
                       setPenalty({ ...penalty, reasonCode, reason });

@@ -1,3 +1,5 @@
+import { parsePenaltyMinutes } from "./penalty-minutes";
+
 export type ProtocolGoalInput = {
   teamEntryId: string;
   scorerId?: string;
@@ -116,12 +118,12 @@ export function deriveMatchProtocol(input: {
     }
   }
   for (const penalty of input.penalties || []) {
-    const parsed = Number(penalty.minutes);
+    const parsed = parsePenaltyMinutes(penalty.minutes);
     add(
       penalty.playerId,
       penalty.teamEntryId,
       "penaltyMinutes",
-      Number.isFinite(parsed) && parsed > 0 ? parsed : 2,
+      parsed ?? 2,
     );
   }
   if (input.status === "FINAL")

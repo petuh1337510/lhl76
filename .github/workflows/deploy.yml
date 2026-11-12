@@ -89,7 +89,6 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           cp docker-compose.production.yml release/
           cp scripts/deploy-release.sh scripts/check-vk-photos.mjs release/
-          cp scripts/migrations/20261110-broadcast-schedule.sql release/
           chmod +x release/deploy-release.sh
           {
             printf 'COMPOSE_PROJECT_NAME=%s\n' "${COMPOSE_PROJECT_NAME}"
@@ -109,7 +108,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/lhl76-deploy -p "${SERVER_PORT}" "${SERVER_USERNAME}@${SERVER_HOST}" \
             "mkdir -p '${SERVER_APP_PATH}/release/secrets' && chmod 700 '${SERVER_APP_PATH}/release/secrets'"
-          scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/docker-compose.production.yml release/deploy-release.sh release/check-vk-photos.mjs release/20261110-broadcast-schedule.sql release/runtime.env \
+          scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/docker-compose.production.yml release/deploy-release.sh release/check-vk-photos.mjs release/runtime.env \
             "${SERVER_USERNAME}@${SERVER_HOST}:${SERVER_APP_PATH}/release/"
           scp -i ~/.ssh/lhl76-deploy -P "${SERVER_PORT}" release/secrets/* \
             "${SERVER_USERNAME}@${SERVER_HOST}:${SERVER_APP_PATH}/release/secrets/"
