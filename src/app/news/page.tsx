@@ -28,7 +28,7 @@ export default async function NewsPage({
       ...(category ? { category } : {}),
     },
     orderBy: [{ publishedAt: "desc" }, { title: "asc" }],
-    select: {id:true, slug:true, title:true, excerpt:true, category:true, imageUrl:true, publishedAt:true},
+    select: {id:true, slug:true, title:true, excerpt:true, category:true, imageUrl:true, videoUrl:true, publishedAt:true},
   }), prisma.news.findMany({
     where: { isPublished: true },
     distinct: ["category"],
@@ -74,8 +74,8 @@ export default async function NewsPage({
                   key={item.id}
                 >
                   <div className="publicNewsCardImage">
-                    {item.imageUrl ? <PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" src={item.imageUrl} alt="" /> : <b>ЛХЛ-76</b>}
-                    <span>{item.category}</span>
+                    {item.imageUrl ? <PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" direct={Boolean(item.videoUrl)} src={item.imageUrl} alt="" /> : <b>ЛХЛ-76</b>}
+                    <span>{item.videoUrl ? "▶ Видео · " : ""}{item.category}</span>
                   </div>
                   <div className="publicNewsCardBody">
                     <time>{date(item.publishedAt)}</time>

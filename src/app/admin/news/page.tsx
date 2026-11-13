@@ -1,4 +1,6 @@
 "use client";
+import { NewsVideo } from "@/components/news-video";
+import { vkNewsVideo } from "@/lib/news-video";
 import { AdminModal } from "../admin-modal";
 import { PublicImage } from "@/components/public-image";
 
@@ -38,6 +40,8 @@ export default function NewsAdminPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
   const [error, setError] = useState("");
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewNotice, setPreviewNotice] = useState("");
 
   const load = () => fetch("/api/admin/news", { cache: "no-store" }).then((response) => response.json()).then((data) => setItems(data.items ?? []));
   useEffect(() => { load().catch(() => setError("Не удалось загрузить новости")); }, []);
@@ -64,6 +68,20 @@ export default function NewsAdminPage() {
       setDraft((current) => current ? target === "cover" ? { ...current, imageUrl: result.url } : target === "video" ? { ...current, videoUrl: result.url } : { ...current, gallery: [...current.gallery, result.url] } : current);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Не удалось загрузить файл"); }
     finally { setUploading(""); }
+  };
+
+  const previewVk = async () => {
+    if (!draft || previewBusy) return;
+    const source = draft.videoUrl;
+    setPreviewBusy(true); setPreviewNotice("");
+    try {
+      const response = await fetch(`/api/public/news-video?url=${encodeURIComponent(source)}`, { signal: AbortSignal.timeout(8000) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Не удалось получить превью VK");
+      setDraft(current => current?.videoUrl === source ? { ...current, imageUrl: current.imageUrl || result.thumbnail || "" } : current);
+      setPreviewNotice(result.thumbnail ? "Плеер доступен. Обложка получена; свою обложку сохраняем." : "Плеер доступен. Обложку загрузите вручную.");
+    } catch (reason) { setPreviewNotice(reason instanceof Error ? reason.message : "VK временно недоступен"); }
+    finally { setPreviewBusy(false); }
   };
 
   const uploadGallery = async (files: FileList | null) => {
@@ -100,13 +118,13 @@ export default function NewsAdminPage() {
         <label>Короткий анонс<small>Показывается на карточке новости на главной.</small><textarea className="newsExcerpt" value={draft.excerpt} onChange={(event) => setDraft({ ...draft, excerpt: event.target.value })} placeholder="Кратко расскажи, о чём материал — 1–3 предложения." /></label>
         <label>Полный текст новости<small>Основной текст публикации. Абзацы сохраняются.</small><textarea className="newsBody" value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} placeholder="Напиши полный текст новости…" /></label>
       </div><aside className="newsMediaPanel">
-        <section><h3>Обложка</h3><p>Главное изображение карточки и страницы новости.</p>{draft.imageUrl ? <div className="newsMediaPreview"><PublicImage sizes="(max-width: 700px) 90vw, 320px" src={draft.imageUrl} alt="Обложка"/><button onClick={() => setDraft({ ...draft, imageUrl: "" })}>Удалить</button></div> : null}<label className="newsFileButton">{uploading === "cover" ? "Загружаю…" : "Загрузить обложку"}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => event.target.files?.[0] && upload(event.target.files[0], "cover")}/></label></section>
+        <section><h3>Обложка</h3><p>Главное изображение карточки и страницы новости.</p>{draft.imageUrl ? <div className="newsMediaPreview"><PublicImage sizes="(max-width: 700px) 90vw, 320px" direct={Boolean(vkNewsVideo(draft.videoUrl))} src={draft.imageUrl} alt="Обложка"/><button onClick={() => setDraft({ ...draft, imageUrl: "" })}>Удалить</button></div> : null}<label className="newsFileButton">{uploading === "cover" ? "Загружаю…" : "Загрузить обложку"}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => event.target.files?.[0] && upload(event.target.files[0], "cover")}/></label></section>
         <section><h3>Фотографии в новости</h3><p>Можно выбрать несколько изображений.</p><div className="newsGalleryPreview">{draft.gallery.map((url, index) => <div key={`${url}-${index}`}><PublicImage sizes="(max-width: 700px) 90vw, 320px" src={url} alt=""/><button onClick={() => setDraft({ ...draft, gallery: draft.gallery.filter((_, item) => item !== index) })}>×</button></div>)}</div><label className="newsFileButton">{uploading === "gallery" ? "Загружаю…" : "+ Добавить фотографии"}<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => uploadGallery(event.target.files)}/></label></section>
-        <section><h3>Видео</h3><p>MP4, WEBM или MOV до 150 МБ. Можно вставить ссылку.</p>{draft.videoUrl && draft.videoUrl.startsWith("/uploads/") ? <video className="newsVideoPreview" src={draft.videoUrl} controls /> : null}<input value={draft.videoUrl} onChange={(event) => setDraft({ ...draft, videoUrl: event.target.value })} placeholder="https://vkvideo.ru/… или YouTube"/><label className="newsFileButton secondary">{uploading === "video" ? "Загружаю…" : "Загрузить видеофайл"}<input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => event.target.files?.[0] && upload(event.target.files[0], "video")}/></label>{draft.videoUrl ? <button className="newsRemoveMedia" onClick={() => setDraft({ ...draft, videoUrl: "" })}>Убрать видео</button> : null}</section>
+        <section><h3>Видео</h3><p>Вставьте ссылку на клип VK — видео останется в VK. Обложка появится при проверке или сохранении, если доступна. Также поддерживаются YouTube, Rutube и файлы до 150 МБ.</p>{draft.videoUrl && draft.videoUrl.startsWith("/uploads/") ? <video className="newsVideoPreview" src={draft.videoUrl} controls /> : null}<input value={draft.videoUrl} onChange={(event) => { setDraft({ ...draft, videoUrl: event.target.value }); setPreviewNotice(""); }} aria-label="Ссылка на видео" placeholder="https://vk.ru/clip-…"/>{vkNewsVideo(draft.videoUrl) ? <><button type="button" disabled={previewBusy} onClick={previewVk}>{previewBusy ? "Проверяю VK…" : "Проверить VK и получить обложку"}</button>{previewNotice ? <p role="status">{previewNotice}</p> : null}<NewsVideo key={draft.videoUrl} source={draft.videoUrl} title={draft.title || "Клип VK"} poster={draft.imageUrl} /></> : null}<label className="newsFileButton secondary">{uploading === "video" ? "Загружаю…" : "Загрузить видеофайл"}<input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={(event) => event.target.files?.[0] && upload(event.target.files[0], "video")}/></label>{draft.videoUrl ? <button className="newsRemoveMedia" onClick={() => setDraft({ ...draft, videoUrl: "" })}>Убрать видео</button> : null}</section>
       </aside></div>
-      <footer><button onClick={() => setDraft(null)}>Отмена</button><button disabled={saving || Boolean(uploading)} onClick={save}>{saving ? "СОХРАНЯЮ…" : draft.status === "PUBLISHED" ? "СОХРАНИТЬ И ОПУБЛИКОВАТЬ" : "СОХРАНИТЬ ЧЕРНОВИК"}</button></footer>
+      <footer><button onClick={() => setDraft(null)}>Отмена</button><button disabled={saving || previewBusy || Boolean(uploading)} onClick={save}>{saving ? "СОХРАНЯЮ…" : draft.status === "PUBLISHED" ? "СОХРАНИТЬ И ОПУБЛИКОВАТЬ" : "СОХРАНИТЬ ЧЕРНОВИК"}</button></footer>
     </section></AdminModal>}
 
-    <section className="newsAdminList"><header><span>ПУБЛИКАЦИИ</span><small>{items.length} материалов</small></header>{items.length ? items.map((item) => <article key={item.id}>{item.imageUrl ? <div className="newsThumb hasImage"><PublicImage sizes="(max-width: 700px) 90vw, 320px" src={item.imageUrl} alt=""/></div> : <div className="newsThumb">ЛХЛ<br/>76</div>}<div><em>{item.category}</em><h3>{item.title}</h3><p>{item.excerpt}</p><small>{item.body ? "Полный текст" : "Только анонс"}{item.videoUrl ? " · Видео" : ""}{galleryOf(item.gallery).length ? ` · Фото: ${galleryOf(item.gallery).length}` : ""}</small></div><time>{item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("ru-RU") : "Не опубликована"}</time><span className={item.isPublished ? "published" : "draft"}>{item.isPublished ? "Опубликовано" : "Черновик"}</span><div className="newsRowActions"><button onClick={() => edit(item)}>Редактировать</button><button onClick={() => toggle(item)}>{item.isPublished ? "Снять" : "Опубликовать"}</button></div></article>) : <p className="registryEmpty">Новостей пока нет.</p>}</section>
+    <section className="newsAdminList"><header><span>ПУБЛИКАЦИИ</span><small>{items.length} материалов</small></header>{items.length ? items.map((item) => <article key={item.id}>{item.imageUrl ? <div className="newsThumb hasImage"><PublicImage sizes="(max-width: 700px) 90vw, 320px" direct={Boolean(vkNewsVideo(item.videoUrl))} src={item.imageUrl} alt=""/></div> : <div className="newsThumb">ЛХЛ<br/>76</div>}<div><em>{item.category}</em><h3>{item.title}</h3><p>{item.excerpt}</p><small>{item.body ? "Полный текст" : "Только анонс"}{item.videoUrl ? " · Видео" : ""}{galleryOf(item.gallery).length ? ` · Фото: ${galleryOf(item.gallery).length}` : ""}</small></div><time>{item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("ru-RU") : "Не опубликована"}</time><span className={item.isPublished ? "published" : "draft"}>{item.isPublished ? "Опубликовано" : "Черновик"}</span><div className="newsRowActions"><button onClick={() => edit(item)}>Редактировать</button><button onClick={() => toggle(item)}>{item.isPublished ? "Снять" : "Опубликовать"}</button></div></article>) : <p className="registryEmpty">Новостей пока нет.</p>}</section>
   </section></main>;
 }

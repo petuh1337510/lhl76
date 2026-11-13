@@ -1,3 +1,5 @@
+import { newsVideoSource, vkNewsVideo } from "@/lib/news-video";
+import { getVkNewsPreview } from "@/lib/vk-news-video";
 import { withAdmin } from "@/lib/admin-guard";
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -14,6 +16,9 @@ async function handleGET() {
 
 async function handlePOST(request: NextRequest) {
   const body = await request.json();
+  if (body.videoUrl !== undefined && body.videoUrl !== "" && body.videoUrl !== null && !newsVideoSource(body.videoUrl)) {
+    return NextResponse.json({ error: "Укажите ссылку на клип/видео VK, YouTube, Rutube или загрузите видеофайл" }, { status: 400 });
+  }
   if (!body.title?.trim() || !body.excerpt?.trim()) {
     return NextResponse.json({ error: "Заполните заголовок и короткое описание" }, { status: 400 });
   }
@@ -23,6 +28,7 @@ async function handlePOST(request: NextRequest) {
     .replace(/^-|-$/g, "")
     .slice(0, 70) || "news";
   const isPublished = body.status === "PUBLISHED";
+  const autoCover = !body.imageUrl?.trim() && vkNewsVideo(body.videoUrl) ? (await getVkNewsPreview(body.videoUrl))?.thumbnail : null;
   const item = await prisma.news.create({
     data: {
       slug: `${baseSlug}-${randomUUID().slice(0, 6)}`,
@@ -30,7 +36,7 @@ async function handlePOST(request: NextRequest) {
       excerpt: body.excerpt.trim(),
       body: body.body?.trim() || null,
       category: body.category?.trim() || "Новости",
-      imageUrl: body.imageUrl?.trim() || null,
+      imageUrl: body.imageUrl?.trim() || autoCover || null,
       videoUrl: body.videoUrl?.trim() || null,
       gallery: Array.isArray(body.gallery) ? body.gallery.filter((item: unknown) => typeof item === "string") : [],
       isPublished,
@@ -43,6 +49,9 @@ async function handlePOST(request: NextRequest) {
 
 async function handlePATCH(request: NextRequest) {
   const body = await request.json();
+  if (body.videoUrl !== undefined && body.videoUrl !== "" && body.videoUrl !== null && !newsVideoSource(body.videoUrl)) {
+    return NextResponse.json({ error: "Укажите ссылку на клип/видео VK, YouTube, Rutube или загрузите видеофайл" }, { status: 400 });
+  }
   if (!body.id) return NextResponse.json({ error: "Новость не выбрана" }, { status: 400 });
   const current = await prisma.news.findUnique({ where: { id: body.id } });
   if (!current) return NextResponse.json({ error: "Новость не найдена" }, { status: 404 });
@@ -51,6 +60,9 @@ async function handlePATCH(request: NextRequest) {
     : body.status
       ? body.status === "PUBLISHED"
       : current.isPublished;
+  const videoUrl = typeof body.videoUrl === "string" ? body.videoUrl.trim() : current.videoUrl;
+  const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : current.imageUrl;
+  const autoCover = !imageUrl && vkNewsVideo(videoUrl) ? (await getVkNewsPreview(videoUrl!))?.thumbnail : null;
   const item = await prisma.news.update({
     where: { id: current.id },
     data: {
@@ -60,7 +72,7 @@ async function handlePATCH(request: NextRequest) {
       ...(typeof body.category === "string" ? { category: body.category.trim() || "Новости" } : {}),
       ...(typeof body.excerpt === "string" ? { excerpt: body.excerpt.trim() } : {}),
       ...(typeof body.body === "string" ? { body: body.body.trim() || null } : {}),
-      ...(typeof body.imageUrl === "string" ? { imageUrl: body.imageUrl.trim() || null } : {}),
+      ...(typeof body.imageUrl === "string" || autoCover ? { imageUrl: imageUrl || autoCover || null } : {}),
       ...(typeof body.videoUrl === "string" ? { videoUrl: body.videoUrl.trim() || null } : {}),
       ...(Array.isArray(body.gallery) ? { gallery: body.gallery.filter((item: unknown) => typeof item === "string") } : {}),
     },

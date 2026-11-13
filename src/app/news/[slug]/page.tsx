@@ -1,3 +1,4 @@
+import { NewsVideo } from "@/components/news-video";
 import { PublicImage } from "@/components/public-image";
 import Link from "next/link";
 import { PublicReturnLink } from "@/components/public-return-link";
@@ -21,22 +22,6 @@ function galleryItems(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-function embeddedVideo(url: string) {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtube.com")) {
-      const id = parsed.searchParams.get("v");
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-    if (parsed.hostname === "youtu.be") return `https://www.youtube.com/embed/${parsed.pathname.slice(1)}`;
-    if (parsed.hostname.includes("rutube.ru")) {
-      const match = parsed.pathname.match(/video\/(?:private\/)?([^/]+)/);
-      return match ? `https://rutube.ru/play/embed/${match[1]}` : null;
-    }
-  } catch {}
-  return null;
-}
-
 export default async function NewsArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
@@ -44,7 +29,6 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
   if (!article) notFound();
 
   const gallery = galleryItems(article.gallery);
-  const videoEmbed = article.videoUrl ? embeddedVideo(article.videoUrl) : null;
   const related = await prisma.news.findMany({
     where: { isPublished: true, id: { not: article.id } },
     orderBy: { publishedAt: "desc" },
@@ -66,7 +50,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
             {article.excerpt ? <p>{article.excerpt}</p> : null}
           </header>
 
-          {article.imageUrl ? (
+          {article.imageUrl && !article.videoUrl ? (
             <div className="newsArticleCover shell">
               <PublicImage priority width={1280} height={720} sizes="(max-width: 1000px) 92vw, 1180px" src={article.imageUrl} alt={article.title} />
             </div>
@@ -80,6 +64,10 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
             )}
           </div>
 
+          {article.videoUrl ? <section className="newsArticleMedia shell">
+            <div className="newsArticleSectionTitle"><span>ВИДЕО</span><h2>Смотреть</h2></div>
+            <NewsVideo source={article.videoUrl} title={article.title} poster={article.imageUrl} />
+          </section> : null}
           {gallery.length ? (
             <section className="newsArticleMedia shell">
               <div className="newsArticleSectionTitle">
@@ -96,21 +84,6 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
             </section>
           ) : null}
 
-          {article.videoUrl ? (
-            <section className="newsArticleMedia shell">
-              <div className="newsArticleSectionTitle">
-                <span>ВИДЕО</span>
-                <h2>Смотреть</h2>
-              </div>
-              <div className="newsArticleVideo">
-                {videoEmbed ? (
-                  <iframe src={videoEmbed} title={article.title} allowFullScreen />
-                ) : (
-                  <video src={article.videoUrl} controls preload="metadata" />
-                )}
-              </div>
-            </section>
-          ) : null}
         </article>
 
         {related.length ? (
@@ -122,8 +95,8 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
             <div className="newsRelatedGrid">
               {related.map((item) => (
                 <Link href={`/news/${item.slug}`} key={item.id}>
-                  {item.imageUrl ? <PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" src={item.imageUrl} alt="" /> : <div>ЛХЛ-76</div>}
-                  <time>{publishedDate(item.publishedAt)}</time>
+                  {item.imageUrl ? <PublicImage width={960} height={540} sizes="(max-width: 600px) 92vw, (max-width: 1000px) 45vw, 640px" direct={Boolean(item.videoUrl)} src={item.imageUrl} alt="" /> : <div>ЛХЛ-76</div>}
+                  {item.videoUrl ? <span>▶ Видео</span> : null}<time>{publishedDate(item.publishedAt)}</time>
                   <h3>{item.title}</h3>
                 </Link>
               ))}

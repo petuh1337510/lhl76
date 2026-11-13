@@ -258,7 +258,7 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
     broadcastsDeferred?: boolean;
     context: PublicSiteContext;
     divisions: Array<{ name: string; slug: string; href: string; teams: any[]; leaders: any[] }>;
-    news: Array<{ id: string; slug: string; title: string; excerpt: string; category: string; imageUrl: string | null; publishedAt: string | null }>;
+    news: Array<{ id: string; slug: string; title: string; excerpt: string; category: string; imageUrl: string | null; videoUrl?: string | null; publishedAt: string | null }>;
     broadcasts: Array<{ id: string; slug: string; title: string; description: string | null; videoUrl: string; imageUrl: string | null; startsAt: string | null; endsAt?: string | null; matchStatus?: string | null; status?: BroadcastStatus; isLive: boolean }>;
     homepageContent: HomepageItem[];
     laureates: Array<{ id:string; category:string; title:string; name:string; teamName:string | null; season:string | null; imageUrl:string | null; link:string | null }>;
@@ -635,8 +635,8 @@ export default function Home({ initialMatches, initialSummary, initialNow }: { i
                 key={news.id}
               >
                 <div className={`newsImage n${index}`}>
-                  {news.imageUrl ? <PublicImage className="homeNewsImage" src={news.imageUrl} alt="" width={960} height={540} sizes={index === 0 ? "(max-width: 800px) 92vw, 50vw" : "(max-width: 600px) 92vw, 30vw"} /> : null}
-                  <span>{news.category}</span>
+                  {news.imageUrl ? <PublicImage direct={Boolean(news.videoUrl)} className="homeNewsImage" src={news.imageUrl} alt="" width={960} height={540} sizes={index === 0 ? "(max-width: 800px) 92vw, 50vw" : "(max-width: 600px) 92vw, 30vw"} /> : null}
+                  <span>{news.videoUrl ? "▶ Видео · " : ""}{news.category}</span>
                 </div>
                 <time>{news.publishedAt ? new Date(news.publishedAt).toLocaleDateString("ru-RU", {timeZone: "Europe/Moscow"}) : ""}</time>
                 <h3>{news.title}</h3>
