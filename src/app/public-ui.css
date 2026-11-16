@@ -300,6 +300,24 @@ main.publicChamp .leagueTable { min-width: 900px; overflow: hidden; }
 .newsCard time,.publicNewsCardBody time,.newsArticleHeader time,.homeNewsCard time { font-size: 12px; color: #52677f; }
 .publicMedia:has(.publicNewsEmpty),.leagueCatalog:has(.publicNewsEmpty),.publicVenues:has(.publicNewsEmpty) { min-height: 0; }
 
+/* Preserve readable team names while statistics scroll on narrow screens. */
+.playerPublic .playerHistory { overflow-x:auto; }
+.playerPublic .playerHistory>div,
+.playerPublic .playerHistory>a {
+  min-width:720px;
+  grid-template-columns:100px minmax(240px,1fr) repeat(5,55px);
+}
+.playerPublic .playerHistory.goalkeeper>div,
+.playerPublic .playerHistory.goalkeeper>a {
+  min-width:500px;
+  grid-template-columns:100px minmax(240px,1fr) 90px;
+}
+.playerPublic .playerHistory.goalkeeperDetailed>div,
+.playerPublic .playerHistory.goalkeeperDetailed>a {
+  min-width:880px;
+  grid-template-columns:100px minmax(240px,1fr) repeat(7,62px);
+}
+
 /* Keep statistics inside narrow phone screens. */
 @media (max-width: 600px) {
   .matchPublic .matchStatViewport { min-width:0; touch-action:pan-y; scroll-behavior:auto; overscroll-behavior-x:contain; }

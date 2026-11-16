@@ -759,7 +759,7 @@ export default function MatchProtocolPage() {
                     <p>Выберите удалённого игрока. Игроки без номера показаны в конце. Повторное нажатие снимает выбор.</p>
                     {penaltyNumberPlayers.length > 0 && <div className="goalNumberGrid">{penaltyNumberPlayers.map(({ row, number }) => {
                       const playerLabel = eventPlayerLabel(row, number);
-                      return <button type="button" key={row.id} className={`goalNumberTile${penalty.playerId === row.playerId ? " is-penalty" : ""}`} aria-pressed={penalty.playerId === row.playerId} aria-label={playerLabel} title={playerLabel} onClick={() => { setPenalty({ ...penalty, playerId: penalty.playerId === row.playerId ? "" : row.playerId }); setPenaltyFormError(""); }}><b>{number || "—"}</b><small>{number ? row.player.lastName : playerLabel}</small></button>;
+                      return <button type="button" key={row.id} className={`goalNumberTile${penalty.playerId === row.playerId ? " is-penalty" : ""}`} aria-pressed={penalty.playerId === row.playerId} aria-label={playerLabel} title={playerLabel} onClick={() => { setPenalty({ ...penalty, playerId: penalty.playerId === row.playerId ? "" : row.playerId }); setPenaltyFormError(""); }}><b>{number || "—"}</b><small>{row.player.lastName}<br />{row.player.firstName}</small></button>;
                     })}</div>}
                   </div>}
                 </>}

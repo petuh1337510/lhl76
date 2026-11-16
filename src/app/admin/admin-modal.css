@@ -157,6 +157,7 @@
 .adminUI .goalNumberTile { display: grid; align-content: center; justify-items: center; gap: 5px; min-height: 72px; padding: 8px 4px; border: 1px solid var(--admin-line); border-top: 3px solid var(--admin-accent); border-radius: 9px; background: var(--admin-surface-raised); color: var(--admin-ink); cursor: pointer; }
 .adminUI .goalNumberTile b { font-size: 23px; line-height: 1; font-variant-numeric: tabular-nums; }
 .adminUI .goalNumberTile small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.adminUI .penaltyProtocolForm .goalNumberTile small { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
 .adminUI .goalNumberTile.is-scorer { border-color: #b9364d; background: #b9364d; color: #fff; }
 .adminUI .goalNumberTile.is-assist { border-color: #deb044; background: #deb044; color: #172338; }
 .adminUI .goalNumberTile.is-penalty { border-color: #b9364d; background: #b9364d; color: #fff; }
