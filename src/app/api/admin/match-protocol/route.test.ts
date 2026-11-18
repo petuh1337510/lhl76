@@ -13,6 +13,7 @@ const database = vi.hoisted(() => {
     penalty: { deleteMany, createMany: vi.fn() },
     penaltyShot: { deleteMany, create: vi.fn() },
     matchRoster: { deleteMany, createMany: vi.fn() },
+    playerStatistic: { findUnique: vi.fn(), update: vi.fn(), create: vi.fn() },
     teamEntry: { findMany: vi.fn() },
     teamStatistic: { upsert: vi.fn() },
     standing: { deleteMany, createMany: vi.fn() },
@@ -93,6 +94,29 @@ describe("match protocol", () => {
     database.findMatch.mockResolvedValue({ ...match, protocolData: { manualScore } });
     expect(await (await save({ staffNote: "Секретарь" })).json()).toMatchObject({ score: manualScore });
     expect(await (await save({ manualScore: null })).json()).toMatchObject({ score: { home: 0, away: 0 } });
+  });
+
+  it("rebuilds player totals from persisted events when saving an imported match without a statistics snapshot", async () => {
+    database.findMatch.mockResolvedValue({ ...match, protocolData: { eventClockVersion: 1 } });
+    database.findRoster.mockResolvedValue([
+      { id: "roster", playerId: "scorer", teamEntryId: "home", matchRosters: [{ id: "appearance" }] },
+    ]);
+    database.tx.goal.create.mockResolvedValue({ id: "goal" });
+    database.tx.playerStatistic.findUnique.mockResolvedValue({ id: "statistics" });
+
+    const response = await save({}, "FINAL", ["roster"], {
+      goals: [{ teamEntryId: "home", scorerId: "scorer" }],
+    });
+
+    expect(response.status).toBe(200);
+    expect(database.tx.playerStatistic.update).not.toHaveBeenCalled();
+    const rebuild = database.tx.$executeRaw.mock.calls.findIndex(([query]) =>
+      query.text?.includes('INSERT INTO "PlayerStatistic"'));
+    expect(rebuild).toBeGreaterThanOrEqual(0);
+    expect(database.tx.$executeRaw.mock.calls[rebuild][0].values).toEqual([match.divisionId]);
+    expect(database.tx.$executeRaw.mock.invocationCallOrder[rebuild]).toBeGreaterThan(
+      database.tx.match.update.mock.invocationCallOrder[0],
+    );
   });
 
   it("rejects incomplete, non-final and drawn playoff scores before writing", async () => {

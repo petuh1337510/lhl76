@@ -9,6 +9,7 @@ import {
   type ProtocolContribution,
 } from "@/lib/domain/match-protocol";
 import { rebuildDivisionStatistics } from "@/lib/rebuild-division-statistics";
+import { rebuildPlayerStatisticsQuery } from "@/lib/rebuild-player-statistics";
 import { getPlayerSuspensionStates } from "@/lib/player-suspensions";
 import { syncPlayoff, PlayoffConflict } from '@/lib/playoff-service';
 import { matchClockResolver, matchClockVersion } from "@/lib/domain/match-clock";
@@ -420,6 +421,13 @@ async function handlePUT(request: NextRequest) {
     for (const key of new Set([...previousMap.keys(), ...nextMap.keys()])) {
       const previous = previousMap.get(key);
       const next = nextMap.get(key);
+      const goalieFields = {
+        goalieGames: (next?.goalieGames ?? 0) - (previous?.goalieGames ?? 0),
+        goalieSeconds: (next?.goalieSeconds ?? 0) - (previous?.goalieSeconds ?? 0),
+        shotsAgainst: (next?.shotsAgainst ?? 0) - (previous?.shotsAgainst ?? 0),
+        goalieGoalsAgainst: (next?.goalieGoalsAgainst ?? 0) - (previous?.goalieGoalsAgainst ?? 0),
+      };
+      if (Object.values(goalieFields).every((delta) => delta === 0)) continue;
       const playerId = next?.playerId || previous!.playerId;
       const teamEntryId = next?.teamEntryId || previous!.teamEntryId;
       const existing = await tx.playerStatistic.findUnique({
@@ -429,38 +437,17 @@ async function handlePUT(request: NextRequest) {
         await tx.playerStatistic.update({
           where: { id: existing.id },
           data: {
-            games: {
-              increment: (next?.games || 0) - (previous?.games || 0),
-            },
-            goals: { increment: (next?.goals || 0) - (previous?.goals || 0) },
-            assists: {
-              increment: (next?.assists || 0) - (previous?.assists || 0),
-            },
-            penaltyMinutes: {
-              increment:
-                (next?.penaltyMinutes || 0) -
-                (previous?.penaltyMinutes || 0),
-            },
-            goalieGames: {
-              increment: (next?.goalieGames || 0) - (previous?.goalieGames || 0),
-            },
-            goalieSeconds: {
-              increment:
-                (next?.goalieSeconds || 0) - (previous?.goalieSeconds || 0),
-            },
-            shotsAgainst: {
-              increment:
-                (next?.shotsAgainst || 0) - (previous?.shotsAgainst || 0),
-            },
-            goalieGoalsAgainst: {
-              increment:
-                (next?.goalieGoalsAgainst || 0) -
-                (previous?.goalieGoalsAgainst || 0),
-            },
+            goalieGames: { increment: goalieFields.goalieGames },
+            goalieSeconds: { increment: goalieFields.goalieSeconds },
+            shotsAgainst: { increment: goalieFields.shotsAgainst },
+            goalieGoalsAgainst: { increment: goalieFields.goalieGoalsAgainst },
           },
         });
       } else if (next) {
-        await tx.playerStatistic.create({ data: next });
+        const { goalieGames, goalieSeconds, shotsAgainst, goalieGoalsAgainst } = next;
+        await tx.playerStatistic.create({
+          data: { playerId, teamEntryId, goalieGames, goalieSeconds, shotsAgainst, goalieGoalsAgainst },
+        });
       }
     }
     const savedMatch = await tx.match.update({
@@ -481,6 +468,7 @@ async function handlePUT(request: NextRequest) {
         resultNote: body.resultNote || null,
       },
     });
+    await tx.$executeRaw(rebuildPlayerStatisticsQuery(match.divisionId));
     await rebuildDivisionStatistics(tx, match.divisionId);
     if (match.isPlayoff && body.status === 'FINAL' && resultType !== 'TECHNICAL' && finalHomeScore === finalAwayScore)
       throw new PlayoffConflict('В завершённом матче плей-офф не может быть ничьей. Укажите решающий результат.');
